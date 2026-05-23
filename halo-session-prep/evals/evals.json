@@ -1,0 +1,73 @@
+{
+  "skill_name": "halo-session-prep",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Prepara la sesión de esta semana. Los jugadores están en Rockwood investigando el robo del componente.",
+      "expected_output": "El skill consulta Supabase, hace preguntas de afinación y propone un prep con 6 NPCs (4 existentes + 2 nuevos), tesoros anclados a items, monstruos del catálogo, y cada entidad explica su relación con la sesión.",
+      "files": [],
+      "assertions": [
+        {"text": "Lee references/learnings.md antes de consultar Supabase"},
+        {"text": "Pregunta al DM cuál fue la última sesión antes de consultar Supabase (no asume)"},
+        {"text": "Consulta quests activas, NPCs candidatos, items y monstruos en Supabase con campaign_slug='halo' donde aplica"},
+        {"text": "Hace máximo 6 preguntas al DM agrupadas en un solo mensaje (no más)"},
+        {"text": "Incluye la pregunta '¿cuál es el objetivo de los jugadores para esta sesión?'"},
+        {"text": "La propuesta contiene ≥6 NPCs, con exactamente 2 marcados 'nuevo' y ≥4 marcados 'existente'"},
+        {"text": "Cada NPC (existente y nuevo) lleva 'Relación con la sesión' no vacía"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Prepara la sesión del próximo sábado 21 de marzo. Hay combate planeado con guardias corruptos. La sesión dura 3 horas.",
+      "expected_output": "La propuesta incluye todas las secciones obligatorias con contenido concreto, y los monstruos de combate vienen del catálogo 'monstruos' de Supabase.",
+      "files": [],
+      "assertions": [
+        {"text": "La propuesta incluye un bloque_strong_start concreto con al menos un detalle sensorial específico (no genérico)"},
+        {"text": "La propuesta incluye entre 3 y 5 escenas posibles, cada una con objetivo y obstáculo explícitos"},
+        {"text": "La propuesta incluye entre 3 y 5 secretos, con múltiples caminos (≥2 pistas) para cada secreto"},
+        {"text": "La propuesta incluye una tabla de NPCs con ≥6 filas y las columnas NPC, Existente/Nuevo, Ubicación, Relación con sesión, Qué quiere, Cómo suena"},
+        {"text": "Cada locación en bloque_locaciones lleva 'Relación con la sesión' no vacía"},
+        {"text": "Cada monstruo referencia un monstruo_id o nombre del catálogo 'monstruos' (no inventa stat blocks)"},
+        {"text": "Cada monstruo lleva flag 'match_directo' o 'reskin'. Si es reskin, incluye las 3 capas narrativas (primera señal, encuentro, comportamiento)"},
+        {"text": "El skill prefiere match directo sobre reskin de monstruo cuando el catálogo ya tiene uno que encaja"}
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Session prep para el viernes 27 de marzo. Quest activa: El Componente Robado.",
+      "expected_output": "Se crea una fila en session_plans de Supabase con todas las columnas de bloque pobladas, se insertan los 2 NPCs nuevos en la tabla npcs (tras confirmación del DM), y al final corre la auditoría con reporte al DM.",
+      "files": [],
+      "assertions": [
+        {"text": "Ejecuta un INSERT INTO session_plans en Supabase (no solo genera texto)"},
+        {"text": "El nombre sigue el patrón 'Sesión DD-MMM-YY' (ej: 'Sesión 27-mar-26')"},
+        {"text": "La columna fecha_sesion se llena con la fecha en formato ISO (YYYY-MM-DD)"},
+        {"text": "campaign_slug='halo' y estado='borrador' en el INSERT"},
+        {"text": "El INSERT llena las columnas bloque_strong_start, bloque_escenas, bloque_secretos, bloque_npcs, bloque_locaciones, bloque_tesoros, bloque_monstruos (no usa solo la columna 'bloques' legacy)"},
+        {"text": "Antes del INSERT a session_plans, pregunta al DM si guarda los 2 NPCs nuevos en la tabla npcs"},
+        {"text": "Si el DM confirma, ejecuta INSERT INTO npcs con campaign_slug='halo' y conocido_jugadores=false, captura los npc_id"},
+        {"text": "Los npc_id reales aparecen en el bloque_npcs del session_plan (no quedan null para NPCs que el DM aprobó)"},
+        {"text": "Cada tesoro en bloque_tesoros referencia un item_id real de la tabla items (no inventa items)"},
+        {"text": "Cada tesoro lleva flag 'match_directo' o 'reskin'. Si es reskin, incluye el flavor nuevo aplicado"},
+        {"text": "El skill prefiere match directo sobre reskin de item: si hay un item existente que encaja, no aplica reskin innecesario"},
+        {"text": "El skill lanza el subagente auditor como paso final después del INSERT (detectable en el trace/output)"},
+        {"text": "El reporte del auditor aparece al final del output con las 3 categorías (REGLAS / COHESIÓN / CALIDAD) y el session_plan_id auditado"},
+        {"text": "Si el auditor detecta issues, los presenta al DM y ofrece corregir vía UPDATE — no duplica registros ni inserta silenciosamente"}
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Prepara sesión. Hay un NPC nuevo: Dona Ferris, alcaldesa de Rockwood, que oculta que es informante de la Facción Gris.",
+      "expected_output": "El NPC nuevo se integra correctamente al prep con motivación oculta, los otros 5+ NPCs se llenan desde la BD, y el skill delega la generación narrativa del NPC nuevo a dnd-worldbuilder.",
+      "files": [],
+      "assertions": [
+        {"text": "Dona Ferris aparece en bloque_npcs marcada como 'nuevo' con primera_impresion y notas_roleplay según formato dnd-worldbuilder"},
+        {"text": "Dona Ferris lleva 'Relación con la sesión' explicando su rol narrativo en la trama"},
+        {"text": "La motivación oculta de Dona Ferris (informante Facción Gris) aparece en notas privadas DM o similar — no en la descripción pública visible al party"},
+        {"text": "El resto del bloque_npcs se completa hasta llegar a ≥6 totales con NPCs existentes de la BD (cuartas como existentes)"},
+        {"text": "El texto usa segunda persona dirigida al DM (contiene 'tus jugadores', 'recuerda que', o similar)"},
+        {"text": "Las descripciones de escenas usan listas o bullets — no párrafos de prosa larga"},
+        {"text": "Dona Ferris, si se commitea, se inserta en la tabla npcs con conocido_jugadores=false (los jugadores no saben aún que existe como alcaldesa oficial — o al menos su motivación oculta)"}
+      ]
+    }
+  ]
+}
