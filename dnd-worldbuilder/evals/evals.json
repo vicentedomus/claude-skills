@@ -1,0 +1,23 @@
+{
+  "skill_name": "dnd-worldbuilder",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Mejora al NPC Thrain de Moria, hazlo más interesante y con más profundidad narrativa.",
+      "expected_output": "Primera impresión en movimiento (no retrato), notas de roleplay con patrón de habla y reacciones, edad coherente con raza, mínimo 2 sentidos, detalle ancla, humor coherente con cultura, conexiones con entidades relacionadas. Tabla comparativa original vs propuesta.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Crea una quest nueva para Sleh, algo que los jugadores puedan encontrar la próxima sesión.",
+      "expected_output": "Quest con premisa (stakes claros), dilema moral, mínimo 2 NPCs conectados, consecuencias múltiples (no binarias), misterio menor que conecte con lore, pistas con múltiples caminos. Coherente con cultura gnómica de Sleh y el lore de Gnomalia.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Mejora todos los establecimientos de Rockwood, están muy genéricos.",
+      "expected_output": "Modo batch: lista establecimientos de Rockwood, pregunta si procesar todos o seleccionar, procesa uno por uno con exterior+interior, cada uno con 3 sentidos, detalle ancla, gancho interacción, humor coherente con cultura local, personalidad del dueño reflejada. Coherencia entre establecimientos.",
+      "files": []
+    }
+  ]
+}
