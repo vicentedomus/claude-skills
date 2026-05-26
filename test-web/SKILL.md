@@ -41,18 +41,23 @@ Then read the changed files to understand what the change is supposed to do — 
 
 ### Step 2: Create targeted tests
 
-Based on the diff, create Playwright test files in `tests/temp/`. Each test should:
+First, ground yourself in the real test setup instead of working from memory:
 
-- Target specific UI changes found in the diff
-- Use existing helpers from `tests/helpers.ts` (waitForDataLoad, switchTab, closeModal)
+- **Read `tests/helpers.ts`** to see which helpers actually exist and their exact signatures before you call them. The names below are a hint, not a guarantee — the file is the source of truth, and helpers get renamed or added over time.
+- **Pull selectors from the source, not from this list.** Grep the changed HTML/JS and a couple of existing tests under `tests/` for the IDs/classes you need (e.g. `grep -rn 'modal-overlay\|tbody-tareas' domus-hub/*.html domus-hub/*.js`). Hardcoded selectors in a skill go stale the moment the markup changes; the code does not.
+
+Then create Playwright test files in `tests/temp/`. Each test should:
+
+- Target the specific UI changes found in the diff
+- Reuse the real helpers from `tests/helpers.ts` (at time of writing: `waitForDataLoad`, `switchTab`, `closeModal`)
 - Follow the patterns in existing tests under `tests/` for selector naming and modal interaction
 - Be read-only by default (don't create/modify real data unless explicitly told to)
-- **CRITICAL**: Name files with `shared.` prefix: `tests/temp/shared.verify-[feature].spec.ts` — this is required by the Playwright config's `testMatch` pattern (`/shared\..+\.spec\.ts/`). Without the prefix, tests won't run.
+- **CRITICAL**: Name files with the `shared.` prefix: `tests/temp/shared.verify-[feature].spec.ts` — this is required by the Playwright config's `testMatch` pattern (`/shared\..+\.spec\.ts/`). Without the prefix, tests won't run.
 
-Reference the existing test patterns:
+Selectors that were current at the time of writing (verify against the source before relying on them):
 - Auth setup reuses `tests/.auth/maestro.json` (storageState from setup-maestro project)
-- Use `#modal-overlay.open` to detect modals
-- Use `.tab-btn[data-tab="X"]` to switch tabs
+- `#modal-overlay.open` to detect modals
+- `.tab-btn[data-tab="X"]` to switch tabs
 - Report modal is `#modal-reporte-overlay`
 - Task rows are in `#tbody-tareas tr`
 
