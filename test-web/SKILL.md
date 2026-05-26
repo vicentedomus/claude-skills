@@ -63,19 +63,36 @@ Selectors that were current at the time of writing (verify against the source be
 
 ### Step 3: Run the tests
 
+First make sure the environment is actually ready — most "test failures" at this stage are really setup problems, and they're faster to rule out up front than to debug from a cryptic Playwright error:
+
 ```bash
 cd "$(git rev-parse --show-toplevel)/domus-hub"
-npx playwright test tests/temp/ --project=setup-maestro --project=shared-tests
+
+# Browsers installed? (no-op if already present)
+npx playwright install --with-deps chromium
+
+# Port 3000 free? The config auto-starts a server there; a stale process will
+# make every test fail to connect. Kill it if something is squatting the port.
+lsof -ti:3000 || echo "port 3000 free"
+
+# Auth state present? If tests/.auth/maestro.json is missing or stale, the
+# setup-maestro project regenerates it — but it needs the credentials in .env.
+ls tests/.auth/ 2>/dev/null || echo "no auth yet — setup project will create it"
 ```
 
-If testing role-specific behavior (maestro vs supervisor), also run:
+If `npx playwright install` or the auth setup fails, fix that before running tests — don't try to interpret downstream failures.
+
+Force the JSON reporter via CLI so the results file always exists, regardless of what `playwright.config.ts` sets. `--reporter=line,json` keeps console progress visible *and* writes the file; `PLAYWRIGHT_JSON_OUTPUT_NAME` controls where it lands (Step 4 reads exactly this path):
+
 ```bash
-npx playwright test tests/temp/ --project=setup-supervisor --project=supervisor-tests
+export PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/results.json
+npx playwright test tests/temp/ --project=setup-maestro --project=shared-tests --reporter=line,json
 ```
 
-Also run core tests to make sure nothing broke:
+**Run the supervisor block only when the change touches role/permission behavior** — e.g. the diff mentions `canEdit`, role checks, or anything gated by user role. There's no point paying for a second auth + run when the change is role-agnostic. When it is relevant, verify the restricted role behaves correctly (e.g. a supervisor can view but not edit):
+
 ```bash
-npx playwright test tests/core/ --project=setup-maestro --project=shared-tests
+npx playwright test tests/temp/ --project=setup-supervisor --project=supervisor-tests --reporter=line,json
 ```
 
 ### Step 4: Read and report results
