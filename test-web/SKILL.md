@@ -116,12 +116,15 @@ If there are failures, for each one:
 
 ### Step 5: Clean up and push
 
-Once all tests pass:
-1. Delete `tests/temp/` directory
-2. Commit the fix (if code was changed)
-3. Push to the `cambios-en-produccion` branch
+**Only run this step once all tests actually pass.** Stopping after the 3-attempt cap in Step 4 is *not* a finish line — it's a pause to fix the underlying problem and re-test. In that case do **not** clean up or push: leave `tests/temp/` in place so the failure can be reproduced and debugged, and hand back to the user.
 
-If all tests passed without needing fixes, just clean up tests/temp/ and report success.
+When everything is green:
+
+1. **Delete the `tests/temp/` directory.** The temp tests are scaffolding — they are never committed.
+2. **Commit only the app-code fix, if any.** If a fix in Step 4 changed application code, commit *that* change with a clear message describing the fix. Never stage anything under `tests/temp/`. If no app code changed (tests passed on the first run), there's nothing to commit — just report success.
+3. **Decide where to push based on the environment:**
+   - **Claude Code on the web / cloud:** always start a *new* branch and open a pull request for the fix — never push directly. (This matches the always-new-PR workflow configured for cloud sessions.)
+   - **Local / anywhere else:** ask the user which branch to push to before pushing. Do not assume `cambios-en-produccion` or any production-looking branch.
 
 ## Important notes
 
