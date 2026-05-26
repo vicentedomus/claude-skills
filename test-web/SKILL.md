@@ -17,15 +17,27 @@ This skill creates **ephemeral tests** specific to what changed, runs them in a 
 
 ### Step 1: Understand what changed
 
-Analyze the recent changes to determine what needs testing:
+Figure out what actually changed so the tests target real behavior instead of guesses. Prefer uncommitted work — that's usually what you're iterating on — and fall back to committed changes only when the tree is clean.
 
 ```bash
-cd "$(git rev-parse --show-toplevel)/domus-hub" && git diff HEAD~1 --name-only -- *.js *.html *.css
+cd "$(git rev-parse --show-toplevel)/domus-hub"
+
+# Uncommitted changes first (staged + unstaged + untracked). Quote the globs so
+# git matches them recursively across subdirectories — an unquoted *.js expands
+# in the shell and only catches files in the current directory.
+git status --porcelain -- '*.js' '*.html' '*.css' '*.ts'
+
+# If nothing is uncommitted, diff the commits on this branch against the deploy
+# branch (not HEAD~1, which misses everything beyond the last commit). Fall back
+# to `git diff HEAD~1` if the deploy branch isn't available locally.
+git diff --name-only cambios-en-produccion...HEAD -- '*.js' '*.html' '*.css' '*.ts'
 ```
 
-If no argument was provided, also check `git diff --cached` and `git status` for uncommitted changes.
+If `$ARGUMENTS` was provided, use it as a test filter (e.g., a specific test file name or keyword) and skip the diff detection.
 
-If `$ARGUMENTS` was provided, use it as a test filter (e.g., a specific test file name or keyword).
+Then read the changed files to understand what the change is supposed to do — don't infer intent from filenames alone.
+
+**Before creating or running any tests, tell the user in 1-2 sentences what you're about to test, and wait for their confirmation.** For example: *"I see changes to the report modal's date filter. I'll verify the modal opens, the range applies, and the task list updates. Sound right?"* Realigning now is cheap; discovering a misunderstanding after writing and running a full suite is expensive.
 
 ### Step 2: Create targeted tests
 
