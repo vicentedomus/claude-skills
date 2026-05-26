@@ -103,12 +103,16 @@ Read `test-results/results.json` and present a summary table:
 |------|--------|----------|
 | verify-feature-name | PASS | 3.2s |
 
-If there are failures:
+If there are failures, for each one:
 1. Read the screenshot: `test-results/*/test-failed-1.png`
 2. Read the error context: `test-results/*/error-context.md`
 3. Explain what failed and why
-4. **Fix the code** (not the test) and re-run
-5. Repeat until all tests pass
+4. **Diagnose where the bug actually is before touching anything.** A failure can come from two sources, and they're fixed differently:
+   - **The app code is wrong** — the feature genuinely misbehaves (wrong value rendered, broken permission gate, missing element that should exist). Fix the app code.
+   - **The test is wrong** — a stale selector, a race the test didn't wait for, an assertion that doesn't match correct behavior. Fix the test.
+   The screenshot is the tiebreaker: if the app looks/behaves correctly but the test still failed, the test is at fault. Don't "fix" working app code to satisfy a broken test, and don't weaken a test to paper over a real app bug.
+5. Apply the fix and re-run. You may edit app code directly without asking — *unless* the fix is destructive or hard to reverse (deleting code paths, schema/migration changes, touching auth or other tests). In that case, stop and confirm with the user first.
+6. **Cap the loop at 3 fix attempts.** If the tests still fail after the third attempt, stop — don't keep changing code. Report what you tried, the current failure, and your best hypothesis, and hand back to the user.
 
 ### Step 5: Clean up and push
 
