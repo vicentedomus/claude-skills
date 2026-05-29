@@ -73,6 +73,10 @@ Lee `references/queries.md` y ejecuta con `execute_sql` (en este orden):
   políticas RLS costosas. Incluye el link de remediación.
 - `get_logs(project_id, service="postgres")` y `service="api"` → errores, OOM,
   "disk full", límite de conexiones, 5xx en las últimas 24h.
+- **Egress** (ver `queries.md` #9): en los api logs busca un mismo endpoint repetido
+  muchas veces en segundos (re-fetch en loop), `select=*` sobre vistas grandes, y
+  clientes `HeadlessChrome` o WebSockets de Realtime. Es la causa típica de un salto
+  súbito de egress.
 
 ### 4. Evaluar estado global
 
