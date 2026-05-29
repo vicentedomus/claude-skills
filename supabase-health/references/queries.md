@@ -148,3 +148,36 @@ limit 10;
 ```sql
 select pg_size_pretty(pg_database_size(current_database())) as tamano_bd;
 ```
+
+## 9. Egress (bytes salientes) — diagnóstico
+
+El egress = bytes enviados a los clientes. Cuota free = 5 GB/mes. No hay métrica de
+"bytes por query" en `pg_stat_statements`, así que se diagnostica por **tres vías**:
+
+**(a) Proxy por filas devueltas** — lecturas REST que devuelven más datos:
+```sql
+select
+  rows, calls,
+  case when calls > 0 then round((rows::numeric / calls), 1) else 0 end as rows_per_call,
+  left(regexp_replace(query, '\s+', ' ', 'g'), 100) as query
+from pg_stat_statements
+where query ilike '%pgrst_source%'      -- solo lecturas vía PostgREST (API)
+order by rows desc
+limit 15;
+```
+Sospecha de **vistas con `select=*`** (`ventas_con_estado`, `tareas_con_estado`) y de
+selects con joins anidados anchos (`tickets`, `polizas`, `visitas`): payload grande
+× muchas llamadas = egress alto.
+
+**(b) Logs de API** — `get_logs(service="api")`. Busca:
+- El **mismo endpoint repetido muchas veces en pocos segundos** (re-fetch en loop,
+  componente que re-renderiza, varias pestañas) → causa típica de un salto súbito.
+- `select=*` sobre vistas/tablas grandes.
+- Clientes **`HeadlessChrome`** (tests/automatización/scrapers): si uno corre en loop,
+  dispara el egress. Cruza la hora del salto con cuándo se lanzó algo headless.
+- `GET /realtime/v1/websocket` (101): Realtime difunde cada cambio a cada cliente
+  suscrito; muchas suscripciones = egress sostenido por WebSocket.
+
+**(c) Métrica de red** — `node_network_transmit_bytes_total{device="ens5"}` (contador,
+refresco ~60s → 2 muestras para tasa). El egress facturado del mes se ve en el
+dashboard de Supabase (Reports/Usage), no en este endpoint.

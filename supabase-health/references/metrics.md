@@ -19,29 +19,39 @@ Formato:  texto Prometheus (una serie por línea)
 - La Metrics API está en **beta**: los nombres de series pueden cambiar. La primera
   corrida, valida los nombres reales contra esta lista y corrige.
 
-## Series clave (verificar nombres reales en la 1ª corrida)
+## Perfil de la instancia (verificado 2026-05-28)
 
-Nombres aproximados basados en el dashboard `supabase/supabase-grafana`. Ajustar tras
-inspeccionar la salida real del endpoint.
+`BD Domus` corre en una instancia **chica (~1 GB RAM, 2 vCPU)**:
+- `node_memory_MemTotal_bytes` ≈ **906 MB**, `SwapTotal` ≈ 1 GB.
+- `max_connections_connection_count` = **60** (límite duro de Postgres).
+- 2 discos: `/` (nvme0n1, ~9.65 GB, OS+WAL) y `/data` (nvme1n1, ~7.8 GB, datos Postgres).
 
-| Qué medir | Serie(s) Prometheus aproximadas | Cómo derivar |
+**Las dos restricciones que tumban la página son CONEXIONES y MEMORIA**, no el tamaño
+de datos. Prioriza esas dos en la evaluación.
+
+## Series clave (nombres REALES, verificados contra el endpoint)
+
+El endpoint emite ~740 series. Estas son las que importan:
+
+| Qué medir | Serie(s) Prometheus reales | Cómo derivar |
 |---|---|---|
-| **CPU busy %** | `node_cpu_seconds_total{mode="idle"}` | 100 − ratio(idle). Para snapshot, usar también las métricas de carga si existen |
-| **Carga** | `node_load1`, `node_load5` | vs nº de vCPU |
-| **Disk IO / IOPS** | `node_disk_reads_completed_total`, `node_disk_writes_completed_total`, `node_disk_read_bytes_total`, `node_disk_written_bytes_total` | tasa de IOPS y throughput |
-| **Disk burst balance** | (gp3/gp2 burst balance si está expuesto) | % restante; bajo ⇒ throttling de IO |
-| **Espacio de disco** | `node_filesystem_avail_bytes`, `node_filesystem_size_bytes` | usado % = 1 − avail/size |
-| **RAM** | `node_memory_MemAvailable_bytes`, `node_memory_MemTotal_bytes` | usado % |
-| **Swap** | `node_memory_SwapFree_bytes`, `node_memory_SwapTotal_bytes` | swap en uso ⇒ presión de memoria |
-| **Egress / red** | `node_network_transmit_bytes_total` | bytes salientes (proxy de egress) |
-| **Conexiones** | `pg_stat_database_num_backends`, `pg_settings_max_connections` | uso % de conexiones |
-| **Cache hit** | `pg_stat_database_blks_hit`, `pg_stat_database_blks_read` | hit / (hit+read) |
+| **Conexiones** 🔴 | `pg_stat_database_num_backends` / `max_connections_connection_count` | uso % = backends / max. **>85% ⇒ riesgo de "too many connections"** |
+| **RAM usada** | `node_memory_MemAvailable_bytes` / `node_memory_MemTotal_bytes` | usado % = 1 − avail/total |
+| **Swap en uso** 🟡 | `node_memory_SwapTotal_bytes` − `node_memory_SwapFree_bytes` | >0 ⇒ presión de memoria ⇒ más disk IO |
+| **Espacio de disco** | `node_filesystem_avail_bytes` / `node_filesystem_size_bytes` (por `mountpoint` `/` y `/data`) | usado % = 1 − avail/size |
+| **CPU / carga** | `node_load1`, `node_load5`, `node_load15` | vs 2 vCPU: load > 2 ⇒ saturación |
+| **CPU detallado** | `node_cpu_seconds_total{mode=...}` (por `cpu` e `idle/user/system/iowait/steal`) | contador acumulado; necesita 2 muestras para % instantáneo |
+| **Disk IO** | `node_disk_reads_completed_total`, `node_disk_writes_completed_total`, `node_disk_read_bytes_total`, `node_disk_written_bytes_total` (por `device`) | IOPS/throughput; `mode="iowait"` alto corrobora IO |
+| **Egress / red** | `node_network_transmit_bytes_total{device="ens5"}` | bytes salientes (proxy de egress) |
+| **Cache hit** | `pg_stat_database_blks_hit_total`, `pg_stat_database_blks_read_total` | hit / (hit+read) |
 
-> Nota: el endpoint da un **snapshot** instantáneo (contadores acumulados). Para
-> tasas reales (IOPS/seg, egress/seg) se necesitarían dos muestras. Para el chequeo
-> matutino basta con: (a) snapshots de gauges (disco usado, RAM, conexiones, burst
-> balance) y (b) cruzar las tasas/queries pesadas con `pg_stat_statements` (ver
-> `queries.md`), que sí da acumulados por query desde el último reset.
+> No hay serie de **disk burst balance** en este endpoint (es de EBS/AWS). Usa `iowait`
+> (en `node_cpu_seconds_total`) + las tasas de `node_disk_*` como proxy de presión de IO.
+>
+> Nota: el endpoint da un **snapshot** de contadores acumulados, y el de red se refresca
+> ~cada 60s. Para tasas reales (IOPS/seg, egress/seg, CPU%) se necesitan 2 muestras
+> separadas ≥60s. Para el chequeo matutino basta con los **gauges** instantáneos
+> (conexiones, RAM, swap, disco, load) + cruzar con `pg_stat_statements` (`queries.md`).
 
 ## Extracción
 
