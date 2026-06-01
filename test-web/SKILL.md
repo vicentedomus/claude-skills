@@ -90,7 +90,15 @@ Then create Playwright test files in `tests/temp/`. Each test should:
 First make sure the environment is actually ready — most "test failures" at this stage are really setup problems, and they're faster to rule out up front than to debug from a cryptic Playwright error:
 
 ```bash
-# Browsers installed? (no-op if already present)
+# Dependencies installed? A fresh clone — especially Claude Code on the web, which
+# clones clean every session — has no node_modules, so Playwright can't even load
+# the config and dies with "Cannot find module '@playwright/test'". Install first.
+[ -d node_modules ] || npm ci || npm install
+
+# Browsers installed? (no-op if already present). ORDER MATTERS: install npm deps
+# *before* this. Deps pin the Playwright version; installing the browser first and
+# then running `npm ci` swaps Playwright to a different version whose browser build
+# is now missing ("Executable doesn't exist at .../chrome-headless-shell-XXXX").
 npx playwright install --with-deps chromium
 
 # Port free? The config usually auto-starts a server (commonly :3000); a stale
@@ -103,6 +111,8 @@ ls tests/.auth/ 2>/dev/null || echo "no auth yet — setup project will create i
 ```
 
 If `npx playwright install` or the auth setup fails, fix that before running tests — don't try to interpret downstream failures. A common auth failure is a missing `TEST_<ROLE>_EMAIL` / `TEST_USER_PASSWORD` — re-check Step 0.
+
+**Behind a TLS-intercepting proxy (common in remote/cloud execution), the setup project times out waiting for the login form even though credentials are fine.** Many apps pull runtime deps from CDNs via `<script src>` (Supabase client, jspdf, web fonts). A MITM proxy re-signs TLS with a CA the browser rejects, so those subresources fail with `ERR_CERT_AUTHORITY_INVALID`, the app never boots, and `setup-<role>` hangs on a *hidden* `#login-form` / a stuck splash screen. **Symptom→cause:** a setup timeout on a hidden login form is almost never bad credentials — it's subresource cert failures. Confirm by loading the app once and checking the browser console for `ERR_CERT_AUTHORITY_INVALID` / `<lib> is not defined`. The fix is a browser-level cert bypass — look for the repo's existing knob rather than editing the config (Domus Hub: `export PLAYWRIGHT_IGNORE_TLS=1`, which the config maps to `ignoreHTTPSErrors` + `--ignore-certificate-errors`).
 
 Force the JSON reporter via CLI so the results file always exists, regardless of what the config sets. `--reporter=line,json` keeps console progress visible *and* writes the file; `PLAYWRIGHT_JSON_OUTPUT_NAME` controls where it lands (Step 4 reads exactly this path):
 
@@ -159,4 +169,4 @@ When everything is green:
 - The Playwright config usually auto-starts a local server (commonly port 3000) and tests run against it, not a deployed URL.
 - Auth credentials live in `.env` (gitignored); session storage states land in `tests/.auth/<role>.json` (gitignored).
 - Data often loads asynchronously — use the repo's `waitForDataLoad()` (or equivalent) helper rather than fixed sleeps.
-- **Repo-specific facts must be re-verified each run** (they drift): the primary role, which permission flags gate which UI, modal/close behavior, and exact selectors. For Domus Hub at time of writing: primary role is `direccion`; permissions follow a 2D `departamento × rango` model in `public/permissions.js` (e.g. `editFechaFinProgramada` is true for `direccion`/`*_gerente`, false for supervisors); modals are `#modal-overlay.open` and close via overlay click (no Escape handler); the deploy/base branch is `cambios-en-produccion`.
+- **Repo-specific facts must be re-verified each run** (they drift): the primary role, which permission flags gate which UI, modal/close behavior, and exact selectors. For Domus Hub at time of writing: primary role is `direccion`; permissions follow a 2D `departamento × rango` model in `public/permissions.js` (e.g. `editFechaFinProgramada` is true for `direccion`/`*_gerente`, false for supervisors); modals are `#modal-overlay.open` and close via overlay click (no Escape handler); the deploy/base branch is `cambios-en-produccion`. In Claude Code on the web: run `npm ci` before `npx playwright install`, and `export PLAYWRIGHT_IGNORE_TLS=1` — without it every test fails at auth setup because the app's CDN `<script>` deps (Supabase/jspdf/fonts) fail cert validation behind the MITM proxy.
