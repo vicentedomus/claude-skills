@@ -14,7 +14,7 @@ Ejecuta el skill `supabase-health` para el proyecto **BD Domus**
 3. Corre `get_advisors(performance)` y `get_logs(postgres)` + `get_logs(api)`.
 4. Evalúa contra `references/thresholds.md` y arma el `status` global + hallazgos
    accionables (máx 5).
-5. Manda el payload JSON a `https://vicente-domus.app.n8n.cloud/webhook/supabase-health`
+5. Manda el payload JSON a `https://n8n.vichon8n.tech/webhook/supabase-health`
    para que llegue por WhatsApp.
 
 Deja el análisis completo en el chat. No hagas cambios en la BD ni en el repo: esto
