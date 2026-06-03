@@ -126,6 +126,18 @@ curl -sS -X POST https://n8n.vichon8n.tech/webhook/supabase-health \
 
 Si una métrica no se pudo leer (p. ej. faltó el key), pon `null` y dilo en `summary`.
 
+> ⚠️ **El `date` define el nombre del archivo del reporte.** El workflow guarda el
+> HTML en Supabase Storage como `salud-<date>.html` (con `x-upsert`, sobreescribe) y
+> el WhatsApp enlaza a ese archivo vía el `reporte-viewer`. En una corrida **real**
+> usa SIEMPRE la fecha de hoy (`YYYY-MM-DD`).
+>
+> **Para validar/probar el webhook (no es una corrida real), NUNCA uses la fecha de
+> hoy:** pon `"date": "TEST"` para que escriba `salud-TEST.html` y **no pise el
+> reporte del día**. Un disparo de prueba con la fecha real contamina el reporte de
+> producción y, por caché del viewer, puede quedar visible un buen rato. El payload
+> de prueba debe ser claramente sintético (p. ej. `summary` que diga "prueba de
+> webhook").
+
 ### 6. Cerrar
 
 Deja en el chat de la sesión el análisis completo (tablas de queries, números). El
