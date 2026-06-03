@@ -9,11 +9,19 @@ El `status` global = el **peor** de todos los hallazgos.
 |---|---|---|---|
 | CPU busy sostenido | < 70% | 70–90% | > 90% |
 | Disk burst balance | > 50% | 20–50% | < 20% |
-| Disco usado | < 75% | 75–90% | > 90% |
+| **Disco `/data`** (datos Postgres) | < 75% | 75–90% | > 90% |
+| Disco `/` (OS+WAL) | informativo | — | — |
 | RAM usada | < 80% | 80–92% | > 92% |
 | Swap en uso | 0 | cualquier uso | crecimiento sostenido |
 | Conexiones (% de max) | < 70% | 70–85% | > 85% |
 | Egress | sin salto vs día previo | salto notable | cerca de la cuota del plan |
+
+> **Disco — cuál mirar.** El status de disco lo define **`/data`** (datos de Postgres).
+> El mount **`/` (OS+WAL)** ronda ~74% por la **imagen base de Supabase**, no por
+> nuestros datos (la BD pesa ~22 MB ⇒ `/data` está casi vacío): es **informativo** y
+> **no** debe disparar WARN por sí solo. `/` solo es preocupante si un log dice
+> "disk full / could not extend file" o si **crece sostenidamente** entre días.
+> `fetch_metrics.sh` ya imprime el `% usado` de cada mount etiquetado.
 
 ## Postgres (introspección)
 

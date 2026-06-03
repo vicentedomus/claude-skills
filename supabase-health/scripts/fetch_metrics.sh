@@ -49,5 +49,37 @@ grep -E "$PATTERN" "$RAW" | grep -vE '^#' || {
   echo "(no se encontraron las series esperadas; revisa $RAW y ajusta el patrón)"
 }
 
+# --- Disco por mountpoint (derivado) ---------------------------------------
+# La instancia tiene DOS discos (ver references/metrics.md): `/` (OS+WAL, imagen
+# base de Supabase, alto ~74% por diseño) y `/data` (datos de Postgres). El status
+# de disco se evalúa SOLO contra `/data`; `/` es informativo. Esto evita la falsa
+# alarma de reportar el 74% del SO como si fuera la data (que pesa ~22 MB).
+echo
+echo "# Disco usado por mountpoint (derivado de node_filesystem_*):"
+# awk portable (mawk/busybox/gawk): extrae el mountpoint sin la extensión
+# match(...,arr) que solo trae gawk.
+awk '
+  function mp_of(s,   b) {
+    b = index(s, "mountpoint=\"")
+    if (b == 0) return ""
+    s = substr(s, b + 12)
+    return substr(s, 1, index(s, "\"") - 1)
+  }
+  /^node_filesystem_avail_bytes/ { mp = mp_of($0); if (mp != "") avail[mp] = $NF }
+  /^node_filesystem_size_bytes/  { mp = mp_of($0); if (mp != "") size[mp]  = $NF }
+  END {
+    n = split("/ /data", want, " ")
+    for (i = 1; i <= n; i++) {
+      mp = want[i]
+      if (size[mp] > 0) {
+        usedpct = 100.0 * (1 - avail[mp] / size[mp])
+        if (mp == "/data") label = "Postgres data  -> ACCIONABLE: umbral 75/90"
+        else               label = "OS+WAL         -> informativo: alto por diseño"
+        printf "  %-7s %5.1f%% usado   (%s)\n", mp, usedpct, label
+      }
+    }
+  }
+' "$RAW"
+
 echo
 echo "# Total de series en la respuesta: $(grep -vcE '^#' "$RAW")"
