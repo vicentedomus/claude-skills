@@ -93,14 +93,14 @@ Prioriza los **hallazgos accionables** (máx ~5): qué medir → qué hacer (ej.
 ### 5. Notificar por WhatsApp (n8n)
 
 Haz `POST` del payload JSON (ver abajo) al webhook de n8n
-`https://vicente-domus.app.n8n.cloud/webhook/supabase-health`. El workflow
+`https://n8n.vichon8n.tech/webhook/supabase-health`. El workflow
 `DomusBot - Alerta Salud Supabase` formatea el resumen como **texto libre** y lo
 manda por WhatsApp a través del sub-workflow **Guard CSW** (que respeta la ventana
 de 24 h: si está cerrada, encola el mensaje y manda el template de pendientes). No
 hay plantilla que aprobar ni credencial que configurar en este flujo.
 
 ```bash
-curl -sS -X POST https://vicente-domus.app.n8n.cloud/webhook/supabase-health \
+curl -sS -X POST https://n8n.vichon8n.tech/webhook/supabase-health \
   -H 'Content-Type: application/json' \
   -d @payload.json
 ```
