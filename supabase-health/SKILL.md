@@ -52,8 +52,10 @@ entorno `SUPABASE_SERVICE_ROLE_KEY`.
 - **Si el key NO está definido**: NO te detengas. Omite esta sección, sigue con la
   introspección de BD (que ya cubre la causa raíz) y **anótalo en el resumen**
   ("⚠️ faltó SUPABASE_SERVICE_ROLE_KEY: sin métricas de infra").
-- Si está: revisa CPU busy %, disk **burst balance** / IOPS, espacio de disco usado,
-  RAM/swap, egress (bytes de red), conexiones. Compáralo con `references/thresholds.md`.
+- Si está: revisa CPU busy %, disk **burst balance** / IOPS, espacio de disco usado
+  (**el % de `/data`**; el de `/` (OS+WAL) es informativo, alto por diseño — ver
+  `thresholds.md`), RAM/swap, egress (bytes de red), conexiones. Compáralo con
+  `references/thresholds.md`.
 - La **primera ejecución**: confirma los nombres reales de las series contra
   `references/metrics.md` y corrígelos si Supabase los cambió.
 
@@ -116,6 +118,7 @@ curl -sS -X POST https://n8n.vichon8n.tech/webhook/supabase-health \
     "cpu_pct": 0,
     "disk_io_burst_pct": 0,
     "disk_used_pct": 0,
+    "disk_os_pct": 0,
     "ram_pct": 0,
     "egress_note": "",
     "connections": ""
@@ -125,6 +128,8 @@ curl -sS -X POST https://n8n.vichon8n.tech/webhook/supabase-health \
 ```
 
 Si una métrica no se pudo leer (p. ej. faltó el key), pon `null` y dilo en `summary`.
+`disk_used_pct` = mount **`/data`** (datos Postgres, el accionable); `disk_os_pct` =
+mount **`/`** (OS+WAL, informativo). El `status` de disco se decide con `/data`.
 
 > ⚠️ **El `date` define el nombre del archivo del reporte.** El workflow guarda el
 > HTML en Supabase Storage como `salud-<date>.html` (con `x-upsert`, sobreescribe) y

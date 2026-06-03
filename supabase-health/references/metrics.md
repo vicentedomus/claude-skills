@@ -25,6 +25,9 @@ Formato:  texto Prometheus (una serie por línea)
 - `node_memory_MemTotal_bytes` ≈ **906 MB**, `SwapTotal` ≈ 1 GB.
 - `max_connections_connection_count` = **60** (límite duro de Postgres).
 - 2 discos: `/` (nvme0n1, ~9.65 GB, OS+WAL) y `/data` (nvme1n1, ~7.8 GB, datos Postgres).
+  **El indicador accionable es `/data`**; `/` ronda ~74% por la imagen base de Supabase
+  (no son nuestros datos: la BD pesa ~22 MB ⇒ `/data` está ~0.3% lleno). No confundas el
+  74% del SO con un disco lleno. Ver `thresholds.md` (fila de disco).
 
 **Las dos restricciones que tumban la página son CONEXIONES y MEMORIA**, no el tamaño
 de datos. Prioriza esas dos en la evaluación.
@@ -38,7 +41,7 @@ El endpoint emite ~740 series. Estas son las que importan:
 | **Conexiones** 🔴 | `pg_stat_database_num_backends` / `max_connections_connection_count` | uso % = backends / max. **>85% ⇒ riesgo de "too many connections"** |
 | **RAM usada** | `node_memory_MemAvailable_bytes` / `node_memory_MemTotal_bytes` | usado % = 1 − avail/total |
 | **Swap en uso** 🟡 | `node_memory_SwapTotal_bytes` − `node_memory_SwapFree_bytes` | >0 ⇒ presión de memoria ⇒ más disk IO |
-| **Espacio de disco** | `node_filesystem_avail_bytes` / `node_filesystem_size_bytes` (por `mountpoint` `/` y `/data`) | usado % = 1 − avail/size |
+| **Espacio de disco** | `node_filesystem_avail_bytes` / `node_filesystem_size_bytes` (por `mountpoint` `/` y `/data`) | usado % = 1 − avail/size. **Evalúa `/data` contra umbrales; `/` es informativo.** `fetch_metrics.sh` ya imprime ambos etiquetados. |
 | **CPU / carga** | `node_load1`, `node_load5`, `node_load15` | vs 2 vCPU: load > 2 ⇒ saturación |
 | **CPU detallado** | `node_cpu_seconds_total{mode=...}` (por `cpu` e `idle/user/system/iowait/steal`) | contador acumulado; necesita 2 muestras para % instantáneo |
 | **Disk IO** | `node_disk_reads_completed_total`, `node_disk_writes_completed_total`, `node_disk_read_bytes_total`, `node_disk_written_bytes_total` (por `device`) | IOPS/throughput; `mode="iowait"` alto corrobora IO |
