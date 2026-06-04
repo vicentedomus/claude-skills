@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Garantías Abiertas — Estado y Plan de Trabajo · 25 may 2026</title>
+<style>
+  :root{
+    --bg:#ECE7DF;            /* paper backdrop / letterbox */
+    --surface:#FBF9F5;       /* slide surface */
+    --surface-2:#F3EFE8;
+    --ink:#1B2530;           /* deep slate */
+    --ink-soft:#5C6773;
+    --ink-faint:#8A929C;
+    --line:#E0D9CC;
+    --line-2:#D2CABA;
+    --teal:#1F7A6E;          /* programado al día / brand */
+    --teal-soft:#DCEDE9;
+    --amber:#C98A21;         /* pendiente de programar */
+    --amber-soft:#F4E8CF;
+    --red:#BE3A2B;           /* vencida / atrasada */
+    --red-soft:#F3DAD3;
+    --green:#2F8F46;
+    --shadow:0 1px 0 rgba(0,0,0,.04), 0 18px 40px -24px rgba(27,37,48,.35);
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:#0e141a;
+    font-family:var(--sans);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  #stage{
+    width:1280px;height:720px;
+    position:fixed;left:50%;top:50%;
+    transform-origin:center center;
+    transform:translate(-50%,-50%);
+    background:var(--surface);
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.6);
+  }
+  .slide{
+    position:absolute;inset:0;
+    display:none;flex-direction:column;
+    padding:54px 64px 48px;
+    background:var(--surface);
+  }
+  .slide.active{display:flex;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---- shared chrome ---- */
+  .eyebrow{
+    font-size:13px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--teal);font-weight:700;margin-bottom:14px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--teal);display:inline-block}
+  h1.title{font-family:var(--serif);font-weight:700;line-height:1.04;letter-spacing:-.5px}
+  h2.head{font-family:var(--serif);font-size:38px;font-weight:700;line-height:1.05;letter-spacing:-.4px}
+  .sub{color:var(--ink-soft);font-size:16px;margin-top:8px;max-width:760px;line-height:1.45}
+  .foot{
+    position:absolute;left:64px;right:64px;bottom:20px;
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:12px;color:var(--ink-faint);letter-spacing:.04em;
+    border-top:1px solid var(--line);padding-top:12px;
+  }
+  .foot b{color:var(--ink-soft);font-weight:600}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* progress bar */
+  #progress{position:fixed;top:0;left:0;height:3px;background:var(--teal);z-index:50;transition:width .3s ease}
+
+  /* ---- cover ---- */
+  .cover{background:#16202B;padding:0}
+  .cover .inner{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 76px}
+  .cover .eyebrow{color:#7FC8BD}
+  .cover .eyebrow::before{background:#7FC8BD}
+  .cover h1{color:#F7F4EE;font-size:72px;max-width:880px}
+  .cover .lede{color:#AEB8C2;font-size:20px;margin-top:22px;max-width:620px;line-height:1.5}
+  .cover .meta{margin-top:40px;display:flex;gap:36px;color:#8B97A3;font-size:14px;letter-spacing:.04em}
+  .cover .meta b{color:#E7E2D8;font-weight:600;display:block;font-size:15px;margin-top:3px}
+  .cover .ghost{position:absolute;right:60px;top:50%;transform:translateY(-50%);
+    font-family:var(--serif);font-size:300px;line-height:1;color:rgba(127,200,189,.10);font-weight:700}
+  .cover .foot{color:#6B7884;border-top-color:rgba(255,255,255,.10)}
+  .cover .foot b{color:#9AA6B1}
+
+  /* ---- KPI cards ---- */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:30px}
+  .kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:22px 20px;position:relative;overflow:hidden}
+  .kpi .v{font-family:var(--serif);font-size:50px;font-weight:700;line-height:1;letter-spacing:-1px}
+  .kpi .l{font-size:13.5px;color:var(--ink-soft);margin-top:10px;line-height:1.35}
+  .kpi.danger .v{color:var(--red)} .kpi.danger{background:var(--red-soft);border-color:#E9C3BA}
+  .kpi.warn .v{color:var(--amber)} .kpi.warn{background:var(--amber-soft);border-color:#E8D6B2}
+  .kpi.teal .v{color:var(--teal)}
+  .takeaway{margin-top:26px;background:#16202B;color:#EDE9E0;border-radius:14px;padding:20px 26px;font-size:18px;line-height:1.5;display:flex;gap:16px;align-items:flex-start}
+  .takeaway .dot{flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:#7FC8BD;margin-top:8px}
+  .takeaway b{color:#fff}
+
+  /* ---- legend ---- */
+  .legend{display:flex;gap:22px;margin:18px 0 6px;font-size:13.5px;color:var(--ink-soft);align-items:center}
+  .legend span{display:flex;align-items:center;gap:8px}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+  .sw.amber{background:var(--amber)} .sw.teal{background:var(--teal)} .sw.red{background:var(--red)}
+
+  /* ---- horizontal stacked bars ---- */
+  .barrow{display:grid;grid-template-columns:150px 1fr 64px;align-items:center;gap:18px;margin-bottom:18px}
+  .barrow .name{font-size:18px;font-weight:600}
+  .barrow .name small{display:block;font-size:12.5px;color:var(--ink-faint);font-weight:400;margin-top:2px}
+  .track{height:38px;background:var(--surface-2);border-radius:8px;display:flex;overflow:hidden;border:1px solid var(--line)}
+  .seg{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;min-width:0}
+  .seg.amber{background:var(--amber)} .seg.teal{background:var(--teal)} .seg.red{background:var(--red)}
+  .barrow .tot{font-family:var(--serif);font-size:26px;font-weight:700;text-align:right}
+
+  /* ---- simple vertical buckets ---- */
+  .buckets{display:flex;gap:18px;align-items:flex-end;height:230px;margin-top:8px}
+  .bucket{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .bucket .bar{width:100%;border-radius:8px 8px 0 0;display:flex;align-items:flex-start;justify-content:center;color:#fff;font-weight:700;font-size:20px;padding-top:8px;transition:height .4s ease}
+  .bucket .cap{font-size:13.5px;color:var(--ink-soft);margin-top:10px;text-align:center;line-height:1.3}
+
+  /* ---- two-column focus ---- */
+  .cols{display:grid;grid-template-columns:0.92fr 1.08fr;gap:34px;flex:1;margin-top:18px;min-height:0}
+  .panel{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .bignum{font-family:var(--serif);font-weight:700;line-height:.92;letter-spacing:-2px}
+  .list{list-style:none}
+  .list li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line-2);font-size:14px}
+  .list li:last-child{border-bottom:0}
+  .list .tag{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .list .desc{color:var(--ink-soft);line-height:1.35}
+  .list .desc b{color:var(--ink);font-weight:600}
+  .list .met{font-family:var(--serif);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .met.red{color:var(--red)} .met.amber{color:var(--amber)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.03em}
+  .pill.prov{background:var(--surface);border:1px solid var(--line-2);color:var(--ink-soft)}
+
+  /* ---- zona bars ---- */
+  .zgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 40px;margin-top:18px}
+  .zrow{display:grid;grid-template-columns:160px 1fr 30px;align-items:center;gap:12px}
+  .zrow .zn{font-size:14.5px;color:var(--ink)}
+  .ztrack{height:20px;background:var(--surface-2);border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+  .zfill{height:100%;background:var(--teal);border-radius:5px}
+  .zrow .zv{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;font-size:14px}
+
+  /* ---- donut + recurrentes ---- */
+  .donutwrap{display:flex;gap:30px;align-items:center}
+  .donut-legend{font-size:15px;color:var(--ink-soft);line-height:2}
+  .donut-legend b{color:var(--ink)}
+  .donut-legend .sw{margin-right:8px}
+
+  /* ---- plan / action list ---- */
+  .actions{display:flex;flex-direction:column;gap:13px;margin-top:24px;flex:1}
+  .act{display:grid;grid-template-columns:46px 1fr auto;gap:20px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:16px 22px}
+  .act .idx{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--teal);text-align:center}
+  .act .txt{font-size:16.5px;line-height:1.4}
+  .act .txt b{font-weight:700}
+  .act .owner{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line-2);padding:6px 12px;border-radius:20px;white-space:nowrap}
+  .act.hot{border-color:#E9C3BA;background:var(--red-soft)} .act.hot .idx{color:var(--red)}
+
+  .flag{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--red);background:var(--red-soft);border:1px solid #E9C3BA;padding:5px 12px;border-radius:20px}
+  .nav{position:fixed;z-index:60;bottom:18px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:12px;
+    background:rgba(16,22,28,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
+  .nav button{appearance:none;-webkit-appearance:none;border:0;background:rgba(255,255,255,.14);
+    color:#fff;width:44px;height:44px;border-radius:50%;font-size:24px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .nav button:active{background:rgba(255,255,255,.30)}
+  .nav .count{color:#d2dae1;font-size:13px;font-variant-numeric:tabular-nums;min-width:46px;text-align:center;letter-spacing:.06em}
+  #orient{position:fixed;top:0;left:0;right:0;z-index:65;background:rgba(31,122,110,.96);
+    color:#fff;font-size:13px;line-height:1.35;text-align:center;padding:9px 14px;display:none}
+  #orient.show{display:block}
+
+  /* funnel */
+  .funnel{display:flex;align-items:stretch;gap:0;margin-top:30px;height:300px}
+  .fstage{display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;position:relative;padding:0 20px}
+  .fstage .fv{font-family:var(--serif);font-size:64px;font-weight:700;line-height:1}
+  .fstage .fl{font-size:15px;margin-top:8px;font-weight:600;text-align:center;opacity:.95}
+  .farrow{align-self:center;font-size:40px;color:var(--ink-faint);padding:0 8px}
+  .context-row{display:flex;gap:14px;margin-top:24px}
+  .ctx{flex:1;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 18px;display:flex;align-items:baseline;gap:12px;color:var(--ink-soft);font-size:14px}
+  .ctx .cv{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--ink-faint)}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage">
+
+  <!-- 1 · PORTADA -->
+  <section class="slide cover active">
+    <div class="ghost num">98</div>
+    <div class="inner">
+      <div class="eyebrow">Domus · Equipo de Garantías</div>
+      <h1 class="title">Garantías abiertas:<br>estado y plan de trabajo</h1>
+      <p class="lede">Dónde estamos hoy con las garantías que siguen activas, qué está atorado y qué proponemos atacar primero.</p>
+      <div class="meta">
+        <div>Corte de datos<b>25 de mayo, 2026</b></div>
+        <div>Alcance<b>Solo garantías abiertas</b></div>
+        <div>Desarrollos<b>Capri · Adara · Gran Bosco</b></div>
+      </div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>1 / 10</span></div>
+  </section>
+
+  <!-- 2 · RESUMEN EJECUTIVO -->
+  <section class="slide">
+    <div class="eyebrow">Resumen ejecutivo</div>
+    <h2 class="head">98 garantías abiertas hoy</h2>
+    <p class="sub">De 514 garantías en total, 397 ya están terminadas y 19 fueron rechazadas. Quedan <b>98 activas</b> que requieren trabajo, repartidas en 27 viviendas.</p>
+    <div class="kpis">
+      <div class="kpi teal"><div class="v num">98</div><div class="l">Garantías abiertas</div></div>
+      <div class="kpi"><div class="v num">27</div><div class="l">Viviendas afectadas</div></div>
+      <div class="kpi danger"><div class="v num">33</div><div class="l">Visitas programadas <b>vencidas</b></div></div>
+      <div class="kpi warn"><div class="v num">8</div><div class="l">Pendientes estancadas <b>(+90 días)</b></div></div>
+      <div class="kpi"><div class="v num">52</div><div class="l">Días promedio para programar <span style="color:var(--ink-faint)">(máx 182)</span></div></div>
+    </div>
+    <div class="takeaway">
+      <span class="dot"></span>
+      <div>El problema no es el volumen, es el <b>flujo</b>: 8 de cada 10 visitas ya programadas están vencidas, y hay reportes esperando programación desde hace medio año.</div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>2 / 10</span></div>
+  </section>
+
+  <!-- 3 · PIPELINE / EMBUDO -->
+  <section class="slide">
+    <div class="eyebrow">El embudo</div>
+    <h2 class="head">Dónde se atoran las garantías</h2>
+    <p class="sub">Las 98 abiertas viven en dos etapas. La segunda etapa es la que está en rojo.</p>
+    <div class="funnel">
+      <div class="fstage" style="background:var(--amber);flex:1.33;clip-path:polygon(0 0,100% 8%,100% 92%,0 100%)">
+        <div class="fv num">56</div>
+        <div class="fl">Pendientes de<br>programación</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fstage" style="background:var(--teal);flex:1;clip-path:polygon(0 8%,100% 16%,100% 84%,0 92%)">
+        <div class="fv num">42</div>
+        <div class="fl">Programadas<br>(con fecha de visita)</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fstage" style="background:var(--red);flex:0.8;clip-path:polygon(0 16%,100% 22%,100% 78%,0 84%)">
+        <div class="fv num">33</div>
+        <div class="fl">…de ellas,<br><b>vencidas (79%)</b></div>
+      </div>
+    </div>
+    <div class="context-row">
+      <div class="ctx"><span class="cv num">397</span><span>terminadas<br>(fuera de alcance)</span></div>
+      <div class="ctx"><span class="cv num">19</span><span>rechazadas<br>(no procedían)</span></div>
+      <div class="ctx" style="background:#16202B;color:#cdd5dd;border-color:#16202B"><span class="cv" style="color:#7FC8BD">514</span><span>garantías<br>en total, histórico</span></div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>3 / 10</span></div>
+  </section>
+
+  <!-- 4 · POR DESARROLLO -->
+  <section class="slide">
+    <div class="eyebrow">Por desarrollo</div>
+    <h2 class="head">Capri y Adara concentran casi todo</h2>
+    <div class="legend">
+      <span><i class="sw amber"></i> Pendiente de programar</span>
+      <span><i class="sw teal"></i> Programada al día</span>
+      <span><i class="sw red"></i> Programada vencida</span>
+    </div>
+    <div style="margin-top:24px">
+      <div class="barrow">
+        <div class="name">Capri <small>23 vencidas</small></div>
+        <div class="track">
+          <div class="seg amber" style="width:47.2%">25</div>
+          <div class="seg teal" style="width:9.4%">5</div>
+          <div class="seg red" style="width:43.4%">23</div>
+        </div>
+        <div class="tot num">53</div>
+      </div>
+      <div class="barrow">
+        <div class="name">Adara <small>10 vencidas</small></div>
+        <div class="track" style="width:83%">
+          <div class="seg amber" style="width:68.2%">30</div>
+          <div class="seg teal" style="width:9.1%">4</div>
+          <div class="seg red" style="width:22.7%">10</div>
+        </div>
+        <div class="tot num">44</div>
+      </div>
+      <div class="barrow">
+        <div class="name">Gran Bosco</div>
+        <div class="track" style="width:1.9%">
+          <div class="seg amber" style="width:100%"></div>
+        </div>
+        <div class="tot num">1</div>
+      </div>
+    </div>
+    <div class="takeaway" style="margin-top:30px">
+      <span class="dot"></span>
+      <div>En <b>Capri</b> el problema es la ejecución: casi la mitad de sus garantías ya están programadas pero vencidas. En <b>Adara</b> el problema es agendar: 30 reportes siguen sin fecha.</div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>4 / 10</span></div>
+  </section>
+
+  <!-- 5 · POR PROVEEDOR -->
+  <section class="slide">
+    <div class="eyebrow">Por proveedor</div>
+    <h2 class="head">Grama es el cuello de botella</h2>
+    <div class="legend">
+      <span><i class="sw amber"></i> Pendiente de programar</span>
+      <span><i class="sw teal"></i> Programada al día</span>
+      <span><i class="sw red"></i> Programada vencida</span>
+    </div>
+    <div style="margin-top:18px">
+      <div class="barrow">
+        <div class="name">Grama <small>19 de 19 prog. vencidas</small></div>
+        <div class="track">
+          <div class="seg amber" style="width:42.4%">14</div>
+          <div class="seg red" style="width:57.6%">19</div>
+        </div>
+        <div class="tot num">33</div>
+      </div>
+      <div class="barrow">
+        <div class="name">Kaiter <small>10 vencidas</small></div>
+        <div class="track" style="width:87.9%">
+          <div class="seg amber" style="width:48.3%">14</div>
+          <div class="seg teal" style="width:17.2%">5</div>
+          <div class="seg red" style="width:34.5%">10</div>
+        </div>
+        <div class="tot num">29</div>
+      </div>
+      <div class="barrow">
+        <div class="name">House <small>4 vencidas</small></div>
+        <div class="track" style="width:57.6%">
+          <div class="seg amber" style="width:73.7%">14</div>
+          <div class="seg teal" style="width:5.3%">1</div>
+          <div class="seg red" style="width:21%">4</div>
+        </div>
+        <div class="tot num">19</div>
+      </div>
+      <div class="barrow">
+        <div class="name">Norkes</div>
+        <div class="track" style="width:30.3%">
+          <div class="seg amber" style="width:70%">7</div>
+          <div class="seg teal" style="width:30%">3</div>
+        </div>
+        <div class="tot num">10</div>
+      </div>
+      <div class="barrow">
+        <div class="name">Domus <small>0 programadas</small></div>
+        <div class="track" style="width:21.2%">
+          <div class="seg amber" style="width:100%">7</div>
+        </div>
+        <div class="tot num">7</div>
+      </div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>5 / 10</span></div>
+  </section>
+
+  <!-- 6 · FOCO ATRASOS -->
+  <section class="slide">
+    <div class="eyebrow">Foco 1 · Lo urgente</div>
+    <h2 class="head">33 de 42 visitas programadas están vencidas</h2>
+    <div class="cols">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <div class="bignum" style="font-size:120px;color:var(--red)">79<span style="font-size:48px">%</span></div>
+        </div>
+        <p style="color:var(--ink-soft);font-size:15px;line-height:1.5;margin-top:4px">de las visitas con fecha asignada ya pasaron de su día y siguen sin cerrarse. Atraso promedio <b>11 días</b>, hasta <b>40 días</b>.</p>
+        <div style="margin-top:auto">
+          <div class="legend" style="margin-bottom:10px"><span style="font-weight:600;color:var(--ink)">Días de atraso</span></div>
+          <div class="buckets" style="height:150px">
+            <div class="bucket"><div class="bar teal" style="height:43%;background:var(--teal)">9</div><div class="cap">Al día<br>o futuro</div></div>
+            <div class="bucket"><div class="bar" style="height:100%;background:var(--red)">21</div><div class="cap">1–7<br>días</div></div>
+            <div class="bucket"><div class="bar" style="height:33%;background:var(--red)">7</div><div class="cap">8–30<br>días</div></div>
+            <div class="bucket"><div class="bar" style="height:24%;background:#8E2A1F">5</div><div class="cap">+30<br>días</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">Las 5 más vencidas</div>
+        <ul class="list">
+          <li><span class="tag">Adara · L48</span><span class="desc">Exterior — <b>manchas en pared</b> · <span class="pill prov">House</span></span><span class="met red">40 d</span></li>
+          <li><span class="tag">Adara · L48</span><span class="desc">Exterior — <b>concreto estampado manchado</b> · <span class="pill prov">House</span></span><span class="met red">40 d</span></li>
+          <li><span class="tag">Adara · L35</span><span class="desc">Sala — <b>pintura de puerta despegándose</b> · <span class="pill prov">Kaiter</span></span><span class="met red">35 d</span></li>
+          <li><span class="tag">Adara · L35</span><span class="desc">C. Servicio — <b>despegue de pintura</b> · <span class="pill prov">Kaiter</span></span><span class="met red">35 d</span></li>
+          <li><span class="tag">Capri · L26</span><span class="desc">Terraza — <b>grieta en junta fría</b> · <span class="pill prov">Kaiter</span></span><span class="met red">34 d</span></li>
+        </ul>
+        <div style="margin-top:16px"><span class="flag">⚠ El lote Capri 2 acumula ~16 garantías programadas el 21-may, todas ya vencidas</span></div>
+      </div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>6 / 10</span></div>
+  </section>
+
+  <!-- 7 · FOCO PENDIENTES ESTANCADAS -->
+  <section class="slide">
+    <div class="eyebrow">Foco 2 · Lo estancado</div>
+    <h2 class="head">Reportes esperando fecha desde hace meses</h2>
+    <div class="cols">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <div class="bignum" style="font-size:104px;color:var(--amber)">182</div>
+          <div style="color:var(--ink-soft);font-size:15px;line-height:1.4">días lleva sin<br>programarse la<br>más antigua</div>
+        </div>
+        <p style="color:var(--ink-soft);font-size:14.5px;line-height:1.5;margin:8px 0 16px"><b>8 reportes</b> llevan más de 90 días sin agendar. Casi todos son de impermeabilización / techos en Capri, asignados a <b>Domus</b> — que hoy no tiene ninguna visita programada.</p>
+        <div style="margin-top:auto">
+          <div class="legend" style="margin-bottom:10px"><span style="font-weight:600;color:var(--ink)">Días sin programar (56 pendientes)</span></div>
+          <div class="buckets" style="height:140px">
+            <div class="bucket"><div class="bar" style="height:100%;background:var(--amber)">26</div><div class="cap">0–30</div></div>
+            <div class="bucket"><div class="bar" style="height:42%;background:var(--amber)">11</div><div class="cap">31–60</div></div>
+            <div class="bucket"><div class="bar" style="height:42%;background:#B26F12">11</div><div class="cap">61–90</div></div>
+            <div class="bucket"><div class="bar" style="height:31%;background:var(--red)">8</div><div class="cap">+90</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">Las 8 más antiguas sin programar</div>
+        <ul class="list" style="font-size:13.2px">
+          <li><span class="tag">Capri · L14</span><span class="desc">Techos — imper. de azotea · <span class="pill prov">Domus</span></span><span class="met amber">182 d</span></li>
+          <li><span class="tag">Capri · L14</span><span class="desc">Rec. ppal — meseta/zoclo baño · <span class="pill prov">Grama</span></span><span class="met amber">181 d</span></li>
+          <li><span class="tag">Capri · L18</span><span class="desc">Rec. sec — puerta de baño no cierra · <span class="pill prov">Grama</span></span><span class="met amber">164 d</span></li>
+          <li><span class="tag">Capri · L37</span><span class="desc">Techos — detalles de imper. · <span class="pill prov">Domus</span></span><span class="met amber">150 d</span></li>
+          <li><span class="tag">Capri · L28</span><span class="desc">Techos — filtraciones <span class="pill" style="background:var(--amber);color:#fff">AMARILLO</span> · <span class="pill prov">Domus</span></span><span class="met amber">124 d</span></li>
+          <li><span class="tag">Capri · L5</span><span class="desc">Sala — perfil de puerta ppal · <span class="pill prov">Grama</span></span><span class="met amber">116 d</span></li>
+          <li><span class="tag">Capri · L5</span><span class="desc">Sala — piso despostillado · <span class="pill prov">Kaiter</span></span><span class="met amber">116 d</span></li>
+          <li><span class="tag">Capri · L17</span><span class="desc">Baños — lavabo con faldón roto · <span class="pill prov">Grama</span></span><span class="met amber">109 d</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>7 / 10</span></div>
+  </section>
+
+  <!-- 8 · POR ZONA -->
+  <section class="slide">
+    <div class="eyebrow">Por zona de la casa</div>
+    <h2 class="head">Dónde aparecen los desperfectos</h2>
+    <p class="sub">Las 98 garantías abiertas se concentran en acabados: baños, recámaras y cocina suman casi la mitad.</p>
+    <div class="zgrid">
+      <div class="zrow"><span class="zn">Baños</span><div class="ztrack"><div class="zfill" style="width:100%"></div></div><span class="zv num">18</span></div>
+      <div class="zrow"><span class="zn">Piscina</span><div class="ztrack"><div class="zfill" style="width:39%"></div></div><span class="zv num">7</span></div>
+      <div class="zrow"><span class="zn">Rec. Secundarias</span><div class="ztrack"><div class="zfill" style="width:89%"></div></div><span class="zv num">16</span></div>
+      <div class="zrow"><span class="zn">Exterior</span><div class="ztrack"><div class="zfill" style="width:33%"></div></div><span class="zv num">6</span></div>
+      <div class="zrow"><span class="zn">Cocina</span><div class="ztrack"><div class="zfill" style="width:83%"></div></div><span class="zv num">15</span></div>
+      <div class="zrow"><span class="zn">Escaleras</span><div class="ztrack"><div class="zfill" style="width:33%"></div></div><span class="zv num">6</span></div>
+      <div class="zrow"><span class="zn">Sala / Comedor</span><div class="ztrack"><div class="zfill" style="width:78%"></div></div><span class="zv num">14</span></div>
+      <div class="zrow"><span class="zn">Techos</span><div class="ztrack"><div class="zfill" style="width:28%"></div></div><span class="zv num">5</span></div>
+      <div class="zrow"><span class="zn">Pasillo Servicio</span><div class="ztrack"><div class="zfill" style="width:22%"></div></div><span class="zv num">4</span></div>
+      <div class="zrow"><span class="zn">Rec. Principal</span><div class="ztrack"><div class="zfill" style="width:22%"></div></div><span class="zv num">4</span></div>
+      <div class="zrow"><span class="zn">C. Servicio · Varios · Terraza</span><div class="ztrack"><div class="zfill" style="width:17%"></div></div><span class="zv num">3</span></div>
+      <div class="zrow"><span class="zn" style="color:var(--ink-faint)">&nbsp;</span><div></div><span></span></div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>8 / 10</span></div>
+  </section>
+
+  <!-- 9 · RECURRENTES + PRIORIDADES -->
+  <section class="slide">
+    <div class="eyebrow">Dos señales de proceso</div>
+    <h2 class="head">Recurrencias y uso de prioridades</h2>
+    <div class="cols" style="grid-template-columns:1fr 1fr">
+      <div class="panel" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+        <div class="bignum" style="font-size:130px;color:var(--red)">5</div>
+        <div style="font-size:19px;font-weight:700;margin-top:6px">garantías recurrentes</div>
+        <p style="color:var(--ink-soft);font-size:15px;line-height:1.5;margin-top:12px;max-width:340px">Reparaciones que <b>ya se habían hecho</b> y volvieron a reportarse. Vale la pena revisar a fondo la causa, no solo repararlas otra vez (varias son fugas de alberca e impermeabilización).</p>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;justify-content:center">
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px">Prioridad de las 98 abiertas</div>
+        <div class="donutwrap">
+          <svg width="190" height="190" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--green)" stroke-width="7"/>
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--amber)" stroke-width="7"
+              stroke-dasharray="1.02 98.98" stroke-dashoffset="25"/>
+            <text x="21" y="20" text-anchor="middle" font-size="9" font-weight="700" fill="#1B2530" font-family="Georgia">97</text>
+            <text x="21" y="27" text-anchor="middle" font-size="3.4" fill="#5C6773">en Verde</text>
+          </svg>
+          <div class="donut-legend">
+            <div><i class="sw" style="background:var(--green)"></i><b>97</b> en Verde</div>
+            <div><i class="sw" style="background:var(--amber)"></i><b>1</b> en Amarillo</div>
+            <div><i class="sw" style="background:var(--red)"></i><b>0</b> en Rojo</div>
+          </div>
+        </div>
+        <p style="color:var(--ink-soft);font-size:14.5px;line-height:1.5;margin-top:16px">Prácticamente todo está en Verde: <b>la priorización no se está usando</b>. Sin niveles reales, todo "compite" igual y lo urgente se pierde entre lo rutinario.</p>
+      </div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa</span><span>9 / 10</span></div>
+  </section>
+
+  <!-- 10 · PLAN DE TRABAJO -->
+  <section class="slide">
+    <div class="eyebrow">Plan de trabajo propuesto</div>
+    <h2 class="head">Por dónde empezamos</h2>
+    <div class="actions">
+      <div class="act hot">
+        <div class="idx num">1</div>
+        <div class="txt"><b>Destrabar las 33 visitas vencidas.</b> Arrancar por los atrasos de +30 días y por Grama (19 vencidas).</div>
+        <div class="owner">URGENTE</div>
+      </div>
+      <div class="act">
+        <div class="idx num">2</div>
+        <div class="txt"><b>Programar las 8 pendientes de +90 días</b> — bloque de impermeabilización/techos en Capri con Domus (hoy sin agenda).</div>
+        <div class="owner">ESTA SEMANA</div>
+      </div>
+      <div class="act">
+        <div class="idx num">3</div>
+        <div class="txt"><b>Acordar compromiso de tiempos con Grama y Kaiter</b> — juntos suman 29 de los 33 atrasos.</div>
+        <div class="owner">PROVEEDORES</div>
+      </div>
+      <div class="act">
+        <div class="idx num">4</div>
+        <div class="txt"><b>Revisar a fondo las 5 recurrentes</b> — atacar la causa raíz, no solo volver a reparar.</div>
+        <div class="owner">CALIDAD</div>
+      </div>
+      <div class="act">
+        <div class="idx num">5</div>
+        <div class="txt"><b>Definir y usar las prioridades de verdad</b> (Verde/Amarillo/Rojo) para que lo crítico se vea.</div>
+        <div class="owner">PROCESO</div>
+      </div>
+    </div>
+    <div class="foot"><span><b>Garantías</b> · Junta operativa · 25 may 2026</span><span>10 / 10</span></div>
+  </section>
+
+</div>
+<div id="orient">Gira el teléfono a horizontal para verla más grande · desliza o usa ‹ › para pasar</div>
+<div class="nav">
+  <button id="prev" aria-label="Anterior">‹</button>
+  <span class="count" id="count">1 / 10</span>
+  <button id="next" aria-label="Siguiente">›</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const progress = document.getElementById('progress');
+  const stage = document.getElementById('stage');
+  const countEl = document.getElementById('count');
+  const orientEl = document.getElementById('orient');
+  const N = slides.length;
+  let scale = 1;
+  let i = parseInt(localStorage.getItem('gar_slide')||'0',10);
+  if(isNaN(i)||i<0||i>=N) i=0;
+
+  function show(n){
+    i = Math.max(0, Math.min(N-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    progress.style.width = ((i+1)/N*100)+'%';
+    countEl.textContent = (i+1)+' / '+N;
+    localStorage.setItem('gar_slide', i);
+  }
+
+  // keyboard (desktop)
+  document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();show(i+1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();show(i-1);}
+    else if(e.key==='Home'){show(0);}
+    else if(e.key==='End'){show(N-1);}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+      else document.exitFullscreen && document.exitFullscreen();
+    }
+  });
+
+  // on-screen buttons (always available, incl. mobile)
+  document.getElementById('prev').addEventListener('click', e=>{e.stopPropagation();show(i-1);});
+  document.getElementById('next').addEventListener('click', e=>{e.stopPropagation();show(i+1);});
+
+  // swipe (mobile)
+  let tx=0, ty=0, swiped=false;
+  document.addEventListener('touchstart', e=>{
+    if(e.touches.length===1){ tx=e.touches[0].clientX; ty=e.touches[0].clientY; swiped=false; }
+  }, {passive:true});
+  document.addEventListener('touchend', e=>{
+    const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){ swiped=true; show(dx<0 ? i+1 : i-1); }
+  }, {passive:true});
+
+  // click anywhere to advance (mouse); left 30% goes back. Ignored right after a swipe.
+  stage.addEventListener('click', e=>{
+    if(swiped){ swiped=false; return; }
+    show(e.clientX < window.innerWidth*0.30 ? i-1 : i+1);
+  });
+
+  // auto-scale to fit ANY screen, centered + letterboxed
+  function fit(){
+    const vp = window.visualViewport;
+    const vw = vp ? vp.width : window.innerWidth;
+    const vh = vp ? vp.height : window.innerHeight;
+    scale = Math.min(vw/1280, vh/720);
+    stage.style.transform = 'translate(-50%,-50%) scale('+scale+')';
+    orientEl.classList.toggle('show', vw < vh && vw < 820);
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', fit);
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+  fit(); show(i);
+</script>
+</body>
+</html>

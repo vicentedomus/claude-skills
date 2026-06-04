@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Tareas de Adara — Estado y focos de atraso · 28 may 2026</title>
+<style>
+  :root{
+    --bg:#ECE7DF;
+    --surface:#FBF9F5;
+    --surface-2:#F3EFE8;
+    --ink:#1B2530;
+    --ink-soft:#5C6773;
+    --ink-faint:#8A929C;
+    --line:#E0D9CC;
+    --line-2:#D2CABA;
+    --teal:#1F7A6E;
+    --teal-soft:#DCEDE9;
+    --amber:#C98A21;
+    --amber-soft:#F4E8CF;
+    --red:#BE3A2B;
+    --red-soft:#F3DAD3;
+    --green:#2F8F46;
+    --shadow:0 1px 0 rgba(0,0,0,.04), 0 18px 40px -24px rgba(27,37,48,.35);
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#0e141a;font-family:var(--sans);color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased}
+  #stage{width:1280px;height:720px;position:fixed;left:50%;top:50%;transform-origin:center center;transform:translate(-50%,-50%);background:var(--surface);box-shadow:0 30px 80px -30px rgba(0,0,0,.6)}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;padding:54px 64px 48px;background:var(--surface)}
+  .slide.active{display:flex;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .eyebrow{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--teal);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--teal);display:inline-block}
+  h1.title{font-family:var(--serif);font-weight:700;line-height:1.04;letter-spacing:-.5px}
+  h2.head{font-family:var(--serif);font-size:38px;font-weight:700;line-height:1.05;letter-spacing:-.4px}
+  .sub{color:var(--ink-soft);font-size:16px;margin-top:8px;max-width:820px;line-height:1.45}
+  .foot{position:absolute;left:64px;right:64px;bottom:20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-faint);letter-spacing:.04em;border-top:1px solid var(--line);padding-top:12px}
+  .foot b{color:var(--ink-soft);font-weight:600}
+  .num{font-variant-numeric:tabular-nums}
+
+  #progress{position:fixed;top:0;left:0;height:3px;background:var(--teal);z-index:50;transition:width .3s ease}
+
+  .cover{background:#16202B;padding:0}
+  .cover .inner{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 76px}
+  .cover .eyebrow{color:#7FC8BD}
+  .cover .eyebrow::before{background:#7FC8BD}
+  .cover h1{color:#F7F4EE;font-size:70px;max-width:900px}
+  .cover .lede{color:#AEB8C2;font-size:20px;margin-top:22px;max-width:660px;line-height:1.5}
+  .cover .meta{margin-top:40px;display:flex;gap:36px;color:#8B97A3;font-size:14px;letter-spacing:.04em}
+  .cover .meta b{color:#E7E2D8;font-weight:600;display:block;font-size:15px;margin-top:3px}
+  .cover .ghost{position:absolute;right:60px;top:50%;transform:translateY(-50%);font-family:var(--serif);font-size:300px;line-height:1;color:rgba(127,200,189,.10);font-weight:700}
+  .cover .foot{color:#6B7884;border-top-color:rgba(255,255,255,.10)}
+  .cover .foot b{color:#9AA6B1}
+
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:30px}
+  .kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:22px 20px;position:relative;overflow:hidden}
+  .kpi .v{font-family:var(--serif);font-size:48px;font-weight:700;line-height:1;letter-spacing:-1px}
+  .kpi .l{font-size:13px;color:var(--ink-soft);margin-top:10px;line-height:1.35}
+  .kpi.danger .v{color:var(--red)} .kpi.danger{background:var(--red-soft);border-color:#E9C3BA}
+  .kpi.warn .v{color:var(--amber)} .kpi.warn{background:var(--amber-soft);border-color:#E8D6B2}
+  .kpi.teal .v{color:var(--teal)}
+  .takeaway{margin-top:26px;background:#16202B;color:#EDE9E0;border-radius:14px;padding:20px 26px;font-size:18px;line-height:1.5;display:flex;gap:16px;align-items:flex-start}
+  .takeaway .dot{flex:0 0 auto;width:10px;height:10px;border-radius:50%;background:#7FC8BD;margin-top:8px}
+  .takeaway b{color:#fff}
+
+  .legend{display:flex;gap:22px;margin:18px 0 6px;font-size:13.5px;color:var(--ink-soft);align-items:center;flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:8px}
+  .legend .hint{color:var(--ink-faint);font-size:12.5px;margin-left:auto}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+  .sw.amber{background:var(--amber)} .sw.teal{background:var(--teal)} .sw.red{background:var(--red)}
+
+  .barrow{display:grid;grid-template-columns:200px 1fr 64px;align-items:center;gap:18px;margin-bottom:20px}
+  .barrow .name{font-size:18px;font-weight:600}
+  .barrow .name small{display:block;font-size:12.5px;color:var(--ink-faint);font-weight:400;margin-top:2px}
+  .track{height:40px;background:var(--surface-2);border-radius:8px;display:flex;overflow:hidden;border:1px solid var(--line)}
+  .seg{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;min-width:0;cursor:pointer;transition:filter .15s}
+  .seg:hover{filter:brightness(1.12)}
+  .seg.amber{background:var(--amber)} .seg.teal{background:var(--teal)} .seg.red{background:var(--red)}
+  .barrow .tot{font-family:var(--serif);font-size:26px;font-weight:700;text-align:right}
+
+  .buckets{display:flex;gap:18px;align-items:flex-end;height:230px;margin-top:8px}
+  .bucket{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .bucket .bar{width:100%;border-radius:8px 8px 0 0;display:flex;align-items:flex-start;justify-content:center;color:#fff;font-weight:700;font-size:20px;padding-top:8px;transition:height .4s ease, filter .15s;cursor:pointer}
+  .bucket .bar:hover{filter:brightness(1.12)}
+  .bucket .cap{font-size:13px;color:var(--ink-soft);margin-top:10px;text-align:center;line-height:1.3}
+
+  .cols{display:grid;grid-template-columns:0.92fr 1.08fr;gap:34px;flex:1;margin-top:18px;min-height:0}
+  .panel{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .bignum{font-family:var(--serif);font-weight:700;line-height:.92;letter-spacing:-2px}
+  .list{list-style:none}
+  .list li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line-2);font-size:14px}
+  .list li:last-child{border-bottom:0}
+  .list .tag{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .list .desc{color:var(--ink-soft);line-height:1.35}
+  .list .desc b{color:var(--ink);font-weight:600}
+  .list .met{font-family:var(--serif);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .met.red{color:var(--red)} .met.amber{color:var(--amber)} .met.teal{color:var(--teal)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.03em}
+  .pill.prov{background:var(--surface);border:1px solid var(--line-2);color:var(--ink-soft)}
+
+  .zgrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:18px}
+  .zrow{display:grid;grid-template-columns:230px 1fr 96px;align-items:center;gap:16px}
+  .zrow .zn{font-size:15.5px;color:var(--ink);font-weight:600}
+  .zrow .zn small{color:var(--ink-faint);font-weight:400}
+  .ztrack{height:22px;background:var(--surface-2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .zfill{height:100%;background:var(--teal);border-radius:6px}
+  .zfill.low{background:var(--red)}
+  .zfill.mid{background:var(--amber)}
+  .zrow .zv{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;font-size:14px;color:var(--ink-soft)}
+
+  .chain{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .clink{background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:10px 14px}
+  .clink .ct{font-size:14.5px;font-weight:700}
+  .clink .cd{font-size:12.5px;color:var(--ink-soft);margin-top:3px}
+  .clink.blk{border-color:#E9C3BA;background:var(--red-soft)}
+  .carrow{text-align:center;color:var(--ink-faint);font-size:18px;line-height:1}
+
+  .actions{display:flex;flex-direction:column;gap:12px;margin-top:22px;flex:1}
+  .act{display:grid;grid-template-columns:46px 1fr auto;gap:20px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 22px}
+  .act .idx{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--teal);text-align:center}
+  .act .txt{font-size:16px;line-height:1.4}
+  .act .txt b{font-weight:700}
+  .act .owner{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line-2);padding:6px 12px;border-radius:20px;white-space:nowrap}
+  .act.hot{border-color:#E9C3BA;background:var(--red-soft)} .act.hot .idx{color:var(--red)}
+
+  .flag{display:inline-block;font-size:13px;font-weight:700;color:var(--red);background:var(--red-soft);border:1px solid #E9C3BA;padding:6px 13px;border-radius:14px;line-height:1.4}
+  .flag b{font-weight:800}
+  .flag.amber{color:var(--amber);background:var(--amber-soft);border-color:#E8D6B2}
+
+  .nav{position:fixed;z-index:60;bottom:18px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:rgba(16,22,28,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:7px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
+  .nav button{appearance:none;-webkit-appearance:none;border:0;background:rgba(255,255,255,.14);color:#fff;width:44px;height:44px;border-radius:50%;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .nav button:active{background:rgba(255,255,255,.30)}
+  .nav .count{color:#d2dae1;font-size:13px;font-variant-numeric:tabular-nums;min-width:46px;text-align:center;letter-spacing:.06em}
+  #orient{position:fixed;top:0;left:0;right:0;z-index:65;background:rgba(31,122,110,.96);color:#fff;font-size:13px;line-height:1.35;text-align:center;padding:9px 14px;display:none}
+  #orient.show{display:block}
+
+  .funnel{display:flex;align-items:stretch;gap:0;margin-top:30px;height:280px}
+  .fstage{display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;position:relative;padding:0 20px}
+  .fstage .fv{font-family:var(--serif);font-size:64px;font-weight:700;line-height:1}
+  .fstage .fl{font-size:15px;margin-top:8px;font-weight:600;text-align:center;opacity:.95}
+  .farrow{align-self:center;font-size:40px;color:var(--ink-faint);padding:0 8px}
+  .context-row{display:flex;gap:14px;margin-top:24px}
+  .ctx{flex:1;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 18px;display:flex;align-items:baseline;gap:12px;color:var(--ink-soft);font-size:14px}
+  .ctx .cv{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--ink-faint)}
+  .ctx .cv.red{color:var(--red)}
+  .ctx .cv.amber{color:var(--amber)}
+
+  /* interactive markers */
+  [data-popup]{cursor:pointer}
+  .ipop{color:var(--teal);text-decoration:underline dotted;text-underline-offset:3px;font-weight:700}
+  .ipop:hover{color:#0e554c}
+  .ipop.amber{color:var(--amber)} .ipop.amber:hover{color:#9e6d1a}
+  .ipop.red{color:var(--red)} .ipop.red:hover{color:#8e2a1f}
+
+  /* modal */
+  #modal{position:fixed;inset:0;background:rgba(11,17,24,.78);display:none;align-items:center;justify-content:center;z-index:120;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  #modal.show{display:flex;animation:mfade .2s ease}
+  @keyframes mfade{from{opacity:0}to{opacity:1}}
+  .mcard{background:var(--surface);border-radius:16px;padding:28px 30px 24px;max-width:780px;width:92%;max-height:80vh;overflow:auto;position:relative;box-shadow:0 30px 90px -30px rgba(0,0,0,.6)}
+  .mcard h3{font-family:var(--serif);font-size:26px;font-weight:700;letter-spacing:-.3px;margin:0;padding-right:30px}
+  .mcard .msub{color:var(--ink-soft);font-size:13.5px;margin:6px 0 16px}
+  .mclose{position:absolute;top:14px;right:18px;font-size:24px;line-height:1;background:transparent;border:0;color:var(--ink-faint);cursor:pointer;padding:6px 10px}
+  .mclose:hover{color:var(--ink)}
+  .mlist{list-style:none}
+  .mlist li{display:grid;grid-template-columns:auto 1fr auto;gap:14px;padding:9px 0;border-bottom:1px dashed var(--line-2);font-size:13.8px;align-items:baseline}
+  .mlist li:last-child{border-bottom:0}
+  .mlist .mn{font-weight:600;color:var(--ink)}
+  .mlist .ma{color:var(--ink-faint);font-size:12px;display:block;margin-top:2px}
+  .mlist .mp{font-family:var(--serif);font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .mlist .mp.full{color:var(--teal)} .mlist .mp.zero{color:var(--red)}
+  .mlist .mr{font-size:11px;color:var(--ink-faint)}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage">
+
+  <!-- 1 · PORTADA -->
+  <section class="slide cover active">
+    <div class="ghost num">74</div>
+    <div class="inner">
+      <div class="eyebrow">Domus · Obra Adara</div>
+      <h1 class="title">Tareas de Adara:<br>estado y focos de atraso</h1>
+      <p class="lede">Dónde vamos hoy con las tareas activas de Adara, qué está atorado y qué proponemos destrabar primero.</p>
+      <div class="meta">
+        <div>Corte de datos<b>28 de mayo, 2026</b></div>
+        <div>Alcance<b>Adara · tareas activas</b></div>
+        <div>Responsables<b>Jorge Aguilar · Israel Cárdenas</b></div>
+      </div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra</span><span>1 / 9</span></div>
+  </section>
+
+  <!-- 2 · RESUMEN EJECUTIVO -->
+  <section class="slide">
+    <div class="eyebrow">Resumen ejecutivo</div>
+    <h2 class="head">74 tareas activas, 66% de avance</h2>
+    <p class="sub">El foco principal de atraso es <b>el seguimiento</b>: <b>11 tareas hoja pendientes</b> con su reporte de avance vencido. La fecha de terminación queda como criterio secundario.</p>
+    <div class="kpis">
+      <div class="kpi teal"><div class="v num">74</div><div class="l">Tareas activas</div></div>
+      <div class="kpi"><div class="v num">66%</div><div class="l">Avance promedio</div></div>
+      <div class="kpi danger"><div class="v num">11</div><div class="l">Con <b>reporte vencido</b> <span style="color:var(--ink-faint);display:block;margin-top:2px">tareas hoja · +7 al 100% por cerrar</span></div></div>
+      <div class="kpi danger"><div class="v num">19</div><div class="l">Sin iniciar <b>(0%)</b></div></div>
+      <div class="kpi warn"><div class="v num">29</div><div class="l">Sin fecha de cierre <span style="color:var(--ink-faint)">(15 pendientes)</span></div></div>
+    </div>
+    <div class="takeaway">
+      <span class="dot"></span>
+      <div>El atraso se concentra en <b>tres focos</b>: el <b>Pórtico</b> (4 tareas en 0% sin reportar hace 8 días), la <b>cadena luz–riego–vegetación</b> del parque central, y el <b>área verde</b> que casi no arranca.</div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra</span><span>2 / 9</span></div>
+  </section>
+
+  <!-- 3 · ESTADO -->
+  <section class="slide">
+    <div class="eyebrow">Estado de avance</div>
+    <h2 class="head">Las 33 que requieren atención</h2>
+    <p class="sub">De las 74 activas, 41 ya están al 100% (pasan a higiene de cierre). El trabajo de esta junta son <b>14 en proceso</b> y <b>19 que no han arrancado</b>.</p>
+    <div class="funnel">
+      <div class="fstage" style="background:var(--amber);flex:14;clip-path:polygon(0 0,100% 8%,100% 92%,0 100%)">
+        <div class="fv num">14</div>
+        <div class="fl">En proceso<br>(1–99%)</div>
+      </div>
+      <div class="farrow">·</div>
+      <div class="fstage" style="background:var(--red);flex:19;clip-path:polygon(0 8%,100% 14%,100% 86%,0 92%)">
+        <div class="fv num">19</div>
+        <div class="fl">Sin iniciar<br>(0%)</div>
+      </div>
+    </div>
+    <div class="context-row">
+      <div class="ctx"><span class="cv num red">11</span><span>hojas con <b>reporte vencido</b><br>(foco principal de atraso)</span></div>
+      <div class="ctx"><span class="cv num amber">6</span><span>con fin programado<br>vencido</span></div>
+      <div class="ctx"><span class="cv num amber">29</span><span>sin fecha de cierre<br>(15 pendientes)</span></div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra</span><span>3 / 9</span></div>
+  </section>
+
+  <!-- 4 · POR RESPONSABLE -->
+  <section class="slide">
+    <div class="eyebrow">Por responsable</div>
+    <h2 class="head">Jorge concentra la carga abierta</h2>
+    <div class="legend">
+      <span><i class="sw teal"></i> Completa (100%)</span>
+      <span><i class="sw amber"></i> En proceso</span>
+      <span><i class="sw red"></i> Sin iniciar</span>
+      <span class="hint">Click en cada segmento para ver las tareas</span>
+    </div>
+    <div style="margin-top:18px">
+      <div class="barrow">
+        <div class="name">Jorge Aguilar <small>52% avance · 19 sin iniciar</small></div>
+        <div class="track">
+          <div class="seg teal" style="width:40.8%" data-popup="jorge_comp" data-title="Jorge Aguilar · Completas (100%)" data-sub="Tareas donde Jorge es responsable y ya están al 100%">20</div>
+          <div class="seg amber" style="width:20.4%" data-popup="jorge_proc" data-title="Jorge Aguilar · En proceso" data-sub="Tareas en proceso (1–99%) donde Jorge es responsable">10</div>
+          <div class="seg red" style="width:38.8%" data-popup="jorge_sin" data-title="Jorge Aguilar · Sin iniciar" data-sub="Tareas en 0% donde Jorge es responsable">19</div>
+        </div>
+        <div class="tot num">49</div>
+      </div>
+      <div class="barrow">
+        <div class="name">Eduardo Flores <small>80% avance</small></div>
+        <div class="track" style="width:63.3%">
+          <div class="seg teal" style="width:74.2%" data-popup="eduardo_comp" data-title="Eduardo Flores · Completas (100%)" data-sub="Tareas donde Eduardo es responsable y ya están al 100%">23</div>
+          <div class="seg amber" style="width:9.7%" data-popup="eduardo_proc" data-title="Eduardo Flores · En proceso" data-sub="Tareas en proceso (1–99%) donde Eduardo es responsable">3</div>
+          <div class="seg red" style="width:16.1%" data-popup="eduardo_sin" data-title="Eduardo Flores · Sin iniciar" data-sub="Tareas en 0% donde Eduardo es responsable">5</div>
+        </div>
+        <div class="tot num">31</div>
+      </div>
+      <div class="barrow">
+        <div class="name">Israel Cárdenas <small>44% avance · área verde</small></div>
+        <div class="track" style="width:38.8%">
+          <div class="seg teal" style="width:21.1%" data-popup="israel_comp" data-title="Israel Cárdenas · Completas (100%)" data-sub="Tareas donde Israel es responsable y ya están al 100%">4</div>
+          <div class="seg amber" style="width:42.1%" data-popup="israel_proc" data-title="Israel Cárdenas · En proceso" data-sub="Tareas en proceso (1–99%) donde Israel es responsable">8</div>
+          <div class="seg red" style="width:36.8%" data-popup="israel_sin" data-title="Israel Cárdenas · Sin iniciar" data-sub="Tareas en 0% donde Israel es responsable">7</div>
+        </div>
+        <div class="tot num">19</div>
+      </div>
+    </div>
+    <div class="takeaway" style="margin-top:22px">
+      <span class="dot"></span>
+      <div><b>Jorge</b> trae las 19 que no arrancan (Pórtico, gym, área verde, nuevas bardas y vallas). <b>Israel</b> tiene poco volumen pero casi todo en proceso (área verde). Muchas tareas son compartidas Jorge–Eduardo.</div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra · una tarea puede tener varios responsables</span><span>4 / 9</span></div>
+  </section>
+
+  <!-- 5 · FOCO 1 · REPORTES VENCIDOS -->
+  <section class="slide">
+    <div class="eyebrow">Foco 1 · Reportes vencidos</div>
+    <h2 class="head">11 hojas pendientes sin actualizar a tiempo</h2>
+    <div class="cols">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <div class="bignum" style="font-size:112px;color:var(--amber)">11</div>
+          <div style="color:var(--ink-soft);font-size:15px;line-height:1.4">tareas hoja<br>pendientes con<br>reporte vencido</div>
+        </div>
+        <p style="color:var(--ink-soft);font-size:14px;line-height:1.5;margin:10px 0 14px">Otras <span class="ipop" data-popup="cerrar7" data-title="7 tareas al 100% por cerrar" data-sub="Ya completadas pero sin archivar — su 'reporte vencido' es ruido del proceso">7 ya están al 100%</span>: solo falta <b>cerrarlas/archivarlas</b>. Otras 4 son <b>tareas padre</b> (sus reportes se cargan en sus subtareas).</p>
+        <div style="margin-top:auto">
+          <span class="flag">⚠ El <b>Pórtico</b> (acceso y seguridad) acumula 4 tareas en 0% sin reportar hace 8 días</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">Hojas pendientes sin reporte al día <span style="color:var(--ink-faint);font-weight:400;font-size:12.5px">· agrupadas (11 tareas)</span></div>
+        <ul class="list" style="font-size:13.6px">
+          <li><span class="tag">Pórtico</span><span class="desc"><b>4 tareas</b> · Iluminación · CCTV · Cerco eléctrico · Tags · 0% · <span class="pill prov">Eduardo + Jorge</span></span><span class="met red">8 d</span></li>
+          <li><span class="tag">Gimnasio</span><span class="desc"><b>Equipo gym</b> · 0% · <span class="pill prov">Jorge</span></span><span class="met amber">6 d</span></li>
+          <li><span class="tag">Etapa 2</span><span class="desc"><b>Arrancar luz Adara Etapa 2</b> · 60% · <span class="pill prov">Jorge</span></span><span class="met amber">3 d</span></li>
+          <li><span class="tag">Área verde</span><span class="desc"><b>3 tareas</b> · jardinería frontal · propuesta vegetación · remate concreto · 0% · <span class="pill prov">Israel + Jorge</span></span><span class="met amber">3 d</span></li>
+          <li><span class="tag">Pórtico</span><span class="desc"><b>Recepción Cancha Padel</b> · 0% · <span class="pill prov">Eduardo + Jorge</span></span><span class="met amber">2 d</span></li>
+          <li><span class="tag">Otros</span><span class="desc"><b>Mantenimiento jardín Adara</b> · 0% · <span class="pill prov">Jorge</span></span><span class="met amber">1 d</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra</span><span>5 / 9</span></div>
+  </section>
+
+  <!-- 6 · FOCO 2 · VENCIDAS POR FECHA + CADENA -->
+  <section class="slide">
+    <div class="eyebrow">Foco 2 · Vencidas por fecha</div>
+    <h2 class="head">6 tareas pasadas de fecha — y encadenadas</h2>
+    <div class="cols">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <div class="bignum" style="font-size:108px;color:var(--red)">6</div>
+          <div style="color:var(--ink-soft);font-size:15px;line-height:1.4">tareas con fin<br>programado<br>vencido</div>
+        </div>
+        <p style="color:var(--ink-soft);font-size:14px;line-height:1.5;margin:6px 0 8px">3 de las más vencidas están en el <b>parque central</b> y se destraban con lo mismo: la <b>luz de la Etapa 2</b>.</p>
+        <div class="chain">
+          <div class="clink blk"><div class="ct">⚡ Arrancar luz Etapa 2 · 60%</div><div class="cd">Vencida 6 d — bloquea lo de abajo</div></div>
+          <div class="carrow">↓</div>
+          <div class="clink blk"><div class="ct">💧 Recepción riego parque central · 90%</div><div class="cd">Vencida 52 d — frenada por falta de luz</div></div>
+          <div class="carrow">↓</div>
+          <div class="clink"><div class="ct">🌱 Recepción vegetación · 0%</div><div class="cd">Vencida 38 d — depende del riego</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">Las 6 vencidas por fecha</div>
+        <ul class="list" style="font-size:13.5px">
+          <li><span class="tag">Parque central</span><span class="desc"><b>Recepción riego</b> · 90% · <span class="pill prov">Jorge</span></span><span class="met red">52 d</span></li>
+          <li><span class="tag">Gimnasio</span><span class="desc"><b>Terminar gym Adara</b> · 0% · <span class="pill prov">Jorge</span></span><span class="met red">52 d</span></li>
+          <li><span class="tag">Parque central</span><span class="desc"><b>Recepción vegetación</b> · 0% · <span class="pill prov">Jorge</span></span><span class="met red">38 d</span></li>
+          <li><span class="tag">Etapa 2</span><span class="desc"><b>Arrancar luz Etapa 2</b> · 60% · <span class="pill prov">Jorge</span></span><span class="met amber">6 d</span></li>
+          <li><span class="tag">Lotes</span><span class="desc"><b>Antes de colado pocetas</b> · 50% · <span class="pill prov">Israel + Jorge</span></span><span class="met amber">1 d</span></li>
+          <li><span class="tag">Pórtico</span><span class="desc"><b>Mantenimiento jardín Adara</b> · 0% · <span class="pill prov">Jorge</span></span><span class="met amber">1 d</span></li>
+        </ul>
+        <div style="margin-top:16px"><span class="flag">⚠ Destrabar la luz de la Etapa 2 libera el cierre del parque central</span></div>
+      </div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra</span><span>6 / 9</span></div>
+  </section>
+
+  <!-- 7 · FOCO 3 · SIN COMPROMISO + FRESCURA -->
+  <section class="slide">
+    <div class="eyebrow">Foco 3 · El proceso de seguimiento</div>
+    <h2 class="head">Sin fecha de cierre y sin actualizar</h2>
+    <div class="cols">
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <div class="bignum" style="font-size:104px;color:var(--amber)">29</div>
+          <div style="color:var(--ink-soft);font-size:15px;line-height:1.4">tareas <b>sin fecha</b><br>de cierre<br>(39% de las activas)</div>
+        </div>
+        <p style="color:var(--ink-soft);font-size:14.5px;line-height:1.5;margin:10px 0 4px">De esas, <b>15 son pendientes</b> sin compromiso de fecha — tienden a no cerrar nunca. (Las otras 14 ya están al 100%.)</p>
+        <div style="margin-top:auto">
+          <span class="flag amber">Poner fecha de cierre a las 15 pendientes da visibilidad real del atraso</span>
+        </div>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column">
+        <div style="font-weight:700;font-size:15px;margin-bottom:2px">Frescura: ¿cuándo se actualizó por última vez? <span style="color:var(--ink-faint);font-weight:400;font-size:12.5px">· click en cada barra</span></div>
+        <div style="color:var(--ink-faint);font-size:12px;margin-bottom:8px">Solo tareas hoja pendientes (25 elegibles) · excluimos 41 al 100% y 9 padres (sus reportes están en subtareas).</div>
+        <div class="buckets" style="height:180px">
+          <div class="bucket"><div class="bar" style="height:69%;background:var(--teal)" data-popup="fresca_7d" data-title="Actualizadas en los últimos 7 días" data-sub="Hojas pendientes con reporte en la última semana">9</div><div class="cap">Últimos<br>7 días</div></div>
+          <div class="bucket"><div class="bar" style="height:23%;background:var(--amber)" data-popup="fresca_d30" data-title="Actualizadas hace 8–30 días" data-sub="Hojas pendientes sin reporte en las últimas semanas">3</div><div class="cap">8–30<br>días</div></div>
+          <div class="bucket"><div class="bar" style="height:14%;background:transparent;border:2px dashed var(--ink-faint);color:var(--ink-faint)" data-popup="fresca_d30plus" data-title="Actualizadas hace +30 días" data-sub="Hojas pendientes sin reporte hace más de un mes">0</div><div class="cap">+30<br>días</div></div>
+          <div class="bucket"><div class="bar" style="height:100%;background:#8E2A1F" data-popup="fresca_nunca" data-title="Nunca actualizadas" data-sub="Hojas pendientes que nunca han recibido un reporte">13</div><div class="cap">Nunca<br>actualizada</div></div>
+        </div>
+        <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.5;margin-top:14px"><b>13 tareas</b> nunca han recibido un primer reporte. Las 12 que sí han reportado están al día: <b>ninguna</b> lleva +30 días sin actualizar.</p>
+      </div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra</span><span>7 / 9</span></div>
+  </section>
+
+  <!-- 8 · POR ÁREA -->
+  <section class="slide">
+    <div class="eyebrow">Por área del desarrollo</div>
+    <h2 class="head">El área verde es la más atrasada</h2>
+    <p class="sub">Avance promedio por área (de las que tienen área asignada). El rezago se concentra en jardinería del Pórtico y en el cierre del parque central; aparecen áreas nuevas en 0% (bardas, vallas, construcción).</p>
+    <div class="zgrid">
+      <div class="zrow"><span class="zn">Área verde <small>· 7 tareas</small></span><div class="ztrack"><div class="zfill low" style="width:3%"></div></div><span class="zv num">3%</span></div>
+      <div class="zrow"><span class="zn">Bardas · Calles · Construcción <small>· 1 c/u (nuevas)</small></span><div class="ztrack"><div class="zfill low" style="width:0%"></div></div><span class="zv num">0%</span></div>
+      <div class="zrow"><span class="zn">Gimnasio <small>· 2 tareas</small></span><div class="ztrack"><div class="zfill mid" style="width:50%"></div></div><span class="zv num">50%</span></div>
+      <div class="zrow"><span class="zn">Pórtico <small>· 3 tareas</small></span><div class="ztrack"><div class="zfill mid" style="width:67%"></div></div><span class="zv num">67%</span></div>
+      <div class="zrow"><span class="zn">Parque central <small>· 4 tareas</small></span><div class="ztrack"><div class="zfill mid" style="width:72%"></div></div><span class="zv num">72%</span></div>
+      <div class="zrow"><span class="zn">Adara Lote 5 · Azoteas <small>· 3 + 2 tareas</small></span><div class="ztrack"><div class="zfill" style="width:100%"></div></div><span class="zv num">100%</span></div>
+      <div class="zrow"><span class="zn">Vialidades · Área común · Exterior · Lateral <small>· 1 c/u</small></span><div class="ztrack"><div class="zfill" style="width:100%"></div></div><span class="zv num">100%</span></div>
+    </div>
+    <div class="takeaway" style="margin-top:22px">
+      <span class="dot"></span>
+      <div><b>46 de 74 tareas no tienen área asignada</b> — cuesta leer el avance por zona. Vale la pena etiquetar el área al crear la tarea, igual que se hace con responsable y fecha.</div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra</span><span>8 / 9</span></div>
+  </section>
+
+  <!-- 9 · PLAN DE TRABAJO -->
+  <section class="slide">
+    <div class="eyebrow">Plan de trabajo propuesto</div>
+    <h2 class="head">Por dónde empezamos</h2>
+    <div class="actions">
+      <div class="act hot">
+        <div class="idx num">1</div>
+        <div class="txt"><b>Destrabar la luz de la Etapa 2.</b> Libera el riego (90%) y la vegetación del parque central — 3 de las 6 vencidas se cierran ahí.</div>
+        <div class="owner">JORGE · URGENTE</div>
+      </div>
+      <div class="act">
+        <div class="idx num">2</div>
+        <div class="txt"><b>Cerrar el Pórtico</b> — fecha y responsable para CCTV, cerco eléctrico, tags e iluminación (4 tareas en 0% sin reportar hace 8 días).</div>
+        <div class="owner">ESTA SEMANA</div>
+      </div>
+      <div class="act">
+        <div class="idx num">3</div>
+        <div class="txt"><b>Arrancar el área verde</b> (3% de avance): vegetación de laterales, jardinería y remates del pórtico.</div>
+        <div class="owner">ISRAEL</div>
+      </div>
+      <div class="act">
+        <div class="idx num">4</div>
+        <div class="txt"><b>Definir el gym</b> — equipo y terminación siguen en 0% y llevan 52 días vencidos.</div>
+        <div class="owner">JORGE</div>
+      </div>
+      <div class="act">
+        <div class="idx num">5</div>
+        <div class="txt"><b>Higiene del tablero:</b> archivar las 7 ya al 100%, poner fecha de cierre a las 15 pendientes sin fecha y actualizar las 23 sin reporte.</div>
+        <div class="owner">PROCESO</div>
+      </div>
+    </div>
+    <div class="foot"><span><b>Adara</b> · Seguimiento de obra · 28 may 2026</span><span>9 / 9</span></div>
+  </section>
+
+</div>
+
+<div id="orient">Gira el teléfono a horizontal para verla más grande · desliza o usa ‹ › para pasar</div>
+<div class="nav">
+  <button id="prev" aria-label="Anterior">‹</button>
+  <span class="count" id="count">1 / 9</span>
+  <button id="next" aria-label="Siguiente">›</button>
+</div>
+
+<!-- Modal de tareas (popups) -->
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="mcard">
+    <button class="mclose" id="mclose" aria-label="Cerrar">×</button>
+    <h3 id="modal-title">Tareas</h3>
+    <div class="msub" id="modal-sub"></div>
+    <ul class="mlist" id="modal-list"></ul>
+  </div>
+</div>
+
+<script>
+  // Datos de tareas para popups — corte 2026-05-28, Adara, no archivadas
+  const TASKS = {
+    jorge_comp: [
+      {n:"Armado eléctrico CONAGUA",a:"—",p:100},
+      {n:"Cambiar mordazas",a:"Adara Lote 5",p:100},
+      {n:"Cargar reporte con Guido sobre area de chaka",a:"—",p:100},
+      {n:"Colado de vialidades",a:"—",p:100},
+      {n:"Colado vialidades etapa 2",a:"—",p:100},
+      {n:"Cotizar equipo gym Adara",a:"—",p:100},
+      {n:"Enrafiar ducto telefonía",a:"Adara Lote 5",p:100},
+      {n:"Limpieza de parques laterales",a:"—",p:100},
+      {n:"Mover contenedores de basura",a:"—",p:100},
+      {n:"Propuesta triángulos sombra P/ Juegos infantiles",a:"—",p:100},
+      {n:"Reacomodar vegetación de parque central",a:"Parque central",p:100},
+      {n:"Recepción de juegos infantiles",a:"—",p:100},
+      {n:"Recepcion juegos infantiles",a:"Area comun",p:100},
+      {n:"Recepcion trabajos agua potable vialidad",a:"Vialidades",p:100},
+      {n:"Recibir riego frontal Adara",a:"Portico",p:100},
+      {n:"Resolver pendientes Mauricio Penagos",a:"Adara Lote 5",p:100},
+      {n:"Resucitar Arecas fachada",a:"—",p:100},
+      {n:"Retiro escombro parque central",a:"—",p:100},
+      {n:"Sistema de riego Parque Central",a:"Parque central",p:100},
+      {n:"Validar jardineria para area chaka frente a portico Adara",a:"Exterior",p:100}
+    ],
+    jorge_proc: [
+      {n:"Antes de colado ver pocetas de arboles de cada 5 metros de distancia",a:"—",p:50},
+      {n:"Arrancar luz Adara Etapa 2",a:"—",p:60},
+      {n:"Colado Banquetas Fase 2 Adara",a:"—",p:50},
+      {n:"Cotizacion Cable y Bomba Solar",a:"—",p:75},
+      {n:"Limpieza lotes entrega inmediata",a:"—",p:98},
+      {n:"Mejora de vista de desarrollo parte Central",a:"—",p:76},
+      {n:"Mejora de vista del desarrollo parte frontal",a:"Área verde",p:3},
+      {n:"Pendientes Manuel Medina",a:"—",p:15},
+      {n:"Recepcion riego parque central",a:"Parque central",p:90},
+      {n:"Sardinel portico",a:"Área verde",p:15}
+    ],
+    jorge_sin: [
+      {n:"Cerco Eléctrico",a:"—",p:0},
+      {n:"Cierre de Barda 3era etapa",a:"Bardas",p:0},
+      {n:"Cotizacion Layout Gimnasio",a:"Gimnasio",p:0},
+      {n:"Cotizacion Vallas Peatonales",a:"Calles y Banquetas",p:0},
+      {n:"Entregar a Labná programa de avaluos",a:"—",p:0},
+      {n:"Equipo gym",a:"—",p:0},
+      {n:"Iluminación Pórtico",a:"—",p:0},
+      {n:"Jardineria frontal portico",a:"Área verde",p:0},
+      {n:"Limpieza parte trasera portico",a:"Área verde",p:0},
+      {n:"Mantenimiento jardin adara",a:"Portico",p:0},
+      {n:"Propuesta vegetacion en laterales del desarrollo",a:"Área verde",p:0},
+      {n:"Recepción Cancha Padel",a:"—",p:0},
+      {n:"Recepcion vegetacion parque central",a:"Parque central",p:0},
+      {n:"Remate concreto Portico",a:"Área verde",p:0},
+      {n:"Reubicacion de rejas al terminan de colar banquetas",a:"Área verde",p:0},
+      {n:"Tags de Acceso",a:"—",p:0},
+      {n:"Terminar CCTV Pórtico",a:"—",p:0},
+      {n:"Terminar gym Adara",a:"—",p:0},
+      {n:"Visita Clientes Lote 64",a:"Construccion",p:0}
+    ],
+    eduardo_comp: [
+      {n:"Armado eléctrico CONAGUA",a:"—",p:100},
+      {n:"Carpinteria MGC",a:"—",p:100},
+      {n:"Cola de rata cancha pádel",a:"—",p:100},
+      {n:"Colado de vialidades",a:"—",p:100},
+      {n:"Deshierbe Adara 43",a:"—",p:100},
+      {n:"Deshierbe y limpieza parque central",a:"—",p:100},
+      {n:"Entrega Adara 2",a:"—",p:100},
+      {n:"Entrega Adara 34",a:"—",p:100},
+      {n:"Entrega Adara 48",a:"—",p:100},
+      {n:"Entrega Adara 57",a:"—",p:100},
+      {n:"Extralum",a:"—",p:100},
+      {n:"House",a:"—",p:100},
+      {n:"Impermeabilizacion Gimnasio Adara",a:"Gimnasio",p:100},
+      {n:"Limpieza lote 50",a:"Lateral y fachada (vista)",p:100},
+      {n:"Lote 33",a:"—",p:100},
+      {n:"Lote 43",a:"—",p:100},
+      {n:"Mover contenedores de basura",a:"—",p:100},
+      {n:"Reacomodar vegetación de parque central",a:"Parque central",p:100},
+      {n:"Recepción de juegos infantiles",a:"—",p:100},
+      {n:"Reparacion de Techos 2da Etapa Adara (House)",a:"Azoteas",p:100},
+      {n:"Reporte de Reparacion e Impermeabilizacion de techos",a:"Azoteas",p:100},
+      {n:"Resucitar Arecas fachada",a:"—",p:100},
+      {n:"Validar con Sepsa linea de cruce de riego lateral con parque",a:"—",p:100}
+    ],
+    eduardo_proc: [
+      {n:"Colado Banquetas Fase 2 Adara",a:"—",p:50},
+      {n:"Lote 49",a:"—",p:95},
+      {n:"Recoleccion de basura y limpieza de calles",a:"—",p:30}
+    ],
+    eduardo_sin: [
+      {n:"Cerco Eléctrico",a:"—",p:0},
+      {n:"Iluminación Pórtico",a:"—",p:0},
+      {n:"Recepción Cancha Padel",a:"—",p:0},
+      {n:"Tags de Acceso",a:"—",p:0},
+      {n:"Terminar CCTV Pórtico",a:"—",p:0}
+    ],
+    israel_comp: [
+      {n:"Lote 33",a:"—",p:100},
+      {n:"Lote 43",a:"—",p:100},
+      {n:"Retiro escombro parque central",a:"—",p:100},
+      {n:"Validar con Sepsa linea de cruce de riego lateral con parque",a:"—",p:100}
+    ],
+    israel_proc: [
+      {n:"Antes de colado ver pocetas de arboles de cada 5 metros de distancia",a:"—",p:50},
+      {n:"Limpieza lotes entrega inmediata",a:"—",p:98},
+      {n:"Lote 49",a:"—",p:95},
+      {n:"Mejora de vista de desarrollo parte Central",a:"—",p:76},
+      {n:"Mejora de vista del desarrollo parte frontal",a:"Área verde",p:3},
+      {n:"Plantar Arboles con Maceta en Banqueta Etapa 3 Adara",a:"—",p:65},
+      {n:"Recoleccion de basura y limpieza de calles",a:"—",p:30},
+      {n:"Sardinel portico",a:"Área verde",p:15}
+    ],
+    israel_sin: [
+      {n:"Cotizacion Layout Gimnasio",a:"Gimnasio",p:0},
+      {n:"Jardineria frontal portico",a:"Área verde",p:0},
+      {n:"Limpieza parte trasera portico",a:"Área verde",p:0},
+      {n:"Propuesta vegetacion en laterales del desarrollo",a:"Área verde",p:0},
+      {n:"Remate concreto Portico",a:"Área verde",p:0},
+      {n:"Reubicacion de rejas al terminan de colar banquetas",a:"Área verde",p:0},
+      {n:"Visita Clientes Lote 64",a:"Construccion",p:0}
+    ],
+    cerrar7: [
+      {n:"Recepcion trabajos agua potable vialidad",a:"Vialidades",p:100,d:"79 d sin reportar",r:"Jorge"},
+      {n:"Entrega Adara 57",a:"—",p:100,d:"77 d sin reportar",r:"Eduardo"},
+      {n:"Enrafiar ducto telefonía",a:"Adara Lote 5",p:100,d:"66 d sin reportar",r:"Jorge"},
+      {n:"Cambiar mordazas",a:"Adara Lote 5",p:100,d:"66 d sin reportar",r:"Jorge"},
+      {n:"Reporte de Reparacion e Impermeabilizacion de techos",a:"Azoteas",p:100,d:"50 d sin reportar",r:"Eduardo"},
+      {n:"Recepcion juegos infantiles",a:"Area comun",p:100,d:"50 d sin reportar",r:"Jorge"},
+      {n:"Lote 43",a:"—",p:100,d:"1 d sin reportar",r:"Eduardo + Israel"}
+    ],
+    // Frescura — solo hojas pendientes (<100% y sin subtareas). 25 elegibles.
+    fresca_7d: [
+      {n:"Cotizacion Cable y Bomba Solar",a:"—",p:75,r:"Jorge"},
+      {n:"Cotizacion Layout Gimnasio",a:"Gimnasio",p:50,r:"Gonzalo + Israel + Jorge"},
+      {n:"Sardinel portico",a:"Área verde",p:15,r:"Israel + Jorge"},
+      {n:"Limpieza parte trasera portico",a:"Área verde",p:0,r:"Israel + Jorge"},
+      {n:"Urbanizacion exterior",a:"—",p:80,r:"Gonzalo"},
+      {n:"Colado Banquetas Fase 2 Adara",a:"—",p:50,r:"Eduardo + Jorge"},
+      {n:"Lote 49",a:"—",p:95,r:"Eduardo + Israel"},
+      {n:"Recepción Cancha Padel",a:"—",p:0,r:"Eduardo + Jorge"},
+      {n:"Reubicacion de rejas al terminan de colar banquetas",a:"Área verde",p:0,r:"Israel + Jorge"}
+    ],
+    fresca_d30: [
+      {n:"Recepcion riego parque central",a:"Parque central",p:90,r:"Jorge"},
+      {n:"Recepcion vegetacion parque central",a:"Parque central",p:0,r:"Jorge"},
+      {n:"Arrancar luz Adara Etapa 2",a:"—",p:60,r:"Jorge"}
+    ],
+    fresca_d30plus: [],
+    fresca_nunca: [
+      {n:"Cerco Eléctrico",a:"—",p:0,r:"Eduardo + Jorge"},
+      {n:"Cierre de Barda 3era etapa",a:"Bardas",p:0,r:"Jorge"},
+      {n:"Cotizacion Vallas Peatonales",a:"Calles y Banquetas",p:0,r:"Jorge"},
+      {n:"Entregar a Labná programa de avaluos",a:"—",p:0,r:"Jorge"},
+      {n:"Equipo gym",a:"—",p:0,r:"Jorge"},
+      {n:"Iluminación Pórtico",a:"—",p:0,r:"Eduardo + Jorge"},
+      {n:"Jardineria frontal portico",a:"Área verde",p:0,r:"Israel + Jorge"},
+      {n:"Mantenimiento jardin adara",a:"Portico",p:0,r:"Jorge"},
+      {n:"Propuesta vegetacion en laterales del desarrollo",a:"Área verde",p:0,r:"Israel + Jorge"},
+      {n:"Remate concreto Portico",a:"Área verde",p:0,r:"Israel + Jorge"},
+      {n:"Tags de Acceso",a:"—",p:0,r:"Eduardo + Jorge"},
+      {n:"Terminar CCTV Pórtico",a:"—",p:0,r:"Eduardo + Jorge"},
+      {n:"Visita Clientes Lote 64",a:"Construccion",p:0,r:"Israel + Jorge"}
+    ]
+  };
+
+  // ---- Navegación de slides ----
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const progress = document.getElementById('progress');
+  const stage = document.getElementById('stage');
+  const countEl = document.getElementById('count');
+  const orientEl = document.getElementById('orient');
+  const modal = document.getElementById('modal');
+  const N = slides.length;
+  let scale = 1;
+  let i = parseInt(localStorage.getItem('adara_slide')||'0',10);
+  if(isNaN(i)||i<0||i>=N) i=0;
+
+  function show(n){
+    i = Math.max(0, Math.min(N-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    progress.style.width = ((i+1)/N*100)+'%';
+    countEl.textContent = (i+1)+' / '+N;
+    localStorage.setItem('adara_slide', i);
+  }
+
+  document.addEventListener('keydown', e=>{
+    if(modal.classList.contains('show')){
+      if(e.key==='Escape'){ closeModal(); }
+      return;
+    }
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();show(i+1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();show(i-1);}
+    else if(e.key==='Home'){show(0);}
+    else if(e.key==='End'){show(N-1);}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+      else document.exitFullscreen && document.exitFullscreen();
+    }
+  });
+
+  document.getElementById('prev').addEventListener('click', e=>{e.stopPropagation();show(i-1);});
+  document.getElementById('next').addEventListener('click', e=>{e.stopPropagation();show(i+1);});
+
+  // swipe
+  let tx=0, ty=0, swiped=false;
+  document.addEventListener('touchstart', e=>{
+    if(e.touches.length===1){ tx=e.touches[0].clientX; ty=e.touches[0].clientY; swiped=false; }
+  }, {passive:true});
+  document.addEventListener('touchend', e=>{
+    if(modal.classList.contains('show')) return;
+    const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){ swiped=true; show(dx<0 ? i+1 : i-1); }
+  }, {passive:true});
+
+  // click anywhere para avanzar — pero no si tocan un trigger de popup ni el modal
+  stage.addEventListener('click', e=>{
+    if(e.target.closest('[data-popup]')) return;
+    if(modal.classList.contains('show')) return;
+    if(swiped){ swiped=false; return; }
+    show(e.clientX < window.innerWidth*0.30 ? i-1 : i+1);
+  });
+
+  // ---- Popups ----
+  function openModal(key, title, sub){
+    const list = TASKS[key];
+    if(!list){ return; }
+    let html;
+    if(list.length===0){
+      html = '<li style="display:block;grid-template-columns:none;padding:24px 0;text-align:center;color:var(--ink-faint);font-style:italic;border:0">Sin tareas en este bucket · buena señal</li>';
+    } else {
+      html = list.map(t=>{
+        const cls = t.p>=100?'full':(t.p===0?'zero':'');
+        const extra = (t.r || t.d) ? '<div class="ma">'+(t.a||'—')+(t.r?' · '+t.r:'')+(t.d?' · '+t.d:'')+'</div>' : '<div class="ma">'+(t.a||'—')+'</div>';
+        return '<li><div><span class="mn">'+t.n+'</span>'+extra+'</div><span class="mp '+cls+'">'+t.p+'%</span></li>';
+      }).join('');
+    }
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-sub').textContent = (sub?sub+' · ':'') + list.length + (list.length===1?' tarea':' tareas');
+    document.getElementById('modal-list').innerHTML = html;
+    modal.classList.add('show');
+  }
+  function closeModal(){ modal.classList.remove('show'); }
+  document.getElementById('mclose').addEventListener('click', e=>{ e.stopPropagation(); closeModal(); });
+  modal.addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+
+  document.addEventListener('click', e=>{
+    const tg = e.target.closest('[data-popup]');
+    if(!tg) return;
+    e.stopPropagation();
+    openModal(tg.dataset.popup, tg.dataset.title || 'Tareas', tg.dataset.sub || '');
+  }, true);
+
+  // ---- Escalado ----
+  function fit(){
+    const vp = window.visualViewport;
+    const vw = vp ? vp.width : window.innerWidth;
+    const vh = vp ? vp.height : window.innerHeight;
+    scale = Math.min(vw/1280, vh/720);
+    stage.style.transform = 'translate(-50%,-50%) scale('+scale+')';
+    orientEl.classList.toggle('show', vw < vh && vw < 820);
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', fit);
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', fit);
+  fit(); show(i);
+</script>
+</body>
+</html>
