@@ -1,6 +1,23 @@
 # claude-skills
 
-Skills compartidos de Claude Code (ver `CLAUDE.md` para convenciones).
+Skills compartidos de Claude Code (ver [`CLAUDE.md`](CLAUDE.md) para convenciones).
+
+## Skills
+
+| Skill | Qué hace |
+|-------|----------|
+| [battlemap](battlemap/) | Genera battlemaps top-down para D&D/TTRPG con Gemini Image (prompt engineering + edición iterativa); integración opcional con QuestKeep |
+| [dnd-worldbuilder](dnd-worldbuilder/) | Genera y mejora entidades narrativas de campañas D&D (NPCs, ciudades, lugares, quests, combates, items) con principios profesionales + framework Encounter Axis |
+| [dream](dream/) | Consolidación de memoria estilo "auto-dream": escanea transcripciones de sesiones y fusiona learnings en archivos de memoria persistentes |
+| [garantias-deck](garantias-deck/) | Genera el deck HTML+PDF del estado de garantías ABIERTAS de Domus para la junta operativa, con datos en vivo de Supabase |
+| [halo-post-session](halo-post-session/) | Actualiza las BDs de la campaña D&D Halo después de una sesión jugada (NPCs conocidos, quests avanzadas, items obtenidos) |
+| [halo-session-prep](halo-session-prep/) | Prepara fichas de sesión para la campaña D&D Halo y las guarda en Supabase — **requiere `dnd-worldbuilder` al lado** |
+| [huashu-design](huashu-design/) | 花叔Design: hi-fi prototyping en HTML con principios anti-AI-slop (mockups, animaciones, decks, demos, app prototypes) |
+| [resultados-proveedores](resultados-proveedores/) | Genera el deck mensual "Análisis de Resultados" por proveedor de garantías de Domus, con datos en vivo de Supabase |
+| [supabase-health](supabase-health/) | Monitoreo proactivo de salud del Supabase de Domus (CPU/IO/disco/RAM/queries) con alerta a WhatsApp vía n8n |
+| [tareas-deck](tareas-deck/) | Genera el deck HTML+PDF de focos de atraso de tareas de obra de un desarrollo Domus (default Adara) |
+| [test-web](test-web/) | Tests E2E con Playwright para verificar cambios de frontend en el navegador (repo-agnóstico) |
+| [ui-ux-pro-max](ui-ux-pro-max/) | Design intelligence: 67 estilos, 96 paletas, 57 font pairings, 99 UX guidelines, 25 chart types, 13 stacks |
 
 ## `hooks/`
 
