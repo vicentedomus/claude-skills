@@ -1,24 +1,22 @@
 # claude-skills
 
-Claude Code skills versionadas para usar entre sesiones y en Claude Code web.
+Skills compartidos de Claude Code (ver `CLAUDE.md` para convenciones).
 
-## Skills
+## `hooks/`
 
-| Skill | Qué hace | Requiere |
-|-------|----------|----------|
-| [battlemap](battlemap/) | Genera battlemaps top-down para D&D/TTRPG con Gemini Image (prompt engineering + edición iterativa) | MCP `gemini-image`; opcional Supabase (integración QuestKeep) |
-| [dnd-worldbuilder](dnd-worldbuilder/) | Genera y mejora entidades narrativas de campañas D&D (NPCs, ciudades, lugares, quests, combates, items) con principios de narración profesional | MCP `supabase` |
-| [halo-session-prep](halo-session-prep/) | Prepara fichas de sesión para la campaña Halo y las guarda en Supabase | MCP `supabase`; **requiere `dnd-worldbuilder` instalada al lado** |
-| [halo-post-session](halo-post-session/) | Actualiza las BDs de la campaña Halo después de una sesión jugada | MCP `supabase` |
-| [test-web](test-web/) | Tests E2E con Playwright para verificar cambios de frontend en el navegador | — |
-| [huashu-design](huashu-design/) | Skill de diseño (instalada vía `npx skills`) | ver su README |
+Hooks de shell compartidos y fuente de verdad central. Otros repos los
+sincronizan desde aquí vía su propio `sync-hooks.sh` (que descarga cada hook
+desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<archivo>.sh`).
 
-## Notas de uso
+_(Sin hooks compartidos por ahora.)_
 
-- **`halo-session-prep` depende de `dnd-worldbuilder`:** delega la generación narrativa de NPCs nuevos, reskins de items y diseño de combates vía rutas relativas (`../dnd-worldbuilder/references/...`). Instala ambas juntas.
-- **Las skills `halo-*` son específicas de la campaña Halo** (project_id de Supabase + `campaign_slug='halo'` hardcoded). `dnd-worldbuilder` y `battlemap` son agnósticas de campaña.
-- **MCPs en Claude Code web:** `battlemap` necesita el MCP `gemini-image`, y las skills de D&D el MCP `supabase`, configurados en tu entorno web. Los archivos generados en web viven en el sandbox (efímero) — descarga lo que quieras conservar.
+### Hooks retirados
 
-## Estructura
-
-Cada skill vive en su carpeta top-level con `SKILL.md` + `assets/`/`references/`/`evals/` según aplique. Ver [CLAUDE.md](CLAUDE.md) para el flujo de instalación de skills externas.
+- `post-plan-todos.sh` — PostToolUse (matcher `ExitPlanMode`). Retirado: era
+  estructuralmente incompatible con extended thinking. El turno con
+  `ExitPlanMode` viene precedido de un bloque `thinking`, y al inyectar
+  `additionalContext` el harness reescribe ese mensaje; la API lo rechaza con
+  `400 … thinking or redacted_thinking blocks in the latest assistant message
+  cannot be modified`. La conducta (armar una lista `TodoWrite` al aprobar un
+  plan) se movió a una instrucción permanente en el `CLAUDE.md` de cada repo
+  consumidor.
