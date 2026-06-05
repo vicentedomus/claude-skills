@@ -1,0 +1,23 @@
+{
+  "skill_name": "halo-post-session",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Ya jugamos la sesión del 25 de marzo, pon al día las BDs.",
+      "expected_output": "El skill pregunta cuál sesión, lee las notas, consulta las BDs, y propone actualizaciones una por una",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Actualiza los registros con lo que pasó la última sesión, fue la del 25 de marzo.",
+      "expected_output": "Lee la sesión indicada, detecta NPCs nuevos/conocidos, ciudades visitadas, y propone cambios con confirmación",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Post-sesión. Jugamos ayer, la sesión del 11 de marzo.",
+      "expected_output": "Detecta cambios de estado (ej: Linna muerta), visibilidad de NPCs, avance de quests, y presenta recordatorios del DM",
+      "files": []
+    }
+  ]
+}

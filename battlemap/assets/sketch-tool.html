@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battlemap Sketch Tool</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #1a1a2e; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 220px; background: #16213e; padding: 16px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #0f3460; overflow-y: auto; }
+  .sidebar h2 { font-size: 14px; color: #7ec8e3; text-transform: uppercase; letter-spacing: 1px; }
+  .sidebar h3 { font-size: 12px; color: #999; margin-top: 4px; }
+
+  /* Palette */
+  .palette { display: flex; flex-direction: column; gap: 4px; }
+  .palette-entry { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 13px; border: 2px solid transparent; transition: border-color 0.15s; }
+  .palette-entry:hover { background: rgba(255,255,255,0.05); }
+  .palette-entry.active { border-color: #7ec8e3; background: rgba(126,200,227,0.1); }
+  .color-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; }
+  .palette-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Custom palette editor */
+  .custom-section { border-top: 1px solid #0f3460; padding-top: 8px; }
+  .custom-row { display: flex; gap: 4px; align-items: center; margin-bottom: 4px; }
+  .custom-row input[type="color"] { width: 32px; height: 28px; border: none; background: none; cursor: pointer; padding: 0; }
+  .custom-row input[type="text"] { flex: 1; background: #0f3460; border: 1px solid #1a3a6e; color: #e0e0e0; padding: 4px 6px; border-radius: 3px; font-size: 12px; }
+  .custom-row button { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 16px; padding: 0 4px; }
+
+  .btn { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-add { background: #0f3460; color: #7ec8e3; width: 100%; }
+  .btn-save { background: #27ae60; color: #fff; width: 100%; }
+  .btn-clear { background: #e74c3c; color: #fff; width: 100%; }
+  .btn-eraser { background: #555; color: #fff; width: 100%; }
+
+  /* Tools */
+  .tool-group { display: flex; flex-direction: column; gap: 4px; }
+  .brush-size { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .brush-size input { flex: 1; }
+
+  /* Canvas area */
+  .canvas-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: #0f0f23; }
+  .canvas-wrapper { position: relative; border: 2px solid #0f3460; border-radius: 4px; }
+  canvas { display: block; cursor: crosshair; }
+  .canvas-info { margin-top: 8px; font-size: 12px; color: #666; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>Battlemap Sketch</h2>
+  <h3>Grid 27 × 15</h3>
+
+  <h3 style="margin-top:8px">Paleta predefinida</h3>
+  <div class="palette" id="defaultPalette"></div>
+
+  <div class="custom-section">
+    <h3>Paleta personalizada</h3>
+    <div id="customEntries"></div>
+    <button class="btn btn-add" id="addCustom">+ Agregar color</button>
+  </div>
+
+  <div class="tool-group" style="margin-top:8px">
+    <h3>Herramientas</h3>
+    <button class="btn btn-eraser" id="eraserBtn">Borrador</button>
+    <div class="brush-size">
+      <span>Pincel:</span>
+      <input type="range" id="brushSize" min="1" max="5" value="1">
+      <span id="brushVal">1</span>
+    </div>
+    <button class="btn btn-clear" id="clearBtn">Limpiar todo</button>
+  </div>
+
+  <div class="tool-group" style="margin-top:auto">
+    <button class="btn btn-save" id="saveBtn">Guardar PNG</button>
+  </div>
+</div>
+
+<div class="canvas-area">
+  <div class="canvas-wrapper">
+    <canvas id="canvas"></canvas>
+  </div>
+  <div class="canvas-info">Clic o arrastra para pintar. Cada cuadro = 1" (5 ft). Guarda el PNG y pásalo a Claude.</div>
+</div>
+
+<script>
+const COLS = 27, ROWS = 15, CELL = 32;
+const W = COLS * CELL, H = ROWS * CELL;
+
+const DEFAULT_PALETTE = [
+  { color: '#4CAF50', label: 'Bosque / Vegetación' },
+  { color: '#2196F3', label: 'Agua' },
+  { color: '#8D6E63', label: 'Tierra / Camino' },
+  { color: '#9E9E9E', label: 'Piedra / Muros' },
+  { color: '#5D4037', label: 'Madera' },
+  { color: '#F44336', label: 'Lava / Fuego' },
+  { color: '#F5F5F5', label: 'Nieve / Hielo' },
+  { color: '#212121', label: 'Vacío / Abismo' },
+];
+
+let customPalette = [];
+let activeColor = DEFAULT_PALETTE[0].color;
+let activeLabel = DEFAULT_PALETTE[0].label;
+let isEraser = false;
+let brushSize = 1;
+let painting = false;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = W;
+canvas.height = H;
+
+// --- Grid state (for clean export) ---
+const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+
+function drawGrid() {
+  ctx.clearRect(0, 0, W, H);
+  // Fill cells
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c]) {
+        ctx.fillStyle = grid[r][c];
+        ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+      }
+    }
+  }
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 0.5;
+  for (let c = 0; c <= COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, H); ctx.stroke();
+  }
+  for (let r = 0; r <= ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(W, r * CELL); ctx.stroke();
+  }
+}
+
+function paintCell(x, y) {
+  const c = Math.floor(x / CELL);
+  const r = Math.floor(y / CELL);
+  const half = Math.floor(brushSize / 2);
+  for (let dr = -half; dr <= half; dr++) {
+    for (let dc = -half; dc <= half; dc++) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+        grid[nr][nc] = isEraser ? null : activeColor;
+      }
+    }
+  }
+  drawGrid();
+}
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+}
+
+canvas.addEventListener('pointerdown', (e) => { painting = true; const p = getPos(e); paintCell(p.x, p.y); });
+canvas.addEventListener('pointermove', (e) => { if (painting) { const p = getPos(e); paintCell(p.x, p.y); } });
+canvas.addEventListener('pointerup', () => painting = false);
+canvas.addEventListener('pointerleave', () => painting = false);
+
+// --- Palette UI ---
+function renderDefaultPalette() {
+  const container = document.getElementById('defaultPalette');
+  container.innerHTML = '';
+  DEFAULT_PALETTE.forEach(({ color, label }) => {
+    const el = document.createElement('div');
+    el.className = 'palette-entry' + (!isEraser && activeColor === color ? ' active' : '');
+    el.innerHTML = `<div class="color-swatch" style="background:${color}"></div><span class="palette-label">${label}</span>`;
+    el.addEventListener('click', () => { activeColor = color; activeLabel = label; isEraser = false; updateUI(); });
+    container.appendChild(el);
+  });
+}
+
+function renderCustomEntries() {
+  const container = document.getElementById('customEntries');
+  container.innerHTML = '';
+  customPalette.forEach((entry, i) => {
+    const row = document.createElement('div');
+    row.className = 'custom-row';
+    row.innerHTML = `
+      <input type="color" value="${entry.color}" data-i="${i}" class="cc">
+      <input type="text" value="${entry.label}" data-i="${i}" class="cl" placeholder="Feature...">
+      <button data-i="${i}" class="cd">×</button>
+    `;
+    // Click to select
+    row.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      activeColor = customPalette[i].color;
+      activeLabel = customPalette[i].label;
+      isEraser = false;
+      updateUI();
+    });
+    container.appendChild(row);
+  });
+  // Bind inputs
+  container.querySelectorAll('.cc').forEach(el => el.addEventListener('input', (e) => { customPalette[+e.target.dataset.i].color = e.target.value; }));
+  container.querySelectorAll('.cl').forEach(el => el.addEventListener('input', (e) => { customPalette[+e.target.dataset.i].label = e.target.value; }));
+  container.querySelectorAll('.cd').forEach(el => el.addEventListener('click', (e) => { customPalette.splice(+e.target.dataset.i, 1); renderCustomEntries(); }));
+}
+
+function updateUI() {
+  renderDefaultPalette();
+  document.getElementById('eraserBtn').style.borderColor = isEraser ? '#7ec8e3' : 'transparent';
+  // Highlight custom entries
+  document.querySelectorAll('#customEntries .custom-row').forEach((row, i) => {
+    row.style.borderLeft = (!isEraser && activeColor === customPalette[i]?.color) ? '3px solid #7ec8e3' : '3px solid transparent';
+  });
+}
+
+document.getElementById('addCustom').addEventListener('click', () => {
+  customPalette.push({ color: '#FFD700', label: '' });
+  renderCustomEntries();
+});
+
+document.getElementById('eraserBtn').addEventListener('click', () => { isEraser = !isEraser; updateUI(); });
+
+document.getElementById('brushSize').addEventListener('input', (e) => {
+  brushSize = +e.target.value;
+  document.getElementById('brushVal').textContent = brushSize;
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm('¿Limpiar todo el canvas?')) {
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) grid[r][c] = null;
+    drawGrid();
+  }
+});
+
+// --- Save ---
+document.getElementById('saveBtn').addEventListener('click', () => {
+  // Export canvas as PNG
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = W;
+  exportCanvas.height = H;
+  const ectx = exportCanvas.getContext('2d');
+  // White background
+  ectx.fillStyle = '#fff';
+  ectx.fillRect(0, 0, W, H);
+  // Cells
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (grid[r][c]) {
+        ectx.fillStyle = grid[r][c];
+        ectx.fillRect(c * CELL, r * CELL, CELL, CELL);
+      }
+    }
+  }
+  // Grid lines
+  ectx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ectx.lineWidth = 0.5;
+  for (let c = 0; c <= COLS; c++) { ectx.beginPath(); ectx.moveTo(c * CELL, 0); ectx.lineTo(c * CELL, H); ectx.stroke(); }
+  for (let r = 0; r <= ROWS; r++) { ectx.beginPath(); ectx.moveTo(0, r * CELL); ectx.lineTo(W, r * CELL); ectx.stroke(); }
+
+  // Build palette legend (for Claude to read)
+  const allPalette = [...DEFAULT_PALETTE.filter(p => grid.flat().includes(p.color)), ...customPalette.filter(p => p.label && grid.flat().includes(p.color))];
+  const legend = allPalette.map(p => `${p.color}=${p.label}`).join(', ');
+
+  const link = document.createElement('a');
+  link.download = 'battlemap-sketch.png';
+  link.href = exportCanvas.toDataURL('image/png');
+  link.click();
+
+  // Also save palette JSON if custom entries exist
+  if (customPalette.length > 0 && customPalette.some(p => p.label)) {
+    const paletteData = JSON.stringify({ default: DEFAULT_PALETTE, custom: customPalette.filter(p => p.label) }, null, 2);
+    const blob = new Blob([paletteData], { type: 'application/json' });
+    const plink = document.createElement('a');
+    plink.download = 'battlemap-sketch-palette.json';
+    plink.href = URL.createObjectURL(blob);
+    plink.click();
+  }
+
+  // Show legend for copy-paste
+  if (allPalette.length > 0) {
+    alert('Sketch guardado.\n\nLeyenda de colores (pásala a Claude si usaste colores custom):\n' + allPalette.map(p => `• ${p.label}`).join('\n'));
+  }
+});
+
+// Init
+renderDefaultPalette();
+drawGrid();
+</script>
+</body>
+</html>
