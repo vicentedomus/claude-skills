@@ -10,6 +10,7 @@ Skills compartidos de Claude Code (ver [`CLAUDE.md`](CLAUDE.md) para convencione
 | [dnd-worldbuilder](dnd-worldbuilder/) | Genera y mejora entidades narrativas de campañas D&D (NPCs, ciudades, lugares, quests, combates, items) con principios profesionales + framework Encounter Axis |
 | [dream](dream/) | Consolidación de memoria estilo "auto-dream": escanea transcripciones de sesiones y fusiona learnings en archivos de memoria persistentes |
 | [garantias-deck](garantias-deck/) | Genera el deck HTML+PDF del estado de garantías ABIERTAS de Domus para la junta operativa, con datos en vivo de Supabase |
+| [graphify](graphify/) | Convierte cualquier carpeta (código, docs, papers, imágenes) en un grafo de conocimiento con detección de comunidades + audit trail → HTML interactivo, JSON (GraphRAG) y reporte — **requiere el paquete Python `graphifyy` (PyPI), que el SKILL.md auto-instala vía `pip` (necesita egress a PyPI)** |
 | [halo-post-session](halo-post-session/) | Actualiza las BDs de la campaña D&D Halo después de una sesión jugada (NPCs conocidos, quests avanzadas, items obtenidos) |
 | [halo-session-prep](halo-session-prep/) | Prepara fichas de sesión para la campaña D&D Halo y las guarda en Supabase — **requiere `dnd-worldbuilder` al lado** |
 | [huashu-design](huashu-design/) | 花叔Design: hi-fi prototyping en HTML con principios anti-AI-slop (mockups, animaciones, decks, demos, app prototypes) |
