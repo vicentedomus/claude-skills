@@ -152,10 +152,15 @@ from pathlib import Path
 detect = json.loads(Path('.graphify_detect.json').read_text())
 all_files = [f for files in detect['files'].values() for f in files]
 
-cached_nodes, cached_edges, uncached = check_semantic_cache(all_files)
+# check_semantic_cache returns 3 values in older versions and 4 (with
+# cached_hyperedges) in newer ones - unpack defensively so either works.
+_res = check_semantic_cache(all_files)
+cached_nodes, cached_edges = _res[0], _res[1]
+cached_hyperedges = _res[2] if len(_res) == 4 else []
+uncached = _res[-1]
 
-if cached_nodes or cached_edges:
-    Path('.graphify_cached.json').write_text(json.dumps({'nodes': cached_nodes, 'edges': cached_edges}))
+if cached_nodes or cached_edges or cached_hyperedges:
+    Path('.graphify_cached.json').write_text(json.dumps({'nodes': cached_nodes, 'edges': cached_edges, 'hyperedges': cached_hyperedges}))
 Path('.graphify_uncached.txt').write_text('\n'.join(uncached))
 print(f'Cache: {len(all_files)-len(uncached)} files hit, {len(uncached)} files need extraction')
 "
