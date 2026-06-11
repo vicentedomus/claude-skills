@@ -14,6 +14,7 @@ Skills compartidos de Claude Code (ver [`CLAUDE.md`](CLAUDE.md) para convencione
 | [halo-post-session](halo-post-session/) | Actualiza las BDs de la campaña D&D Halo después de una sesión jugada (NPCs conocidos, quests avanzadas, items obtenidos) |
 | [halo-session-prep](halo-session-prep/) | Prepara fichas de sesión para la campaña D&D Halo y las guarda en Supabase — **requiere `dnd-worldbuilder` al lado** |
 | [huashu-design](huashu-design/) | 花叔Design: hi-fi prototyping en HTML con principios anti-AI-slop (mockups, animaciones, decks, demos, app prototypes) |
+| [programa-semanal](programa-semanal/) | Genera el Programa Semanal de coordinación de tareas estratégicas de un desarrollo de Domus (Gran Bosco por defecto): un calendario PDF Lun-Vie por actor (uno por supervisor/gerente) con datos en vivo de Supabase |
 | [resultados-proveedores](resultados-proveedores/) | Genera el deck mensual "Análisis de Resultados" por proveedor de garantías de Domus, con datos en vivo de Supabase |
 | [supabase-health](supabase-health/) | Monitoreo proactivo de salud del Supabase de Domus (CPU/IO/disco/RAM/queries) con alerta a WhatsApp vía n8n |
 | [tareas-deck](tareas-deck/) | Genera el deck HTML+PDF de focos de atraso de tareas de obra de un desarrollo Domus (default Adara) |

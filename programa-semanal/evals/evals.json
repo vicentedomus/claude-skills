@@ -1,0 +1,45 @@
+{
+  "skill_name": "programa-semanal",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Arma el programa semanal de Gran Bosco para la semana que viene",
+      "expected_output": "Un PDF carta apaisada de 1 página por cada actor con pendientes estratégicos (Fernando Vera, Alejandro Mendoza, Daniel Vallejos), con calendario Lun-Vie de acciones de coordinación basadas en datos en vivo de Supabase",
+      "files": [],
+      "assertions": [
+        "Genera un PDF por cada actor con pendientes estratégicos abiertos en Gran Bosco (Fernando Vera, Alejandro Mendoza y Daniel Vallejos)",
+        "Cada PDF es de exactamente 1 página, carta apaisada",
+        "El programa corresponde a la semana siguiente (lunes 15 a viernes 19 de junio de 2026)",
+        "Ninguna tarjeta presenta una fecha programada como hecho consumado: tareas con avance 0% y sin observación de arranque (p.ej. zanjeo Dotec Calle 1) se redactan como 'confirmar si entraron', no como ya iniciadas",
+        "Las acciones respetan el rol: nada de créditos/anticipos/convenios asignado a supervisores, nada de recorridos de campo rutinarios asignados al gerente",
+        "No hay emojis en el HTML/PDF",
+        "Existe un plan.json válido que sigue el esquema de scripts/render.mjs"
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Qué le toca a Fernando Vera la próxima semana? Genera su calendario",
+      "expected_output": "Un solo PDF de 1 página para Fernando Vera con sus acciones de coordinación de la semana siguiente, sin acciones fuera de su rol de supervisor",
+      "files": [],
+      "assertions": [
+        "Genera exactamente un PDF, el de Fernando Vera",
+        "El PDF es de 1 página, carta apaisada",
+        "Todas las acciones son de cancha de supervisor (campo/sitio/proveedores); ninguna de gerencia como créditos de clientes o convenios con autoridades",
+        "Las tarjetas usan verbos concretos (llamar, recorrer, verificar, confirmar) con el 'a quién' y 'para qué' extraídos de las observaciones, no 'dar seguimiento' genérico",
+        "Las dependencias de proveedores con compromiso en la semana se aseguran el lunes (anticipar), y las verificaciones caen el día del compromiso con escalación el mismo día",
+        "No hay emojis en el HTML/PDF"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Genera el programa semanal de Adara",
+      "expected_output": "Manejo correcto de un desarrollo sin tareas estratégicas: reportar que Adara no tiene tareas estratégicas marcadas (o generar solo lo que realmente exista), sin inventar pendientes",
+      "files": [],
+      "assertions": [
+        "Detecta que Adara no tiene tareas estratégicas marcadas (verificado: 0 en la BD) y se lo comunica al usuario con claridad",
+        "No inventa pendientes ni genera PDFs con contenido fabricado",
+        "Ofrece un siguiente paso razonable (p.ej. marcar tareas como estratégicas en Adara, o señalar que hoy solo Gran Bosco las usa)"
+      ]
+    }
+  ]
+}
