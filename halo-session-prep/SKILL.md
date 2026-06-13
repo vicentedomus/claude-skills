@@ -236,38 +236,46 @@ a una fila real en `npcs`. El Paso 6 lo audita.
 
 ### 4b. Insertar el session_plan
 
-El schema real de `session_plans` tiene **columnas separadas por bloque** (todas jsonb excepto
-`bloque_strong_start` que es text). Hacer un solo INSERT que llene todos los bloques:
+El frontend de QuestKeep (`preparador.js`) lee el plan desde **una sola columna `bloques`**
+(jsonb anidado) — `plan.bloques['bloque_strong_start']`, `plan.bloques['bloque_escenas']`, etc. —
+más una columna `bloques_committed` (jsonb). **NO leas/escribas las columnas legacy sueltas**
+(`bloque_strong_start`, `bloque_escenas`, …): existen por compatibilidad pero la UI las ignora,
+y un plan escrito ahí sale **vacío** en el planner. Todos los bloques van anidados dentro de
+`bloques`. Hacer un solo INSERT:
 
 ```sql
 INSERT INTO session_plans (
   nombre, fecha_sesion, estado, campaign_slug,
-  bloque_strong_start,
-  bloque_escenas,
-  bloque_secretos,
-  bloque_npcs,
-  bloque_locaciones,
-  bloque_tesoros,
-  bloque_monstruos,
+  bloques,
+  bloques_committed,
   input_data
 ) VALUES (
   'Sesión DD-MMM-YY',
   'YYYY-MM-DD',
   'borrador',
   'halo',
-  'texto del strong start',
-  '[{"titulo":"...","descripcion":"...","tipo":"combate|social|exploración|misterio|revelación","tension":1,"objetivo":"...","obstaculo":"...","espacio":"... (solo combate)","ejes":{"protein":{"tipo":"...","descripcion":"...","condicion_cierre":"...","retreat_number":null},"optimizers":[{"tipo":"...","descripcion":"...","como_descubrirlo":"..."}],"hazards":[{"tipo":"...","descripcion":"...","stages":["..."]}],"chaos":[{"tipo":"...","descripcion":"...","trigger":"..."}]}}]'::jsonb,
-  '[{"secreto":"...","pistas":["pista A","pista B","pista C"],"quien_sabe":"..."}]'::jsonb,
-  '[{"npc_id":"uuid_o_null","nombre":"...","raza":"...","rol":"...","flag":"existente|nuevo","relacion_sesion":"...","motivacion":"...","tono":"...","frase":"...","primera_impresion":"...","notas_roleplay":"..."}]'::jsonb,
-  '[{"nombre":"...","tipo":"...","region":"...","relacion_sesion":"...","descripcion_sensorial":"..."}]'::jsonb,
-  '[{"item_id":"uuid","nombre":"...","rareza":"...","flag":"match_directo|reskin","reskin_flavor":"... o null","portador_sugerido":"..."}]'::jsonb,
-  '[{"monstruo_id":"uuid","nombre":"...","cantidad":1,"flag":"match_directo|reskin","contexto_narrativo":"...","reskin_primera_senal":"... o null","reskin_encuentro":"... o null","reskin_comportamiento":"... o null"}]'::jsonb,
+  '{
+    "bloque_strong_start": "texto del strong start",
+    "bloque_escenas": [{"titulo":"...","descripcion":"...","tipo":"combate|social|exploración|misterio|revelación","tension":1,"objetivo":"...","obstaculo":"...","espacio":"... (solo combate)","ejes":{"protein":{"tipo":"...","descripcion":"...","condicion_cierre":"...","retreat_number":null},"optimizers":[{"tipo":"...","descripcion":"...","como_descubrirlo":"..."}],"hazards":[{"tipo":"...","descripcion":"...","stages":["..."]}],"chaos":[{"tipo":"...","descripcion":"...","trigger":"..."}]}}],
+    "bloque_secretos": [{"secreto":"...","pistas":["pista A","pista B","pista C"],"quien_sabe":"..."}],
+    "bloque_npcs": [{"npc_id":"uuid_o_null","nombre":"...","raza":"...","rol":"...","flag":"existente|nuevo","relacion_sesion":"...","motivacion":"...","tono":"...","frase":"...","primera_impresion":"...","notas_roleplay":"..."}],
+    "bloque_locaciones": [{"nombre":"...","tipo":"...","region":"...","relacion_sesion":"...","descripcion_sensorial":"..."}],
+    "bloque_tesoros": [{"item_id":"uuid","nombre":"...","rareza":"...","flag":"match_directo|reskin","reskin_flavor":"... o null","portador_sugerido":"..."}],
+    "bloque_monstruos": [{"monstruo_id":"uuid","nombre":"...","cantidad":1,"flag":"match_directo|reskin","contexto_narrativo":"...","reskin_primera_senal":"... o null","reskin_encuentro":"... o null","reskin_comportamiento":"... o null"}],
+    "bloque_pivote": "texto del momento pivote",
+    "bloque_notas_dm": ["nota privada DM 1", "nota privada DM 2"]
+  }'::jsonb,
+  '{}'::jsonb,
   '{"pregunta_objetivos":"...","duracion_horas":3,"notas_dm":[]}'::jsonb
 )
 RETURNING id, nombre, fecha_sesion, estado;
 ```
 
 Captura el `session_plan_id` — lo necesita el Paso 6.
+
+> **Nota de migración:** los bloques viven **dentro** de `bloques` (jsonb), no en columnas
+> sueltas. Para verificar/auditar un plan, consulta `bloques->'bloque_npcs'`,
+> `bloques->>'bloque_strong_start'`, etc. — no las columnas `bloque_*` legacy.
 
 ---
 
@@ -285,6 +293,10 @@ Este es el **último paso** de la skill. La skill no termina hasta que este repo
 Lanza un **subagente auditor** (Agent tool, `subagent_type=general-purpose`) con prompt fijo que
 incluye la lista de reglas abajo y el `session_plan_id` del Paso 4b. El auditor tiene acceso al
 Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
+
+> Los bloques se consultan dentro de la columna `bloques` (jsonb): `bloques->'bloque_npcs'`,
+> `bloques->>'bloque_strong_start'`, `jsonb_array_length(bloques->'bloque_monstruos')`, etc. Un
+> plan con `bloques` NULL o `{}` está vacío para la UI aunque las columnas legacy tengan datos.
 
 **El auditor verifica 3 dimensiones:**
 
@@ -417,7 +429,7 @@ que se active, es un banco de patrones al que esta skill consulta.
 | `personajes` | nombre, clase, raza, jugador, nivel, ac, hp_maximo | PJs del party |
 | `lugares` | nombre, tipo, region, ciudad_id | Puntos de interés |
 | `monstruos` | nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones, … | **Catálogo 5e oficial** — compartido entre campañas (sin `campaign_slug`) |
-| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloque_strong_start**, **bloque_escenas**, **bloque_secretos**, **bloque_npcs**, **bloque_locaciones**, **bloque_tesoros**, **bloque_monstruos**, input_data | **Destino final del prep**. Bloques en columnas separadas (jsonb). |
+| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloques** (jsonb), **bloques_committed** (jsonb), input_data | **Destino final del prep**. Todos los bloques anidados dentro de `bloques` (`bloque_strong_start`, `bloque_escenas`, `bloque_secretos`, `bloque_npcs`, `bloque_locaciones`, `bloque_tesoros`, `bloque_monstruos`, `bloque_pivote`, `bloque_notas_dm`). Las columnas `bloque_*` sueltas son legacy y la UI las ignora. |
 
 ### Junction tables (relaciones M2M)
 
