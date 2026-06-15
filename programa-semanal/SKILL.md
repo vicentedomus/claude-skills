@@ -96,13 +96,42 @@ lo destraba (recorrido, llamada, exigir fecha firme).
 **10. Sin emojis.** El PDF usa etiquetas de texto (Coordinar / Recorrido /
 Verificar / Actualizar) y colores por frente; nada de emojis.
 
+**11. Inventarios sin fecha se consolidan, no se enumeran.** Cuando un frente
+trae muchas subtareas hermanas (recepciones/checklists por lote) sin
+`fecha_inicio`/`fecha_fin_programada` y sin observaciones, NO generes una
+tarjeta por subtarea: consolida en una tarjeta de coordinación por actor
+("revisar la lista, priorizar los próximos a avalúo/entrega, agendar con el
+proveedor/constructor"). Si son muchas y el actor las trabaja a diario,
+repártelas en bloques por día (p. ej. "4 casas/día de lunes a jueves") en vez de
+una sola tarjeta gigante. Para el gerente, consolida por **proveedor** (toda
+Dotec en una tarjeta, toda Gidesa en otra), no por obra individual.
+
+**12. "Recepción de claros" es un pipeline de dos etapas, no un duplicado.** Por
+lote suele haber dos tareas con nombre parecido: (a) *recibir los claros al
+constructor* (para que el proveedor pueda entrar a trabajar) y (b) *recibirle el
+trabajo al proveedor* después. NO las trates como duplicado a depurar. La etapa
+accionable de la semana es la que trae `fecha_siguiente_actualizacion`; la de
+fecha nula es la etapa posterior y no se agenda todavía.
+
+**13. Las tareas raíz no se agendan ni se "refrescan".** Una tarea padre (raíz)
+es el plan de trabajo = la suma de sus subtareas; no es una acción. El
+seguimiento (incluido el de lo vencido) se le da SIEMPRE a las **subtareas**, no
+a la raíz. Al listar pendientes vencidos para el lunes, filtra las raíces.
+
+**14. Vencidos/compartidos cuya palanca es de un proveedor → cancha del
+gerente.** Si un lote está frenado por un proveedor externo (muretes de Dotec,
+templados, filtración, anticipo, crédito del cliente), el destrabe NO va al
+supervisor: va al gerente (regla 5). El supervisor solo conserva la parte de
+campo (recibir/verificar en sitio una vez destrabado); si su único pendiente en
+ese lote es el destrabe, el lote no aparece en su calendario.
+
 ## Frentes y colores
 
 Agrupa las tareas raíz estratégicas en "frentes" con color estable. Paleta de
 referencia (reúsala si aplican; inventa claves nuevas para frentes nuevos):
 avalúo `#2563eb`, recepción de lotes `#7c3aed`, urbanización `#d97706`,
 parques/amenidades `#16a34a`, vialidades/colados `#0d9488`,
-convenios/autoridades `#dc2626`.
+convenios/autoridades `#dc2626`, recepción de claros `#be185d`.
 
 ## Verificación antes de entregar
 
