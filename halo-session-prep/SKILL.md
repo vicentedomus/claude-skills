@@ -177,16 +177,22 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - Cada locación lleva campo "Relación con la sesión": qué escena ocurre ahí, qué rol cumple
   (combate, social, revelación, exploración). No vale dejarlo vacío.
 
-#### Tesoros — **SOLO items reales de la tabla `items`**. Regla de prioridad estricta:
+#### Tesoros — **SOLO items reales del catálogo `items_catalog`**. Regla de prioridad estricta:
 
-1. **Primero** busca un item existente que satisfaga la necesidad narrativa tal cual.
+> **Fuente correcta:** `items_catalog` es el catálogo global 5e (≈668 items, fuente `DMG'24`),
+> análogo a `monstruos`. La tabla `items` son las **instancias** de campaña (lo que alguien posee,
+> con `personaje_id`/`npc_portador_id`). Para elegir un tesoro se busca en `items_catalog`.
+
+1. **Primero** busca un item en `items_catalog` que satisfaga la necesidad narrativa tal cual.
    Si encaja (efecto y tono), úsalo sin tocar nada.
-2. **Solo si ningún item existente encaja**, aplica **reskin narrativo** invocando `dnd-worldbuilder`
+2. **Solo si ningún item del catálogo encaja**, aplica **reskin narrativo** invocando `dnd-worldbuilder`
    con `references/item.md`. El reskin cambia flavor (nombre, descripción) pero **mantiene el item
    base como referencia** (mismas stats y efectos).
-3. **Nunca inventar** items que no existan en la BD.
+3. **Nunca inventar** items. Si la trama exige un item oficial que no está en el catálogo (p. ej.
+   un item 2014 fuera del DMG'24), **darlo de alta primero en `items_catalog`** con su texto
+   oficial verbatim (en inglés, por convención del proyecto) — extraído de la fuente, no de memoria.
 
-Cada tesoro lleva: `item_id` base, flag `match_directo | reskin`, y si es reskin el flavor aplicado.
+Cada tesoro lleva: `item_id` de `items_catalog`, flag `match_directo | reskin`, y si es reskin el flavor aplicado.
 
 #### Combate / Encuentro — invocar `dnd-worldbuilder` con `references/combate.md`
 
@@ -281,13 +287,13 @@ INSERT INTO session_plans (
   'halo',
   '{
     "bloque_strong_start": "texto del strong start",
-    "bloque_escenas": [{"titulo":"...","descripcion":"...","tipo":"combate|social|exploración|misterio|revelación","tension":1,"objetivo":"...","obstaculo":"...","espacio":"... (solo combate)","ejes":{"protein":{"tipo":"...","descripcion":"...","condicion_cierre":"...","retreat_number":null},"optimizers":[{"tipo":"...","descripcion":"...","como_descubrirlo":"..."}],"hazards":[{"tipo":"...","descripcion":"...","stages":["..."]}],"chaos":[{"tipo":"...","descripcion":"...","trigger":"..."}]}}],
-    "bloque_secretos": [{"secreto":"...","pistas":["pista A","pista B","pista C"],"quien_sabe":"..."}],
+    "bloque_escenas": [{"titulo":"...","descripcion":"...","tipo":"combate|social|exploración|misterio|revelación","tension":1,"objetivo":"...","obstaculo":"...","espacio":"... (solo combate)","secretos":[{"secreto":"...","pistas":["pista A","pista B","pista C"],"quien_sabe":"..."}],"es_pivote":false,"pivote":"texto del pivote SI esta escena es el momento bisagra; si no, null","ejes":{"protein":{"tipo":"...","descripcion":"...","condicion_cierre":"...","retreat_number":null},"optimizers":[{"tipo":"...","descripcion":"...","como_descubrirlo":"..."}],"hazards":[{"tipo":"...","descripcion":"...","stages":["..."]}],"chaos":[{"tipo":"...","descripcion":"...","trigger":"..."}]}}],
     "bloque_npcs": [{"npc_id":"uuid_o_null","nombre":"...","raza":"...","rol":"...","flag":"existente|nuevo","relacion_sesion":"...","motivacion":"...","tono":"...","frase":"...","primera_impresion":"...","notas_roleplay":"..."}],
     "bloque_locaciones": [{"nombre":"...","tipo":"...","region":"...","relacion_sesion":"...","descripcion_sensorial":"..."}],
-    "bloque_tesoros": [{"item_id":"uuid","nombre":"...","rareza":"...","flag":"match_directo|reskin","reskin_flavor":"... o null","portador_sugerido":"..."}],
-    "bloque_monstruos": [{"monstruo_id":"uuid","nombre":"...","cantidad":1,"flag":"match_directo|reskin","contexto_narrativo":"...","reskin_primera_senal":"... o null","reskin_encuentro":"... o null","reskin_comportamiento":"... o null"}],
-    "bloque_pivote": "texto del momento pivote",
+    "bloque_tesoros": [{"item_id":"uuid_de_items_catalog","nombre":"...","rareza":"...","flag":"match_directo|reskin","reskin_flavor":"... o null","portador_sugerido":"..."}],
+    "bloque_monstruos": [{"monstruo_id":"uuid","escena_idx":0,"nombre":"...","cantidad":1,"flag":"match_directo|reskin","contexto_narrativo":"...","reskin_primera_senal":"... o null","reskin_encuentro":"... o null","reskin_comportamiento":"... o null"}],
+    "bloque_secretos": [],
+    "bloque_pivote": null,
     "bloque_notas_dm": ["nota privada DM 1", "nota privada DM 2"]
   }'::jsonb,
   '{}'::jsonb,
@@ -301,6 +307,22 @@ Captura el `session_plan_id` — lo necesita el Paso 6.
 > **Nota de migración:** los bloques viven **dentro** de `bloques` (jsonb), no en columnas
 > sueltas. Para verificar/auditar un plan, consulta `bloques->'bloque_npcs'`,
 > `bloques->>'bloque_strong_start'`, etc. — no las columnas `bloque_*` legacy.
+
+**Contrato de render del planner (`preparador.js`) — cómo se anidan los bloques:**
+
+- **Secretos y pivote van DENTRO de cada escena** (`bloque_escenas[i].secretos[]` y
+  `bloque_escenas[i].es_pivote` / `bloque_escenas[i].pivote`). El planner pinta las escenas
+  **en orden** (apoyo narrativo de "qué sigue") y muestra los secretos y el pivote dentro de
+  su escena. `bloque_secretos` y `bloque_pivote` quedan **deprecados** (`[]` / `null`): solo
+  se usan como fallback para planes viejos. **No** dupliques la info en ambos lados.
+- **Cada monstruo lleva `escena_idx`** (índice 0-based dentro de `bloque_escenas`) que lo liga
+  a su escena de combate. La pestaña Combate agrupa por encuentro: muestra los **Ejes/Hazards**
+  de la escena y el **statblock base** de cada monstruo, leído del catálogo `monstruos` vía
+  `monstruo_id` (o por nombre si falta el id). Sin `escena_idx`, el monstruo no se agrupa.
+- **Tesoros:** `item_id` referencia el catálogo global **`items_catalog`** (no `items`).
+  `items` es el inventario instanciado de la campaña. Si el item no existe en `items_catalog`
+  (p. ej. items 2014 fuera del DMG'24), **darlo de alta primero** en `items_catalog` con su
+  texto oficial verbatim; al entregarse al party se instancia en `items` con `personaje_id`.
 
 ---
 
@@ -332,12 +354,17 @@ Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
   NPC flag=`nuevo` no tiene `npc_id`, es issue crítico (la transición no se hizo).
 - Cada NPC tiene `relacion_sesion` no vacía.
 - Cada locación en `bloque_locaciones` tiene `relacion_sesion` no vacía.
-- Cada tesoro en `bloque_tesoros` tiene `item_id` que existe en `items` con `campaign_slug='halo'`.
-- Cada monstruo en `bloque_monstruos` tiene `monstruo_id` que existe en `monstruos`.
+- Cada tesoro en `bloque_tesoros` tiene `item_id` que existe en `items_catalog` (o, si se dio de
+  alta un item oficial nuevo, que ya esté insertado en `items_catalog`).
+- Cada monstruo en `bloque_monstruos` tiene `monstruo_id` que existe en `monstruos` **y** un
+  `escena_idx` válido (índice 0-based dentro de `bloque_escenas`, apuntando a una escena de combate).
 - Cada tesoro y monstruo tiene flag `match_directo | reskin`. Si es reskin, flavor/capas completas.
 - Cada escena con `tipo='combate'` tiene el campo `ejes` con `protein` + ≥2 ejes adicionales
   (Optimizers/Hazards/Chaos). Regla de Tres cumplida. Si Protein = `Kill Them`, debe tener
   `retreat_number` definido.
+- **Secretos y pivote anidados:** los secretos viven en `bloque_escenas[i].secretos[]` y el pivote
+  en `bloque_escenas[i].pivote` (+`es_pivote`). `bloque_secretos`/`bloque_pivote` deben estar
+  vacíos/null (deprecados). Issue si la info está duplicada en ambos lados o solo en los legacy.
 - Secretos no duplican info ya conocida por el party (crosscheck contra los recaps de la
   bitácora del DM consultados en Paso 1b).
 - `nombre` en formato `"Sesión DD-MMM-YY"`, `fecha_sesion` ISO, `estado='borrador'`, `campaign_slug='halo'`.
@@ -455,11 +482,12 @@ que se active, es un banco de patrones al que esta skill consulta.
 | `npcs` | nombre, raza, rol, estado, tipo_npc, ciudad_id, establecimiento_id, primera_impresion, notas_roleplay, edad, campaign_slug | PJs no jugadores |
 | `ciudades` | nombre, descripcion, lider, poblacion, estado, conocida_jugadores | Ciudades del mapa |
 | `establecimientos` | nombre, tipo, ciudad_id, dueno_id, descripcion_exterior, descripcion_interior | Tiendas, tabernas |
-| `items` | nombre, tipo, rareza, personaje_id, npc_portador_id, descripcion, requiere_sintonizacion, campaign_slug | **Catálogo de tesoros** (siempre origen real) |
+| `items_catalog` | nombre, fuente, rareza, tipo, requiere_sintonizacion, descripcion, valor | **Catálogo global 5e** (≈668, `DMG'24`), sin `campaign_slug` — compartido. **Origen de los tesoros** (`item_id` → aquí) |
+| `items` | nombre, tipo, rareza, personaje_id, npc_portador_id, descripcion, requiere_sintonizacion, campaign_slug | **Instancias** de campaña (lo que alguien posee). NO es el catálogo |
 | `personajes` | nombre, clase, raza, jugador, nivel, ac, hp_maximo | PJs del party |
 | `lugares` | nombre, tipo, region, ciudad_id | Puntos de interés |
 | `monstruos` | nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones, … | **Catálogo 5e oficial** — compartido entre campañas (sin `campaign_slug`) |
-| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloques** (jsonb), **bloques_committed** (jsonb), input_data | **Destino final del prep**. Todos los bloques anidados dentro de `bloques` (`bloque_strong_start`, `bloque_escenas`, `bloque_secretos`, `bloque_npcs`, `bloque_locaciones`, `bloque_tesoros`, `bloque_monstruos`, `bloque_pivote`, `bloque_notas_dm`). Las columnas `bloque_*` sueltas son legacy y la UI las ignora. |
+| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloques** (jsonb), **bloques_committed** (jsonb), input_data | **Destino final del prep**. Bloques anidados dentro de `bloques` (`bloque_strong_start`, `bloque_escenas` —con `secretos[]` y `pivote` anidados por escena—, `bloque_npcs`, `bloque_locaciones`, `bloque_tesoros`, `bloque_monstruos` —con `escena_idx`—, `bloque_notas_dm`). `bloque_secretos`/`bloque_pivote` deprecados. Las columnas `bloque_*` sueltas son legacy y la UI las ignora. |
 
 ### Junction tables (relaciones M2M)
 
