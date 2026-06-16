@@ -115,6 +115,20 @@ ORDER BY nombre;
 
 Nota: `monstruos` no tiene `campaign_slug` — es un catálogo compartido.
 
+```sql
+-- Party real (para calibrar combate): nivel/clase de los PJs
+SELECT nombre, clase, raza, nivel, ac, hp_maximo
+FROM personajes
+WHERE campaign_slug = 'halo' AND NOT archived
+ORDER BY nombre;
+```
+
+**Higiene de datos al leer entidades:** la BD tiene ruido — entradas de prueba (p. ej.
+"Fighter Prueba", "Pruebo"), animales/monturas ("Nelly la Yegua", "Altino el Caballo Albino")
+y a veces **duplicados** (pasó con un "Dabblewick" repetido). Al contar el party para el
+combate, **descarta los que no son PJs reales**. Si detectas duplicados o registros basura
+relevantes a la sesión, **repórtalos al DM** (no los borres sin permiso).
+
 Si no encuentras algo mencionado por el DM, anótalo como `[no encontrado]` y pregunta después.
 
 ### Paso 2 — Preguntas de afinación
@@ -158,6 +172,9 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **Escenas posibles**: 3-5 escenas con objetivo + obstáculo cada una
 - **Secrets & Clues**: múltiples caminos a la misma información
 - **Mundo se sigue expandiendo**: 2 NPCs nuevos por sesión, bien integrados
+- **Nada inventado**: todo secreto/gancho/pista nace de un hecho en BD o recap, o se marca como propuesta nueva a aprobar. No disfrazar flavor de NPC (p. ej. una línea de `notas_roleplay`) como secreto de trama.
+- **Consistencia causal**: si un NPC posee un objeto o sabe algo, debe haber una razón in-world explícita. Cazar plotholes antes de presentar (¿de dónde sacó X esa prueba/llave/carta?).
+- **Decisión con consecuencias**: cuando ofrezcas una elección importante, telegrafía la ruta alternativa para que los jugadores la vean, dale a cada rama su propio beat/combate, y cierra con una escena de Desenlace que enumere los resultados.
 
 **Reglas duras por sección** (se auditan en el Paso 6):
 
@@ -176,6 +193,19 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 
 - Cada locación lleva campo "Relación con la sesión": qué escena ocurre ahí, qué rol cumple
   (combate, social, revelación, exploración). No vale dejarlo vacío.
+
+#### Secretos & ganchos — **anclados a la fuente, nada inventado**
+
+- Cada secreto sale de (a) un hecho en BD (quest, NPC, item, recap) o (b) se marca como
+  **propuesta nueva** para que el DM la apruebe. Nunca presentar como "secreto de sesión" algo
+  que en realidad es flavor de un NPC (p. ej. una muletilla de `notas_roleplay`).
+- **Múltiples caminos (rule of three):** entidades o info *gated* por investigación (un NPC
+  oculto, una prueba) deben tener ≥2-3 vías de descubrimiento, repartidas entre lo social y lo
+  de acción, para que el grupo no se quede sin verlo.
+- **Plothole check:** antes de presentar, pregunta por cada pieza clave "¿por qué este NPC
+  tiene/sabe esto?". Si no hay razón in-world, invéntala con base en el mundo existente o
+  recórtala. (Ej. real: "¿por qué Rammel tiene el libro de Torben?" → porque archiva el
+  comercio de la ciudad y descifró los manifiestos.)
 
 #### Tesoros — **SOLO items reales del catálogo `items_catalog`**. Regla de prioridad estricta:
 
@@ -222,8 +252,21 @@ La skill hermana retorna:
 Cada monstruo lleva: `monstruo_id` base, flag `match_directo | reskin`, cantidad, contexto
 narrativo, y si es reskin las 3 capas completas.
 
-**Dificultad:** calibrada con la tabla XP XDMG 2024 (Low / Moderate / High, sin multiplicador
-por cantidad). Ver detalle en `../dnd-worldbuilder/references/combate.md`.
+**Dificultad — calibrar contra el party REAL y mostrar la cuenta:**
+
+1. Lee `personajes` (`campaign_slug='halo'`) y **cuenta los PJs reales**, descartando entradas
+   de prueba/animales (p. ej. "Fighter Prueba", "Pruebo", monturas como "Nelly la Yegua"). Usa
+   nivel y cantidad reales — no asumas 4.
+2. Calcula el presupuesto con la **tabla XP por personaje XDMG 2024** (Low/Moderate/High, sin
+   multiplicador por cantidad) × nº de PJs. Ej.: 5 PJs nivel 4 → Low 1 875 / Moderate 2 500 /
+   **High ≈ 3 750**.
+3. **Default del DM: al menos un combate difícil (tier High).** Apunta el total cerca de High.
+4. **Composición = pieza central temática + apoyos**, no un enjambre de CR trivial. Una criatura
+   ancla con buena economía de acción (boss/coloso, con reskin si hace falta para el tono) +
+   minions. Evita rellenar solo con CR 1/8–1/4.
+5. **Muestra la cuenta** al presentar el combate: lista monstruos, XP de cada uno, total y tier
+   resultante vs. el umbral del party. Detalle del framework en
+   `../dnd-worldbuilder/references/combate.md`.
 
 **Otras validaciones antes de presentar el borrador:**
 
@@ -231,6 +274,15 @@ por cantidad). Ver detalle en `../dnd-worldbuilder/references/combate.md`.
   con `personaje_id` apuntándolo. "Quiero que X obtenga Y" es quest futura, no hecho actual.
 - **Secretos:** crosscheck contra resúmenes de sesiones consultadas en Paso 1b. Si los jugadores
   ya lo saben, no es secreto — busca algo nuevo.
+
+#### Desenlace — **obligatorio si la sesión tiene una decisión bifurcante**
+
+Si el pivote ofrece una elección de peso (p. ej. aliarse vs. traicionar), incluye una **escena
+final de Desenlace** en `bloque_escenas` que enumere cada rama y sus consecuencias concretas
+(qué gana/pierde el grupo, qué relación queda con los NPCs, qué semilla de futuro). Sin combate
+ni ejes; es el aterrizaje de la decisión. Vigila que ambas ramas sigan siendo **tentadoras**:
+si un giro vuelve una opción "claramente mala" (ej. la trata volvió a Torben villano puro),
+avisa al DM del corrimiento de tono y reajusta qué compra cada rama para que la elección pese.
 
 **Presentar el borrador al DM y preguntar:** "¿Quieres algún cambio?"
 - Si pide cambios → ajustar y volver a presentar.
@@ -362,6 +414,9 @@ Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
 - Cada escena con `tipo='combate'` tiene el campo `ejes` con `protein` + ≥2 ejes adicionales
   (Optimizers/Hazards/Chaos). Regla de Tres cumplida. Si Protein = `Kill Them`, debe tener
   `retreat_number` definido.
+- **Dificultad de combate:** la suma de XP de los monstruos (por `escena_idx`) está calibrada
+  contra el party real (nº de PJs × tabla XDMG 2024), y por defecto ≥1 combate alcanza tier
+  **High**. Combates de puro CR trivial sin pieza central → issue.
 - **Secretos y pivote anidados:** los secretos viven en `bloque_escenas[i].secretos[]` y el pivote
   en `bloque_escenas[i].pivote` (+`es_pivote`). `bloque_secretos`/`bloque_pivote` deben estar
   vacíos/null (deprecados). Issue si la info está duplicada en ambos lados o solo en los legacy.
@@ -376,6 +431,13 @@ Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
 - Momento pivote (si aplica) conecta con ≥1 escena y ≥1 secreto.
 - Tesoros y monstruos encajan en escenas concretas (no cuelgan sueltos).
 - Tono uniforme entre secciones.
+- **Consistencia causal (plotholes):** cada prueba/objeto/conocimiento que tiene un NPC tiene
+  una razón in-world rastreable en el plan. Marca como issue cualquier "¿de dónde sacó esto?"
+  sin respuesta (ej. un NPC que tiene un documento incriminatorio sin explicar cómo llegó a él).
+- **Nada inventado:** ningún secreto es flavor de NPC reciclado como trama; cada secreto/gancho
+  ancla a BD/recap o estaba marcado como propuesta aprobada por el DM.
+- **Desenlace:** si hay decisión bifurcante, existe una escena de cierre que enumera las ramas y
+  ambas siguen siendo opciones tentadoras (ninguna es obviamente la "correcta").
 
 ### 3. Calidad de contenido (cualitativo ligero)
 
