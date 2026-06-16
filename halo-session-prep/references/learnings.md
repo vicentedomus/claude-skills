@@ -8,8 +8,13 @@ preparación (Paso 0) para aplicar las preferencias aprendidas.
 
 ## Preferencias del DM
 
-- **Co-diseño sección por sección (preferido):** recorrer las etapas de la sesión una por una y ofrecer **3 opciones** por sección (que difieran en enfoque/tono/consecuencia, no cosméticas). El DM elige/mezcla/ajusta antes de avanzar. No entregar el borrador completo de golpe. Mantener un resumen vivo de lo ya fijado.
-- **Siempre ≥1 combate preparado** por sesión, aunque el objetivo sea social/exploración.
+- **Co-diseño sección por sección (preferido):** recorrer las etapas de la sesión una por una y ofrecer **3 opciones** por sección (que difieran en enfoque/tono/consecuencia, no cosméticas). El DM elige/mezcla/ajusta antes de avanzar. No entregar el borrador completo de golpe. Mantener un resumen vivo de lo ya fijado. Si el DM rechaza las 3 y da su propia visión, incorpórala y sigue ofreciendo opciones en la siguiente decisión abierta.
+- **Siempre ≥1 combate preparado**, y el DM lo quiere **difícil** (tier High contra el party real). Pieza central temática + apoyos, no enjambre trivial. Mostrar la cuenta de XP.
+- **Nada inventado:** los secretos/ganchos se anclan a BD o recap; no reciclar flavor de NPC (`notas_roleplay`) como secreto de trama. Si es nuevo, marcarlo como propuesta a aprobar. (Cazado en 17-jun: el "pulso bajo el piso" era flavor de Rammel, no un secreto.)
+- **Sin plotholes:** todo lo que un NPC posee/sabe necesita razón in-world. (17-jun: "¿por qué Rammel tiene el libro de Torben?" → es el archivero de Sleh y descifró los manifiestos.)
+- **Decisiones morales:** telegrafiar la ruta alternativa, cada rama con su beat/combate, cerrar con escena de Desenlace; cuidar que el "gris" no colapse a "claramente malo" (avisar al DM si pasa).
+- **Verbatim desde la fuente:** contenido D&D oficial se extrae de 5etools/fuente, nunca de memoria; si falta en `items_catalog`, darlo de alta primero.
+- **Higiene de datos:** ignorar PJs de prueba/animales al contar el party; reportar duplicados (no borrar sin permiso).
 - Sucesos narrativos en el barco/viaje (sin combate obligatorio) — el DM elige cuáles usar según el ritmo
 - Tabla de NPCs con "qué quieren" + tono conciso — no monólogos
 - Líneas de diálogo sugeridas: breves, entre comillas, en el cuerpo de la escena (no como sección aparte)
@@ -64,4 +69,4 @@ Las tablas tienen RLS habilitado — las queries se ejecutan como servicio, no c
 ## Historial de sesiones
 
 - **Sesión 11-mar-26** — Rockwood — Combate vs Gerardo + huida al barco. Prep generado: "Sesion mar-26" (sin fecha fija).
-- **Sesión 17-jun-26** (en prep) — Sleh/Gnomalia. Objetivo: devolver la mercancía a Mivvi y conocer a Torben Brassworth. 3h, ≥1 combate. Co-diseñada sección por sección con 3 opciones.
+- **Sesión 17-jun-26** — Sleh/Gnomalia. Objetivo: devolver la mercancía a Mivvi y conocer a Torben Brassworth. 3h. Co-diseñada con 3 opciones. Dilema moral (ayudar a Torben = aliado / robar la cittern = enemigo), encargo gris (intimidar a Rammel), 2 NPCs nuevos gated (Brenna víctima de trata, Pim cómplice), 2 combates difíciles (Coloso de Cintas / Autómata Maestro), tesoro = Mac-Fuirmidh Cittern (alta en items_catalog). Guardada en `session_plans` 7ee42176. Feedback aplicado: quitar secreto inventado, tapar plothole del libro, agregar Desenlace, subir dificultad de combate, no etiquetar "facción del cianuro".
