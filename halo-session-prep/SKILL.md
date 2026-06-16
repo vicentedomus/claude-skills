@@ -55,10 +55,17 @@ El contexto del DM define QUÉ buscar — Supabase completa con los detalles.
 **Queries base:**
 
 ```sql
--- Sesión específica mencionada por el DM
-SELECT id, nombre, fecha, resumen, contenido_html
-FROM notas_dm
-WHERE campaign_slug = 'halo' AND nombre ILIKE '%nombre_sesion%' AND NOT archived;
+-- Recap de sesión(es) previa(s) — vive en la BITÁCORA DEL DM (ya no en notas_dm,
+-- que no existe en el schema public de Halo). El cuerpo abre con "Sesión DD-MMM-YY"
+-- y suele cerrar con "Notas/Ideas para la siguiente sesión" — léelas y aplícalas.
+-- Las menciones @[Nombre](tabla:uuid) dan el id exacto de cada entidad referida.
+SELECT m.id, m.created_at::date AS fecha,
+       regexp_replace(m.content_html, '<[^>]+>', ' ', 'g') AS texto
+FROM public.bitacora_mensajes m
+JOIN public.bitacoras b ON b.id = m.bitacora_id
+WHERE b.campaign_slug = 'halo' AND b.owner_role = 'dm' AND m.deleted_at IS NULL
+ORDER BY m.created_at DESC
+LIMIT 10;
 
 -- Quest mencionada
 SELECT q.id, q.nombre, q.estado, q.resumen, q.contenido_html
@@ -124,9 +131,27 @@ que ya encontraste. Agrúpalas en un solo mensaje:
 
 Omite las preguntas cuya respuesta ya esté clara en la BD.
 
-### Paso 3 — Generar propuesta (iterativo con el DM)
+### Paso 3 — Construir la propuesta (co-diseño sección por sección)
 
-Genera un borrador siguiendo la plantilla de `references/session-structure.md`. Los principios guía:
+**Modo de trabajo preferido del DM (co-diseño):** no entregar el borrador completo de golpe.
+Recorrer las etapas de la sesión **una por una** y, en cada sección, **ofrecer 3 opciones**
+distintas (no variaciones cosméticas: deben diferir en enfoque, tono o consecuencia). El DM
+elige una, pide mezclar, o pide ajustar; recién entonces se pasa a la siguiente sección. El
+prep se va construyendo en conjunto, no se presenta cerrado.
+
+Orden sugerido de las etapas: **Strong Start → Escenas → Combate → Secretos & Pistas → NPCs
+(4 existentes + 2 nuevos) → Locaciones → Tesoros → Momento pivote → Notas DM.**
+
+Para cada sección:
+1. Presenta **3 opciones** etiquetadas (A/B/C) con 1-2 líneas cada una y, si aplica, su
+   gancho/consecuencia. Da una recomendación breve.
+2. Espera la decisión del DM (elige / mezcla / ajusta).
+3. Fija lo acordado y avanza a la siguiente etapa.
+
+Mantén un **resumen vivo** de lo ya fijado para que el DM no pierda el hilo entre secciones.
+Solo cuando todas las secciones estén acordadas se arma el borrador final y se pasa al Paso 4.
+
+Principios guía (aplican a todas las opciones que ofrezcas):
 
 - **Prep = ingredientes, no script**: el DM improvisa sobre esto
 - **Strong Start**: la apertura lanza la acción de inmediato, sin preámbulo
@@ -152,16 +177,22 @@ Genera un borrador siguiendo la plantilla de `references/session-structure.md`. 
 - Cada locación lleva campo "Relación con la sesión": qué escena ocurre ahí, qué rol cumple
   (combate, social, revelación, exploración). No vale dejarlo vacío.
 
-#### Tesoros — **SOLO items reales de la tabla `items`**. Regla de prioridad estricta:
+#### Tesoros — **SOLO items reales del catálogo `items_catalog`**. Regla de prioridad estricta:
 
-1. **Primero** busca un item existente que satisfaga la necesidad narrativa tal cual.
+> **Fuente correcta:** `items_catalog` es el catálogo global 5e (≈668 items, fuente `DMG'24`),
+> análogo a `monstruos`. La tabla `items` son las **instancias** de campaña (lo que alguien posee,
+> con `personaje_id`/`npc_portador_id`). Para elegir un tesoro se busca en `items_catalog`.
+
+1. **Primero** busca un item en `items_catalog` que satisfaga la necesidad narrativa tal cual.
    Si encaja (efecto y tono), úsalo sin tocar nada.
-2. **Solo si ningún item existente encaja**, aplica **reskin narrativo** invocando `dnd-worldbuilder`
+2. **Solo si ningún item del catálogo encaja**, aplica **reskin narrativo** invocando `dnd-worldbuilder`
    con `references/item.md`. El reskin cambia flavor (nombre, descripción) pero **mantiene el item
    base como referencia** (mismas stats y efectos).
-3. **Nunca inventar** items que no existan en la BD.
+3. **Nunca inventar** items. Si la trama exige un item oficial que no está en el catálogo (p. ej.
+   un item 2014 fuera del DMG'24), **darlo de alta primero en `items_catalog`** con su texto
+   oficial verbatim (en inglés, por convención del proyecto) — extraído de la fuente, no de memoria.
 
-Cada tesoro lleva: `item_id` base, flag `match_directo | reskin`, y si es reskin el flavor aplicado.
+Cada tesoro lleva: `item_id` de `items_catalog`, flag `match_directo | reskin`, y si es reskin el flavor aplicado.
 
 #### Combate / Encuentro — invocar `dnd-worldbuilder` con `references/combate.md`
 
@@ -256,13 +287,13 @@ INSERT INTO session_plans (
   'halo',
   '{
     "bloque_strong_start": "texto del strong start",
-    "bloque_escenas": [{"titulo":"...","descripcion":"...","tipo":"combate|social|exploración|misterio|revelación","tension":1,"objetivo":"...","obstaculo":"...","espacio":"... (solo combate)","ejes":{"protein":{"tipo":"...","descripcion":"...","condicion_cierre":"...","retreat_number":null},"optimizers":[{"tipo":"...","descripcion":"...","como_descubrirlo":"..."}],"hazards":[{"tipo":"...","descripcion":"...","stages":["..."]}],"chaos":[{"tipo":"...","descripcion":"...","trigger":"..."}]}}],
-    "bloque_secretos": [{"secreto":"...","pistas":["pista A","pista B","pista C"],"quien_sabe":"..."}],
+    "bloque_escenas": [{"titulo":"...","descripcion":"...","tipo":"combate|social|exploración|misterio|revelación","tension":1,"objetivo":"...","obstaculo":"...","espacio":"... (solo combate)","secretos":[{"secreto":"...","pistas":["pista A","pista B","pista C"],"quien_sabe":"..."}],"es_pivote":false,"pivote":"texto del pivote SI esta escena es el momento bisagra; si no, null","ejes":{"protein":{"tipo":"...","descripcion":"...","condicion_cierre":"...","retreat_number":null},"optimizers":[{"tipo":"...","descripcion":"...","como_descubrirlo":"..."}],"hazards":[{"tipo":"...","descripcion":"...","stages":["..."]}],"chaos":[{"tipo":"...","descripcion":"...","trigger":"..."}]}}],
     "bloque_npcs": [{"npc_id":"uuid_o_null","nombre":"...","raza":"...","rol":"...","flag":"existente|nuevo","relacion_sesion":"...","motivacion":"...","tono":"...","frase":"...","primera_impresion":"...","notas_roleplay":"..."}],
     "bloque_locaciones": [{"nombre":"...","tipo":"...","region":"...","relacion_sesion":"...","descripcion_sensorial":"..."}],
-    "bloque_tesoros": [{"item_id":"uuid","nombre":"...","rareza":"...","flag":"match_directo|reskin","reskin_flavor":"... o null","portador_sugerido":"..."}],
-    "bloque_monstruos": [{"monstruo_id":"uuid","nombre":"...","cantidad":1,"flag":"match_directo|reskin","contexto_narrativo":"...","reskin_primera_senal":"... o null","reskin_encuentro":"... o null","reskin_comportamiento":"... o null"}],
-    "bloque_pivote": "texto del momento pivote",
+    "bloque_tesoros": [{"item_id":"uuid_de_items_catalog","nombre":"...","rareza":"...","flag":"match_directo|reskin","reskin_flavor":"... o null","portador_sugerido":"..."}],
+    "bloque_monstruos": [{"monstruo_id":"uuid","escena_idx":0,"nombre":"...","cantidad":1,"flag":"match_directo|reskin","contexto_narrativo":"...","reskin_primera_senal":"... o null","reskin_encuentro":"... o null","reskin_comportamiento":"... o null"}],
+    "bloque_secretos": [],
+    "bloque_pivote": null,
     "bloque_notas_dm": ["nota privada DM 1", "nota privada DM 2"]
   }'::jsonb,
   '{}'::jsonb,
@@ -276,6 +307,22 @@ Captura el `session_plan_id` — lo necesita el Paso 6.
 > **Nota de migración:** los bloques viven **dentro** de `bloques` (jsonb), no en columnas
 > sueltas. Para verificar/auditar un plan, consulta `bloques->'bloque_npcs'`,
 > `bloques->>'bloque_strong_start'`, etc. — no las columnas `bloque_*` legacy.
+
+**Contrato de render del planner (`preparador.js`) — cómo se anidan los bloques:**
+
+- **Secretos y pivote van DENTRO de cada escena** (`bloque_escenas[i].secretos[]` y
+  `bloque_escenas[i].es_pivote` / `bloque_escenas[i].pivote`). El planner pinta las escenas
+  **en orden** (apoyo narrativo de "qué sigue") y muestra los secretos y el pivote dentro de
+  su escena. `bloque_secretos` y `bloque_pivote` quedan **deprecados** (`[]` / `null`): solo
+  se usan como fallback para planes viejos. **No** dupliques la info en ambos lados.
+- **Cada monstruo lleva `escena_idx`** (índice 0-based dentro de `bloque_escenas`) que lo liga
+  a su escena de combate. La pestaña Combate agrupa por encuentro: muestra los **Ejes/Hazards**
+  de la escena y el **statblock base** de cada monstruo, leído del catálogo `monstruos` vía
+  `monstruo_id` (o por nombre si falta el id). Sin `escena_idx`, el monstruo no se agrupa.
+- **Tesoros:** `item_id` referencia el catálogo global **`items_catalog`** (no `items`).
+  `items` es el inventario instanciado de la campaña. Si el item no existe en `items_catalog`
+  (p. ej. items 2014 fuera del DMG'24), **darlo de alta primero** en `items_catalog` con su
+  texto oficial verbatim; al entregarse al party se instancia en `items` con `personaje_id`.
 
 ---
 
@@ -307,14 +354,19 @@ Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
   NPC flag=`nuevo` no tiene `npc_id`, es issue crítico (la transición no se hizo).
 - Cada NPC tiene `relacion_sesion` no vacía.
 - Cada locación en `bloque_locaciones` tiene `relacion_sesion` no vacía.
-- Cada tesoro en `bloque_tesoros` tiene `item_id` que existe en `items` con `campaign_slug='halo'`.
-- Cada monstruo en `bloque_monstruos` tiene `monstruo_id` que existe en `monstruos`.
+- Cada tesoro en `bloque_tesoros` tiene `item_id` que existe en `items_catalog` (o, si se dio de
+  alta un item oficial nuevo, que ya esté insertado en `items_catalog`).
+- Cada monstruo en `bloque_monstruos` tiene `monstruo_id` que existe en `monstruos` **y** un
+  `escena_idx` válido (índice 0-based dentro de `bloque_escenas`, apuntando a una escena de combate).
 - Cada tesoro y monstruo tiene flag `match_directo | reskin`. Si es reskin, flavor/capas completas.
 - Cada escena con `tipo='combate'` tiene el campo `ejes` con `protein` + ≥2 ejes adicionales
   (Optimizers/Hazards/Chaos). Regla de Tres cumplida. Si Protein = `Kill Them`, debe tener
   `retreat_number` definido.
-- Secretos no duplican info ya conocida por el party (crosscheck contra `resumen` de `notas_dm`
-  consultadas en Paso 1b).
+- **Secretos y pivote anidados:** los secretos viven en `bloque_escenas[i].secretos[]` y el pivote
+  en `bloque_escenas[i].pivote` (+`es_pivote`). `bloque_secretos`/`bloque_pivote` deben estar
+  vacíos/null (deprecados). Issue si la info está duplicada en ambos lados o solo en los legacy.
+- Secretos no duplican info ya conocida por el party (crosscheck contra los recaps de la
+  bitácora del DM consultados en Paso 1b).
 - `nombre` en formato `"Sesión DD-MMM-YY"`, `fecha_sesion` ISO, `estado='borrador'`, `campaign_slug='halo'`.
 
 ### 2. Cohesión narrativa (cualitativo)
@@ -414,22 +466,28 @@ que se active, es un banco de patrones al que esta skill consulta.
 
 ## Estructura de datos en Supabase
 
-**Proyecto:** `dwmzchtqjcblupmmklcl` · **Campaign slug:** `halo`
+**Proyecto:** `dwmzchtqjcblupmmklcl` · **Schema:** `public` · **Campaign slug:** `halo`
+
+> Halo vive en el schema `public` (`campaign_slug='halo'`). Los recaps de sesión NO están en
+> `notas_dm` (esa tabla solo existe en otras campañas, p. ej. el schema `tierras_perdidas`):
+> para Halo viven en la **bitácora del DM** (`public.bitacoras` + `public.bitacora_mensajes`).
 
 ### Tablas operativas
 
 | Tabla | Columnas clave | Notas |
 |-------|----------------|-------|
-| `notas_dm` | nombre, fecha, resumen, contenido_html, jugadores_presentes (text[]) | Sesiones del DM |
+| `bitacoras` | campaign_slug, owner_role ('dm'/'player'), personaje_id | La del DM (`owner_role='dm'`) guarda los recaps de sesión |
+| `bitacora_mensajes` | bitacora_id, author_role, content_html, created_at, deleted_at | Cada recap del DM es un mensaje (`content_html`); filtrar `deleted_at IS NULL` |
 | `quests` | nombre, estado (Activa/Completada/En pausa), resumen, contenido_html | Misiones |
 | `npcs` | nombre, raza, rol, estado, tipo_npc, ciudad_id, establecimiento_id, primera_impresion, notas_roleplay, edad, campaign_slug | PJs no jugadores |
 | `ciudades` | nombre, descripcion, lider, poblacion, estado, conocida_jugadores | Ciudades del mapa |
 | `establecimientos` | nombre, tipo, ciudad_id, dueno_id, descripcion_exterior, descripcion_interior | Tiendas, tabernas |
-| `items` | nombre, tipo, rareza, personaje_id, npc_portador_id, descripcion, requiere_sintonizacion, campaign_slug | **Catálogo de tesoros** (siempre origen real) |
+| `items_catalog` | nombre, fuente, rareza, tipo, requiere_sintonizacion, descripcion, valor | **Catálogo global 5e** (≈668, `DMG'24`), sin `campaign_slug` — compartido. **Origen de los tesoros** (`item_id` → aquí) |
+| `items` | nombre, tipo, rareza, personaje_id, npc_portador_id, descripcion, requiere_sintonizacion, campaign_slug | **Instancias** de campaña (lo que alguien posee). NO es el catálogo |
 | `personajes` | nombre, clase, raza, jugador, nivel, ac, hp_maximo | PJs del party |
 | `lugares` | nombre, tipo, region, ciudad_id | Puntos de interés |
 | `monstruos` | nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones, … | **Catálogo 5e oficial** — compartido entre campañas (sin `campaign_slug`) |
-| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloques** (jsonb), **bloques_committed** (jsonb), input_data | **Destino final del prep**. Todos los bloques anidados dentro de `bloques` (`bloque_strong_start`, `bloque_escenas`, `bloque_secretos`, `bloque_npcs`, `bloque_locaciones`, `bloque_tesoros`, `bloque_monstruos`, `bloque_pivote`, `bloque_notas_dm`). Las columnas `bloque_*` sueltas son legacy y la UI las ignora. |
+| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloques** (jsonb), **bloques_committed** (jsonb), input_data | **Destino final del prep**. Bloques anidados dentro de `bloques` (`bloque_strong_start`, `bloque_escenas` —con `secretos[]` y `pivote` anidados por escena—, `bloque_npcs`, `bloque_locaciones`, `bloque_tesoros`, `bloque_monstruos` —con `escena_idx`—, `bloque_notas_dm`). `bloque_secretos`/`bloque_pivote` deprecados. Las columnas `bloque_*` sueltas son legacy y la UI las ignora. |
 
 ### Junction tables (relaciones M2M)
 
@@ -452,7 +510,8 @@ que se active, es un banco de patrones al que esta skill consulta.
 
 ### Jugadores del party
 
-Tino, Caco, Leo, Enoch, Hiram. Campo `jugadores_presentes` en `notas_dm` es text array.
+PJs en `public.personajes` (`campaign_slug='halo'`): Pithor, Maverick, Lupin, Doran (+ Zif
+como compañero). La asistencia por sesión se infiere del recap del DM en la bitácora.
 
 ---
 

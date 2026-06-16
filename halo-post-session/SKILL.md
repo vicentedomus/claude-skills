@@ -37,22 +37,41 @@ y reglas aprendidas de ejecuciones anteriores.
 Pregunta al DM cuál fue la sesión que se jugó. No asumir — puede haber varias notas
 recientes y el DM sabe exactamente cuál se jugó.
 
-Una vez que el DM indique la sesión, buscarla en `notas_dm`:
+Una vez que el DM indique la sesión, busca el recap en la **bitácora del DM**. Las notas
+post-sesión de Halo ya **no viven en `notas_dm`** (esa tabla solo existe para otras
+campañas en su propio schema, p. ej. `tierras_perdidas`). Para Halo, el DM escribe el
+recap como mensajes en su bitácora: `public.bitacoras` con `owner_role='dm'` →
+`public.bitacora_mensajes`.
 
 ```sql
-SELECT id, nombre, fecha, resumen, contenido_html
-FROM notas_dm
-WHERE nombre ILIKE '%término_búsqueda%' AND NOT archived
-ORDER BY fecha DESC
-LIMIT 3;
+SELECT m.id,
+       m.created_at::date AS fecha,
+       regexp_replace(m.content_html, '<[^>]+>', ' ', 'g') AS texto
+FROM public.bitacora_mensajes m
+JOIN public.bitacoras b ON b.id = m.bitacora_id
+WHERE b.campaign_slug = 'halo'
+  AND b.owner_role = 'dm'
+  AND m.deleted_at IS NULL
+ORDER BY m.created_at DESC
+LIMIT 10;
 ```
 
-Lee el campo `resumen` — ahí están las notas del DM sobre lo que ocurrió. Son notas
-informales que mezclan narrativa con recordatorios personales del DM. Hay que interpretar
-ambas cosas.
+Cada mensaje del DM es el recap de una sesión. El cuerpo (`content_html`) suele abrir con
+el título `Sesión DD-MMM-YY`, sigue con la narrativa de lo que ocurrió y cierra con notas
+sueltas tipo "Ideas/Notas para la siguiente sesión". Son notas informales que mezclan
+narrativa con recordatorios personales del DM — hay que interpretar ambas cosas.
 
-Si `contenido_html` tiene contenido, también léelo — es el prep original de la sesión
-y ayuda a contrastar lo planeado vs lo que realmente pasó.
+Notas importantes al leer el recap:
+- **Una sesión puede ocupar varios mensajes** (p. ej. el arco 08-abr-26 quedó en 3
+  mensajes). Agrúpalos por arco narrativo / título, no asumas un mensaje = una sesión.
+- **`created_at` puede no coincidir** con la fecha del título `Sesión DD-MMM-YY` (a veces
+  el DM captura el recap días después). Confía en el título y en lo que indique el DM, no
+  en `created_at`.
+- El recap usa **menciones embebidas** `@[Nombre](tabla:uuid)` (npcs, lugares,
+  establecimientos, quests, personajes). Esos `uuid` son oro para el crosscheck: dan el id
+  exacto de cada entidad tocada sin tener que buscarla por nombre.
+- El prep original de la sesión vive en `public.session_plans` (`campaign_slug='halo'`).
+  Léelo para contrastar lo planeado vs. lo que realmente pasó.
 
 ---
 
@@ -189,12 +208,18 @@ listarlos al final como recordatorio:
 
 ## Estructura de datos en Supabase
 
-**Proyecto:** `dwmzchtqjcblupmmklcl`
+**Proyecto:** `dwmzchtqjcblupmmklcl` · **Schema:** `public` · **Campaign slug:** `halo`
+
+> Los datos de Halo viven en el schema `public` filtrando por `campaign_slug='halo'`. Otras
+> campañas viven en schemas separados (p. ej. `tierras_perdidas`) y esas sí tienen su propia
+> tabla `notas_dm`. Para Halo, el recap de cada sesión vive en la **bitácora del DM**, no en
+> `notas_dm` (que no existe en `public`).
 
 ### Tablas principales
 | Tabla | Columnas clave | Notas |
 |-------|---------------|-------|
-| `notas_dm` | nombre, fecha, resumen, contenido_html, jugadores_presentes (text[]) | Sesiones del DM |
+| `bitacoras` | campaign_slug, owner_role ('dm'/'player'), personaje_id | La bitácora del DM (`owner_role='dm'`) guarda los recaps de sesión |
+| `bitacora_mensajes` | bitacora_id, author_role, content_html, created_at, deleted_at | Cada recap del DM es un mensaje (`content_html`); filtrar `deleted_at IS NULL` |
 | `quests` | nombre, estado (Activa/Completada/En pausa), resumen, contenido_html | Misiones |
 | `npcs` | nombre, raza, rol, estado, tipo_npc, ciudad_id, establecimiento_id, primera_impresion, notas_roleplay, edad, conocido_jugadores | Personajes no jugadores |
 | `ciudades` | nombre, descripcion, lider, poblacion, estado, conocida_jugadores | Ciudades del mapa |
@@ -221,7 +246,9 @@ listarlos al final como recordatorio:
 - Soft delete: `archived = true` (no borrar registros, marcarlos como archivados)
 
 ### Jugadores del party
-Tino, Caco, Leo, Enoch, Hiram (campo `jugadores_presentes` en `notas_dm` es text array)
+PJs en `public.personajes` (`campaign_slug='halo'`): Pithor, Maverick, Lupin, Doran (+ Zif
+como compañero). La asistencia por sesión no se registra en una columna dedicada; si hace
+falta, se infiere del recap del DM en la bitácora.
 
 ---
 
