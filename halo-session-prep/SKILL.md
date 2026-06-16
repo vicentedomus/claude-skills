@@ -55,10 +55,17 @@ El contexto del DM define QUÉ buscar — Supabase completa con los detalles.
 **Queries base:**
 
 ```sql
--- Sesión específica mencionada por el DM
-SELECT id, nombre, fecha, resumen, contenido_html
-FROM notas_dm
-WHERE campaign_slug = 'halo' AND nombre ILIKE '%nombre_sesion%' AND NOT archived;
+-- Recap de sesión(es) previa(s) — vive en la BITÁCORA DEL DM (ya no en notas_dm,
+-- que no existe en el schema public de Halo). El cuerpo abre con "Sesión DD-MMM-YY"
+-- y suele cerrar con "Notas/Ideas para la siguiente sesión" — léelas y aplícalas.
+-- Las menciones @[Nombre](tabla:uuid) dan el id exacto de cada entidad referida.
+SELECT m.id, m.created_at::date AS fecha,
+       regexp_replace(m.content_html, '<[^>]+>', ' ', 'g') AS texto
+FROM public.bitacora_mensajes m
+JOIN public.bitacoras b ON b.id = m.bitacora_id
+WHERE b.campaign_slug = 'halo' AND b.owner_role = 'dm' AND m.deleted_at IS NULL
+ORDER BY m.created_at DESC
+LIMIT 10;
 
 -- Quest mencionada
 SELECT q.id, q.nombre, q.estado, q.resumen, q.contenido_html
@@ -124,9 +131,27 @@ que ya encontraste. Agrúpalas en un solo mensaje:
 
 Omite las preguntas cuya respuesta ya esté clara en la BD.
 
-### Paso 3 — Generar propuesta (iterativo con el DM)
+### Paso 3 — Construir la propuesta (co-diseño sección por sección)
 
-Genera un borrador siguiendo la plantilla de `references/session-structure.md`. Los principios guía:
+**Modo de trabajo preferido del DM (co-diseño):** no entregar el borrador completo de golpe.
+Recorrer las etapas de la sesión **una por una** y, en cada sección, **ofrecer 3 opciones**
+distintas (no variaciones cosméticas: deben diferir en enfoque, tono o consecuencia). El DM
+elige una, pide mezclar, o pide ajustar; recién entonces se pasa a la siguiente sección. El
+prep se va construyendo en conjunto, no se presenta cerrado.
+
+Orden sugerido de las etapas: **Strong Start → Escenas → Combate → Secretos & Pistas → NPCs
+(4 existentes + 2 nuevos) → Locaciones → Tesoros → Momento pivote → Notas DM.**
+
+Para cada sección:
+1. Presenta **3 opciones** etiquetadas (A/B/C) con 1-2 líneas cada una y, si aplica, su
+   gancho/consecuencia. Da una recomendación breve.
+2. Espera la decisión del DM (elige / mezcla / ajusta).
+3. Fija lo acordado y avanza a la siguiente etapa.
+
+Mantén un **resumen vivo** de lo ya fijado para que el DM no pierda el hilo entre secciones.
+Solo cuando todas las secciones estén acordadas se arma el borrador final y se pasa al Paso 4.
+
+Principios guía (aplican a todas las opciones que ofrezcas):
 
 - **Prep = ingredientes, no script**: el DM improvisa sobre esto
 - **Strong Start**: la apertura lanza la acción de inmediato, sin preámbulo
@@ -313,8 +338,8 @@ Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
 - Cada escena con `tipo='combate'` tiene el campo `ejes` con `protein` + ≥2 ejes adicionales
   (Optimizers/Hazards/Chaos). Regla de Tres cumplida. Si Protein = `Kill Them`, debe tener
   `retreat_number` definido.
-- Secretos no duplican info ya conocida por el party (crosscheck contra `resumen` de `notas_dm`
-  consultadas en Paso 1b).
+- Secretos no duplican info ya conocida por el party (crosscheck contra los recaps de la
+  bitácora del DM consultados en Paso 1b).
 - `nombre` en formato `"Sesión DD-MMM-YY"`, `fecha_sesion` ISO, `estado='borrador'`, `campaign_slug='halo'`.
 
 ### 2. Cohesión narrativa (cualitativo)
@@ -414,13 +439,18 @@ que se active, es un banco de patrones al que esta skill consulta.
 
 ## Estructura de datos en Supabase
 
-**Proyecto:** `dwmzchtqjcblupmmklcl` · **Campaign slug:** `halo`
+**Proyecto:** `dwmzchtqjcblupmmklcl` · **Schema:** `public` · **Campaign slug:** `halo`
+
+> Halo vive en el schema `public` (`campaign_slug='halo'`). Los recaps de sesión NO están en
+> `notas_dm` (esa tabla solo existe en otras campañas, p. ej. el schema `tierras_perdidas`):
+> para Halo viven en la **bitácora del DM** (`public.bitacoras` + `public.bitacora_mensajes`).
 
 ### Tablas operativas
 
 | Tabla | Columnas clave | Notas |
 |-------|----------------|-------|
-| `notas_dm` | nombre, fecha, resumen, contenido_html, jugadores_presentes (text[]) | Sesiones del DM |
+| `bitacoras` | campaign_slug, owner_role ('dm'/'player'), personaje_id | La del DM (`owner_role='dm'`) guarda los recaps de sesión |
+| `bitacora_mensajes` | bitacora_id, author_role, content_html, created_at, deleted_at | Cada recap del DM es un mensaje (`content_html`); filtrar `deleted_at IS NULL` |
 | `quests` | nombre, estado (Activa/Completada/En pausa), resumen, contenido_html | Misiones |
 | `npcs` | nombre, raza, rol, estado, tipo_npc, ciudad_id, establecimiento_id, primera_impresion, notas_roleplay, edad, campaign_slug | PJs no jugadores |
 | `ciudades` | nombre, descripcion, lider, poblacion, estado, conocida_jugadores | Ciudades del mapa |
@@ -452,7 +482,8 @@ que se active, es un banco de patrones al que esta skill consulta.
 
 ### Jugadores del party
 
-Tino, Caco, Leo, Enoch, Hiram. Campo `jugadores_presentes` en `notas_dm` es text array.
+PJs en `public.personajes` (`campaign_slug='halo'`): Pithor, Maverick, Lupin, Doran (+ Zif
+como compañero). La asistencia por sesión se infiere del recap del DM en la bitácora.
 
 ---
 
