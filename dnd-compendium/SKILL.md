@@ -177,6 +177,11 @@ Usa la consulta de la skill `graphify` (`/graphify query "<tema>"`) sobre
 connections" + hyperedges arquetípicas). Elige UN arquetipo/patrón como semilla y entrégalo a
 `dnd-worldbuilder`/`halo-session-prep` para Capa 3.
 
+> **Este es el lado de consulta que las skills de generación invocan PRIMERO.** `dnd-worldbuilder`
+> (su Paso 0.5) y `halo-session-prep` consultan este compendio como primera fuente de inspiración
+> antes de inventar cualquier elemento nuevo de campaña; toman un arquetipo/`theme`/`motif` y le
+> liman los nombres propios. El compendio es la musa; Supabase es la fuente de verdad del mundo.
+
 ---
 
 ## Reglas

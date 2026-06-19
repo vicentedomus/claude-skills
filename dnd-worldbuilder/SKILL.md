@@ -46,6 +46,26 @@ profesional. Los datos viven en Supabase (PostgreSQL). Todas las consultas usan 
 
 ---
 
+## Paso 0.5: Consultar el compendio (la musa) — PRIMERO
+
+**Antes de inventar nada, busca inspiración en el compendio de flavor.** Si hay un grafo de la
+skill `dnd-compendium` disponible (en este proyecto vive en `questkeep/compendium/graphify-out/`),
+es la **primera fuente de inspiración** — inventar desde cero es el último recurso.
+
+1. Identifica el tema/arquetipo de lo que vas a crear (p. ej. "villano trágico atado a un lugar",
+   "facción de intriga", "bosque con algo antiguo y hambriento").
+2. Consúltalo: lee `GRAPH_REPORT.md` (comunidades, **hyperedges/arquetipos**, "surprising
+   connections") o `graph.json` — o usa el modo consulta de `dnd-compendium` / `/graphify query`.
+3. Toma **un** arquetipo + sus `theme`/`motif` como **semilla de flavor**, y **lima los nombres
+   propios** (nada de "Strahd"/"Barovia" directo): el compendio es museo/inspiración, el mundo de
+   la campaña (Supabase) es la fuente de verdad.
+
+Si no hay compendio disponible, sigue con los principios narrativos. Lo que tomes del compendio es
+*grounding* de sabor; el tono final y la coherencia los dan el lore del mundo (Paso 1) + los
+principios (`principles.md`).
+
+---
+
 ## Paso 1: Consultar Supabase
 
 Proyecto: obtenerlo del contexto de la campaña activa.
@@ -161,6 +181,8 @@ No se duplica trabajo — el session planner da la estructura, esta skill da la 
 ## Reglas generales
 
 - **Nunca escribir a la BD sin confirmación explícita del DM**
+- **El compendio es la primera fuente de inspiración (la musa):** consúltalo en el Paso 0.5 antes
+  de inventar; inventar desde cero es el último recurso. Lima los nombres propios de la fuente.
 - El lore es fundamento, no decoración: si el lore dice X, la descripción lo hace sentir sin decirlo
 - Humor coherente con la cultura, nunca random
 - Cada entidad necesita al menos un detalle ancla memorable
