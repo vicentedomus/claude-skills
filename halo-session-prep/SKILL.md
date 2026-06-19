@@ -172,6 +172,11 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **Escenas posibles**: 3-5 escenas con objetivo + obstáculo cada una
 - **Secrets & Clues**: múltiples caminos a la misma información
 - **Mundo se sigue expandiendo**: 2 NPCs nuevos por sesión, bien integrados
+- **Compendio primero (la musa)**: para cualquier elemento NUEVO (NPC, locación, gancho, tono de
+  escena), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/` —
+  `GRAPH_REPORT.md`, hyperedges/arquetipos, o `/graphify query`) y toma un arquetipo/`theme`/`motif`
+  como semilla, limando los nombres propios. Inventar desde cero es el último recurso. (El compendio
+  es inspiración; Supabase sigue siendo la fuente de verdad del mundo.)
 - **Nada inventado**: todo secreto/gancho/pista nace de un hecho en BD o recap, o se marca como propuesta nueva a aprobar. No disfrazar flavor de NPC (p. ej. una línea de `notas_roleplay`) como secreto de trama.
 - **Consistencia causal**: si un NPC posee un objeto o sabe algo, debe haber una razón in-world explícita. Cazar plotholes antes de presentar (¿de dónde sacó X esa prueba/llave/carta?).
 - **Decisión con consecuencias**: cuando ofrezcas una elección importante, telegrafía la ruta alternativa para que los jugadores la vean, dale a cada rama su propio beat/combate, y cierra con una escena de Desenlace que enumere los resultados.
@@ -183,6 +188,8 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **4 existentes**: selecciona los más relevantes a la quest, ciudad o lugar objetivo de la sesión.
 - **2 nuevos**: genera frescos invocando el flujo de `dnd-worldbuilder` con `references/npc.md`
   (primera_impresion + notas_roleplay, con las capas sensoriales y manierismos de ese formato).
+  Ese flujo ya consulta el **compendio** primero (su Paso 0.5) — ánclalos a un arquetipo/`theme`
+  del grafo (con nombres propios limados) antes de inventar.
 - Cada NPC (existente o nuevo) lleva el campo **"Relación con la sesión"**: qué rol narrativo cumple,
   por qué aparece, cómo se cruza con los objetivos. No vale dejarlo vacío.
 - Marca cada NPC con flag `existente` o `nuevo`. Este flag se preserva como snapshot histórico

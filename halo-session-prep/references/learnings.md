@@ -10,6 +10,7 @@ preparación (Paso 0) para aplicar las preferencias aprendidas.
 
 - **Co-diseño sección por sección (preferido):** recorrer las etapas de la sesión una por una y ofrecer **3 opciones** por sección (que difieran en enfoque/tono/consecuencia, no cosméticas). El DM elige/mezcla/ajusta antes de avanzar. No entregar el borrador completo de golpe. Mantener un resumen vivo de lo ya fijado. Si el DM rechaza las 3 y da su propia visión, incorpórala y sigue ofreciendo opciones en la siguiente decisión abierta.
 - **Siempre ≥1 combate preparado**, y el DM lo quiere **difícil** (tier High contra el party real). Pieza central temática + apoyos, no enjambre trivial. Mostrar la cuenta de XP.
+- **El compendio es la PRIMERA fuente de inspiración (la musa):** para cualquier elemento nuevo (NPC, locación, gancho, tono/atmósfera de escena, darklord/villano), consulta primero el compendio de flavor en `questkeep/compendium/graphify-out/` (`GRAPH_REPORT.md` → hyperedges/arquetipos + "surprising connections", o `/graphify query "<tema>"`). Toma **un** arquetipo/`theme`/`motif` como semilla y **lima los nombres propios** antes de adaptarlo a Halo. Inventar desde cero es el último recurso. El compendio es museo/inspiración; Supabase sigue siendo la fuente de verdad del mundo. (`dnd-worldbuilder` ya lo hace en su Paso 0.5.)
 - **Nada inventado:** los secretos/ganchos se anclan a BD o recap; no reciclar flavor de NPC (`notas_roleplay`) como secreto de trama. Si es nuevo, marcarlo como propuesta a aprobar. (Cazado en 17-jun: el "pulso bajo el piso" era flavor de Rammel, no un secreto.)
 - **Sin plotholes:** todo lo que un NPC posee/sabe necesita razón in-world. (17-jun: "¿por qué Rammel tiene el libro de Torben?" → es el archivero de Sleh y descifró los manifiestos.)
 - **Decisiones morales:** telegrafiar la ruta alternativa, cada rama con su beat/combate, cerrar con escena de Desenlace; cuidar que el "gris" no colapse a "claramente malo" (avisar al DM si pasa).
@@ -37,7 +38,7 @@ preparación (Paso 0) para aplicar las preferencias aprendidas.
 
 ### Reglas estructurales del prep
 
-- **NPCs por sesión:** piso de **6 NPCs** = **4 existentes + 2 nuevos**. El mundo crece cada sesión.
+- **NPCs por sesión:** piso de **6 NPCs** = **4 existentes + 2 nuevos**. El mundo crece cada sesión. Los **2 nuevos** se anclan a un arquetipo del **compendio** (musa) antes de inventar — `dnd-worldbuilder` lo hace en su Paso 0.5.
 - **Transición `nuevo → existente`:** ocurre en el Paso 4, al confirmar con el DM. INSERT en `npcs` con `conocido_jugadores=false`, `campaign_slug='halo'`. El flag `nuevo` queda como snapshot histórico del session_plan.
 - **Relación con la sesión:** todo NPC y toda locación deben explicar su relación con la sesión (qué rol cumple, por qué aparece). No vale dejarlo vacío.
 - **Tesoros:** SOLO items reales del catálogo **`items_catalog`** (global, ≈668 DMG'24, sin campaign_slug). `items` son las instancias de campaña, NO el catálogo. Prioridad: match directo > reskin (solo si nada encaja) > nunca inventar. Si la trama exige un item oficial fuera del catálogo (p. ej. 2014), darlo de alta primero en `items_catalog` con texto verbatim de la fuente.
