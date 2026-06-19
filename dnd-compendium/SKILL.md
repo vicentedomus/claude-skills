@@ -121,13 +121,15 @@ CR en entidades que recurren); la canonicalización del Paso 4 fusiona por label
 
 Fusiona los nodos del libro por label normalizado (cross-file), **luego** mézclalo con la unión
 existente del compendio y vuelve a canonicalizar (cross-book). **Este paso es lo que hace que el
-grafo crezca en vez de duplicarse.**
+grafo crezca en vez de duplicarse.** El flag `--source=<ID>` estampa la **provenance** (qué libro
+aportó cada nodo); al fusionar, `canonicalize.py` une las listas `source`, así que un nodo presente
+en varios libros queda con `source: ["EGW","RHW",...]` — auditable y sin re-extraer.
 
 ```bash
 SKILL=/ruta/a/dnd-compendium
-# 4a. canonicaliza el libro solo (resuelve fragmentación intra-libro)
-python3 "$SKILL/scripts/canonicalize.py" /tmp/cwork/.book-extract.json /tmp/cwork/.book-canon.json
-# 4b. une con el compendio existente (si existe) y canonicaliza la unión
+# 4a. canonicaliza el libro solo (resuelve fragmentación intra-libro) y estampa provenance
+python3 "$SKILL/scripts/canonicalize.py" /tmp/cwork/.book-extract.json /tmp/cwork/.book-canon.json --source=<ID>
+# 4b. une con el compendio existente (si existe) y canonicaliza la unión (une las listas `source`)
 python3 - "$QUESTKEEP/compendium/extract.json" /tmp/cwork/.book-canon.json <<'PY'
 import json, sys
 from pathlib import Path
