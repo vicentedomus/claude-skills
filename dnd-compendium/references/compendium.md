@@ -34,6 +34,14 @@ paréntesis ni sufijos de CR). Es conservador pero efectivo; si dos entidades di
 nombre corto (p. ej. una localización "Old Mill" en dos dominios), se fusionarían — aceptable en
 v1. Mejora futura: desambiguar por `kind`+source.
 
+### Provenance (`source` por nodo)
+
+Cada nodo lleva un atributo `source`: la lista de libros que lo aportaron (p. ej. `["RHW"]`,
+`["EGW"]`, o `["EGW","RHW"]` para una entidad compartida). Se estampa al ingerir con
+`canonicalize.py --source=<ID>` y se **une** al fusionar. Así, las fusiones cross-book son
+auditables directamente (`len(source) > 1`) — no hay que inferirlas por intersección de labels.
+El reporte de `canonicalize.py` imprime `N multi-book` con ese conteo.
+
 ## Qué se commitea (y qué no)
 
 - **SÍ:** `extract.json`, `sources.json`, `graphify-out/` (grafo derivado: labels + aristas +
