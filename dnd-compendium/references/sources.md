@@ -34,6 +34,26 @@ Las fuentes activas de QuestKeep viven en `questkeep/data/5e/meta.json → sourc
 - El orden de filas de bestiary/items **no es determinista** entre máquinas (depende de
   `readdirSync`); el conjunto de entidades es lo que importa, no el orden.
 
+## Homebrew / 3rd-party (no viven en `5etools-src`)
+
+El contenido homebrew y de terceros vive en un repo aparte, **`TheGiddyLimit/homebrew`**, no en
+`5etools-src`. El hash de 5e.tools (`book.html#<id>` / `adventure.html#<id>`) es el `source.json`
+del brew. Para ubicar el archivo:
+
+```bash
+# sparse-clone (el repo es enorme; solo metadatos + el dir que necesitas)
+git clone --depth 1 --filter=blob:none --sparse https://github.com/TheGiddyLimit/homebrew.git /tmp/homebrew
+cd /tmp/homebrew && git ls-tree -r HEAD --name-only | grep -i "<título o autor>"   # localizar
+git sparse-checkout set adventure book collection                                   # materializar
+```
+
+Los brew se nombran `Autor; Título.json` (en `adventure/`, `book/`, `collection/`, …). Su forma
+difiere del book oficial: usan wrappers `{adventure, adventureData, book, bookData}` en vez de
+`{data:[...]}`. El **constructor de corpus ya los soporta** (`loadChapters`): cada aventura se
+emite como una unidad completa `kind: adventure`; el book acompañante se recorre por subsecciones.
+Muchos brew **no traen bestiary/items propios** — sus criaturas son refs `{@creature}` al catálogo
+oficial, así que el tejido cross-book sale de las criaturas compartidas.
+
 ## Ejemplo: RHW (Ravenloft: The Horrors Within)
 
 ```bash
