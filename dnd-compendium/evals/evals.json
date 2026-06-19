@@ -1,0 +1,23 @@
+{
+  "skill_name": "dnd-compendium",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Ingiere Ravenloft: The Horrors Within (RHW) al compendio.",
+      "expected_output": "Verifica graphify + clon de questkeep; clona la fuente 5etools a /tmp; construye el corpus tipado con build-compendium-corpus.mjs (un archivo por unidad lógica, encabezados kind:); extrae con subagentes en paralelo usando la taxonomía centrada en género; canonicaliza intra-libro y luego une+canonicaliza contra compendium/extract.json; reconstruye graphify-out; reporta el delta (nodos/aristas/comunidades nuevas + fusiones cross-book) y commitea compendium/ a la rama. NO escribe a Supabase. NO commitea corpus crudo.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Agrega el siguiente libro al grafo y dime qué se conectó con lo que ya teníamos.",
+      "expected_output": "Mismo flujo de ingesta. Énfasis en el Paso 4 (unión canonicalizada): reporta cuántas entidades del libro nuevo cayeron sobre nodos canónicos existentes (géneros, tipos de criatura, criaturas de catálogo) — las conexiones cross-book — como señal de que el compendio se teje en vez de duplicarse. Actualiza sources.json.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Consulta el compendio: ¿qué arquetipos de darklord de horror gótico tenemos?",
+      "expected_output": "Modo consulta (no ingesta): consulta graph.json del compendio con /graphify query o revisa GRAPH_REPORT.md (comunidades, surprising connections, hyperedges arquetípicas). Devuelve patrones/arquetipos (p. ej. 'darklords de obsesión trágica') con su evidencia en el grafo, listos como semilla para dnd-worldbuilder. No genera la entidad de campaña por sí misma.",
+      "files": []
+    }
+  ]
+}
