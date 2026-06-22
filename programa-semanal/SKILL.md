@@ -125,6 +125,14 @@ supervisor: va al gerente (regla 5). El supervisor solo conserva la parte de
 campo (recibir/verificar en sitio una vez destrabado); si su único pendiente en
 ese lote es el destrabe, el lote no aparece en su calendario.
 
+**15. "Cambiar de proveedor/contratista" nunca es una escalación válida.** No la
+propongas en ninguna tarjeta. En Domus cambiar de proveedor no es una opción real
+(no hay sustituto disponible y romper la relación cuesta más de lo que resuelve),
+así que ese consejo nunca aplica. La escalación correcta de un incumplimiento es
+**presionar la entrega por la vía que sí existe**: documentar el incumplimiento,
+escalar al gerente para que apriete, exigir fecha firme por escrito, o subir la
+presión por la vía contractual — no reemplazar al proveedor.
+
 ## Frentes y colores
 
 Agrupa las tareas raíz estratégicas en "frentes" con color estable. Paleta de
