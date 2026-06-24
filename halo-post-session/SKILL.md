@@ -69,9 +69,35 @@ Notas importantes al leer el recap:
   en `created_at`.
 - El recap usa **menciones embebidas** `@[Nombre](tabla:uuid)` (npcs, lugares,
   establecimientos, quests, personajes). Esos `uuid` son oro para el crosscheck: dan el id
-  exacto de cada entidad tocada sin tener que buscarla por nombre.
+  exacto de cada entidad tocada sin tener que buscarla por nombre. **Cuidado con duplicados:**
+  el `uuid` de una mención puede apuntar a un registro **archivado y vacío** (pasó con Rammel
+  `408f81d9` y Dabblewick `b2793b34`), mientras el registro bueno es otro activo con toda la
+  info. Si el id de la mención cae en un registro `archived` o sin datos, reconcilia por
+  **nombre** para hallar el activo antes de proponer el update.
 - El prep original de la sesión vive en `public.session_plans` (`campaign_slug='halo'`).
-  Léelo para contrastar lo planeado vs. lo que realmente pasó.
+  Léelo para contrastar lo planeado vs. lo que realmente pasó. **El contenido del plan vive
+  en la columna `bloques` (jsonb) y en `input_data` (jsonb) — NO en las columnas escalares
+  `bloque_*`/`input_*` del mismo nombre, que son legacy y casi siempre vienen vacías/null.**
+  No concluyas que un plan está vacío sin mirar `bloques`.
+
+  ```sql
+  SELECT id, nombre, fecha_sesion, estado,
+         input_data->>'pregunta_objetivos'          AS objetivo,
+         bloques->>'bloque_strong_start'            AS strong_start,
+         jsonb_pretty(bloques->'bloque_escenas')    AS escenas,
+         jsonb_pretty(bloques->'bloque_npcs')       AS npcs_plan,
+         jsonb_pretty(bloques->'bloque_locaciones') AS locaciones,
+         jsonb_pretty(bloques->'bloque_tesoros')    AS tesoros
+  FROM public.session_plans
+  WHERE campaign_slug = 'halo'
+  ORDER BY fecha_sesion DESC NULLS LAST, created_at DESC
+  LIMIT 5;
+  ```
+
+  Los `npc_id`/`item_id` dentro de `bloques` (entidades con `flag:"nuevo"`) ya fueron
+  **creados** por el prep en `conocido=false` (p. ej. Brenna, Pim). En el crosscheck decide
+  cuáles alcanzó el party de verdad y cuáles siguen ocultos — no asumas que todo lo planeado
+  ocurrió.
 
 ---
 
