@@ -38,6 +38,23 @@ inicio evita que el DM tenga que corregir cosas ya aprendidas.
 
 ---
 
+## Paso 0.5 — Verificar graphify (el acceso a la musa)
+
+Antes del co-diseño, confirma que el CLI de graphify y el grafo están disponibles — el compendio
+es la **primera fuente de inspiración** para todo elemento nuevo (NPC, locación, gancho, tono):
+
+```bash
+graphify --help                                          # ¿responde el CLI?
+cd questkeep/compendium && graphify query "test"         # ¿hay graph.json?
+```
+
+Si responde, úsalo por la **vía sancionada** (`graphify query "<tema>"`, `graphify explain "<nodo>"`,
+`graphify path "A" "B"`) — ver el principio "Compendio primero (la musa)" en el Paso 3. Si NO
+responde (no instalado / sin `graph.json`), **avísale al DM** y sigue con los principios narrativos
+como fallback.
+
+---
+
 ## Paso 1a — Recibir contexto del DM
 
 El DM da el contexto libre para planear la sesión. Puede incluir:
@@ -99,17 +116,26 @@ WHERE n.ciudad_id = 'uuid_ciudad' AND NOT n.archived AND n.campaign_slug = 'halo
 **Queries nuevas obligatorias (catálogos de referencia):**
 
 ```sql
--- Items candidatos para tesoros (filtrar por rareza/tipo según tono de la sesión)
+-- Tesoros: SE BUSCAN EN items_catalog (catálogo global 5e ≈668 DMG'24), NO en `items`
+-- (`items` = instancias de campaña). Ver reglas duras de Tesoros más abajo.
+-- ⚠️ Formato real: el tier `uncommon` (nivel correcto ~4) son casi todos armas/munición +1
+-- y armaduras adamantina/mithral; los "Wondrous Item" vistosos (varitas, bolsas…) están
+-- catalogados como `rare`. No pierdas queries buscando wands uncommon — no los hay.
 SELECT id, nombre, tipo, rareza, descripcion, requiere_sintonizacion
-FROM items
-WHERE campaign_slug = 'halo' AND NOT archived
-  AND personaje_id IS NULL AND npc_portador_id IS NULL;
+FROM items_catalog
+WHERE rareza ILIKE 'uncommon';   -- ajustar rareza al nivel del party
 
--- Monstruos candidatos para combate (ajustar filtro por CR y entorno de la escena)
+-- Monstruos candidatos para combate (ajustar CR y entorno de la escena)
+-- ⚠️ Formato real del catálogo: `cr` es un STRING con XP embebido ("2 (XP 450; PB +2)") —
+-- NO uses `cr::text = ANY(...)`, no casa y devuelve vacío. Filtra con LIKE. `entorno` son
+-- listas en inglés (Urban, Forest…). Los statblocks NPC (Bandit, Tough, Bandit Captain,
+-- Mage, Gladiator…) salen por `tipo ILIKE '%Humanoid%'`.
 SELECT id, nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones
 FROM monstruos
 WHERE NOT archived
-  AND cr::text = ANY(ARRAY['1/4','1/2','1','2','3'])  -- ajustar rango según nivel del party
+  AND (cr LIKE '1/4 (%' OR cr LIKE '1/2 (%' OR cr LIKE '1 (%'
+       OR cr LIKE '2 (%' OR cr LIKE '3 (%' OR cr LIKE '4 (%' OR cr LIKE '5 (%')
+  AND (entorno ILIKE '%Urban%' OR tipo ILIKE '%Humanoid%')  -- ajustar a la escena
 ORDER BY nombre;
 ```
 
@@ -173,10 +199,14 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **Secrets & Clues**: múltiples caminos a la misma información
 - **Mundo se sigue expandiendo**: 2 NPCs nuevos por sesión, bien integrados
 - **Compendio primero (la musa)**: para cualquier elemento NUEVO (NPC, locación, gancho, tono de
-  escena), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/` —
-  `GRAPH_REPORT.md`, hyperedges/arquetipos, o `/graphify query`) y toma un arquetipo/`theme`/`motif`
-  como semilla, limando los nombres propios. Inventar desde cero es el último recurso. (El compendio
-  es inspiración; Supabase sigue siendo la fuente de verdad del mundo.)
+  escena), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/`) por la
+  **vía sancionada del CLI**: `graphify query "<tema>"`, `graphify explain "<nodo>"`,
+  `graphify path "A" "B"` (o lee `GRAPH_REPORT.md` para hyperedges/arquetipos). Toma un
+  arquetipo/`theme`/`motif` como semilla, **limando los nombres propios Y los tags de dominio que no
+  encajen**: el grafo es **multi-libro (~3.072 nodos / 377 archivos, NO solo Ravenloft)**, así que
+  un nodo puede arrastrar el setting de su libro (p. ej. Batan trae el tag "Dominion of Shatrekvan"
+  de Ravenloft, que no pega con goliaths) → quédate con el arquetipo, descarta el setting. Inventar
+  desde cero es el último recurso. (El compendio es inspiración; Supabase es la fuente de verdad.)
 - **Nada inventado**: todo secreto/gancho/pista nace de un hecho en BD o recap, o se marca como propuesta nueva a aprobar. No disfrazar flavor de NPC (p. ej. una línea de `notas_roleplay`) como secreto de trama.
 - **Consistencia causal**: si un NPC posee un objeto o sabe algo, debe haber una razón in-world explícita. Cazar plotholes antes de presentar (¿de dónde sacó X esa prueba/llave/carta?).
 - **Decisión con consecuencias**: cuando ofrezcas una elección importante, telegrafía la ruta alternativa para que los jugadores la vean, dale a cada rama su propio beat/combate, y cierra con una escena de Desenlace que enumere los resultados.
@@ -264,9 +294,25 @@ narrativo, y si es reskin las 3 capas completas.
 1. Lee `personajes` (`campaign_slug='halo'`) y **cuenta los PJs reales**, descartando entradas
    de prueba/animales (p. ej. "Fighter Prueba", "Pruebo", monturas como "Nelly la Yegua"). Usa
    nivel y cantidad reales — no asumas 4.
-2. Calcula el presupuesto con la **tabla XP por personaje XDMG 2024** (Low/Moderate/High, sin
-   multiplicador por cantidad) × nº de PJs. Ej.: 5 PJs nivel 4 → Low 1 875 / Moderate 2 500 /
-   **High ≈ 3 750**.
+2. Calcula el presupuesto con la **tabla XP por personaje XDMG 2024** (abajo; Low/Moderate/High,
+   sin multiplicador por cantidad) × nº de PJs. Ej.: 5 PJs nivel 4 → Low 1 250 / Moderate 1 875 /
+   **High = 2 500**. (Si el DM pide un combate **deadly**, puede gastarse por encima del High
+   oficial; eso es caso por caso y suele pedir una mitigación que el DM defina.)
+
+   **Tabla XP budget por personaje (XDMG 2024)** — multiplica por nº de PJs reales:
+
+   | Nivel | Low | Moderate | High | | Nivel | Low | Moderate | High |
+   |---|---|---|---|---|---|---|---|---|
+   | 1 | 50 | 75 | 100 | | 11 | 1 900 | 2 900 | 4 100 |
+   | 2 | 100 | 150 | 200 | | 12 | 2 200 | 3 700 | 4 700 |
+   | 3 | 150 | 225 | 400 | | 13 | 2 600 | 4 200 | 5 400 |
+   | 4 | 250 | 375 | 500 | | 14 | 2 900 | 4 900 | 6 200 |
+   | 5 | 500 | 750 | 1 100 | | 15 | 3 300 | 5 400 | 7 800 |
+   | 6 | 600 | 1 000 | 1 400 | | 16 | 3 800 | 6 100 | 9 800 |
+   | 7 | 750 | 1 300 | 1 700 | | 17 | 4 500 | 7 200 | 11 700 |
+   | 8 | 1 000 | 1 700 | 2 100 | | 18 | 5 000 | 8 700 | 14 200 |
+   | 9 | 1 300 | 2 000 | 2 600 | | 19 | 5 500 | 10 700 | 17 200 |
+   | 10 | 1 600 | 2 300 | 3 100 | | 20 | 6 400 | 13 200 | 22 000 |
 3. **Default del DM: al menos un combate difícil (tier High).** Apunta el total cerca de High.
 4. **Composición = pieza central temática + apoyos**, no un enjambre de CR trivial. Una criatura
    ancla con buena economía de acción (boss/coloso, con reskin si hace falta para el tono) +

@@ -174,12 +174,16 @@ Calcular `budget = valor_tabla × # PCs`. Consultar `monstruos` filtrando por CR
 al budget y por `entorno` coherente con la ubicación:
 
 ```sql
-SELECT id, nombre, tipo, tamano, cr, entorno, hp, ac, xp, rasgos, acciones
+-- ⚠️ `cr` es un STRING con XP embebido ("2 (XP 450; PB +2)") — NO uses `cr::text = ANY(...)`,
+-- devuelve vacío. Filtra con LIKE. `entorno` son listas en inglés (Urban, Forest…). Los
+-- statblocks NPC (Bandit, Tough, Bandit Captain, Mage, Gladiator…) salen por tipo Humanoid.
+SELECT id, nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones
 FROM monstruos
 WHERE NOT archived
-  AND cr::text = ANY(ARRAY['1','2','3','4','5'])  -- ajustar al budget
-  AND (entorno ILIKE '%bosque%' OR entorno IS NULL)  -- ajustar a ubicación
-ORDER BY cr;
+  AND (cr LIKE '1 (%' OR cr LIKE '2 (%' OR cr LIKE '3 (%'
+       OR cr LIKE '4 (%' OR cr LIKE '5 (%')               -- ajustar al budget
+  AND (entorno ILIKE '%Forest%' OR tipo ILIKE '%Humanoid%')  -- ajustar a ubicación
+ORDER BY nombre;
 ```
 
 ### 4. Proponer 2-3 combos de monstruos

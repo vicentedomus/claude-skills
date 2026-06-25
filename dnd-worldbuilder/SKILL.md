@@ -54,11 +54,15 @@ es la **primera fuente de inspiración** — inventar desde cero es el último r
 
 1. Identifica el tema/arquetipo de lo que vas a crear (p. ej. "villano trágico atado a un lugar",
    "facción de intriga", "bosque con algo antiguo y hambriento").
-2. Consúltalo: lee `GRAPH_REPORT.md` (comunidades, **hyperedges/arquetipos**, "surprising
-   connections") o `graph.json` — o usa el modo consulta de `dnd-compendium` / `/graphify query`.
-3. Toma **un** arquetipo + sus `theme`/`motif` como **semilla de flavor**, y **lima los nombres
-   propios** (nada de "Strahd"/"Barovia" directo): el compendio es museo/inspiración, el mundo de
-   la campaña (Supabase) es la fuente de verdad.
+2. Consúltalo por la **vía sancionada del CLI**: `graphify query "<tema>"`,
+   `graphify explain "<nodo>"`, `graphify path "A" "B"` (o lee `GRAPH_REPORT.md` para comunidades,
+   **hyperedges/arquetipos** y "surprising connections").
+3. Toma **un** arquetipo + sus `theme`/`motif` como **semilla de flavor**, **limando los nombres
+   propios Y los tags de dominio que no encajen**: el grafo es multi-libro (~3.072 nodos, NO solo
+   Ravenloft), así que un nodo puede arrastrar el setting de su libro (p. ej. el tag "Dominion of
+   Shatrekvan" de Ravenloft sobre un lugar goliath) → descarta el setting de origen y quédate con
+   el arquetipo (nada de "Strahd"/"Barovia"/"Shatrekvan" directo). El compendio es
+   museo/inspiración; el mundo de la campaña (Supabase) es la fuente de verdad.
 
 Si no hay compendio disponible, sigue con los principios narrativos. Lo que tomes del compendio es
 *grounding* de sabor; el tono final y la coherencia los dan el lore del mundo (Paso 1) + los
