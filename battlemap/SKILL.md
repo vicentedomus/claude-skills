@@ -187,6 +187,10 @@ Prompt optimizado:
 
 ## Paso 3 — Generación
 
+> **Si la tool `mcp__gemini-image__*` NO está disponible** (p. ej. en sesiones remotas de Claude
+> Code web, donde el entorno solo carga conectores remotos y no servers MCP locales stdio), salta
+> al **Fallback sin MCP** más abajo: genera por el API directo con el mismo modelo y resultado.
+
 Llamar al MCP con estos parámetros:
 
 ```
@@ -220,6 +224,35 @@ Costo: $[costo]
 • Procesar — crop, resize, o cambiar formato
 • Listo — guardar y terminar
 ```
+
+---
+
+## Paso 3b — Fallback sin MCP (API directo de Gemini)
+
+Cuando la tool `mcp__gemini-image__*` no está presente (sesiones remotas de Claude Code web no
+levantan servers MCP locales stdio; solo consumen **conectores remotos** a nivel de cuenta), usa
+el script **`scripts/gen-image.sh`**, que llama al **API de Gemini directo** con la `GEMINI_API_KEY`
+del entorno — mismo modelo y resultado que el MCP, **cero infraestructura**.
+
+```bash
+# Generación (escribe el prompt optimizado a un archivo primero — evita problemas de escaping)
+scripts/gen-image.sh --prompt-file prompt.txt --out battlemaps/battlemap-X.png --aspect 16:9
+
+# Edición iterativa (Paso 4) — pasa la imagen base con --edit
+scripts/gen-image.sh --prompt "Edit this battle map: <cambio>. Keep everything else the same." \
+  --edit battlemaps/battlemap-X.png --out battlemaps/battlemap-X-v2.png --aspect 16:9
+```
+
+El script construye el body con `jq` (escapado seguro), respeta el CA bundle del proxy si existe,
+decodifica el PNG de `inlineData`, y reporta errores de la API (HTTP, safety, cuota). El resto del
+flujo es idéntico — **solo cambia el motor de render**: el prompt-engineering del Paso 2, la
+edición del Paso 4 (vía `--edit`) y los specs de TV (16:9, grid 27×15) aplican igual. El
+`aspectRatio` va en `generationConfig.imageConfig` y funciona con `gemini-2.5-flash-image`.
+
+> **Por qué existe este fallback:** en Claude Code web el entorno cablea MCP como conectores
+> remotos (HTTP); un server local stdio como `gemini-image` (npx) no se puede agregar ahí. Para
+> tenerlo como MCP nativo en web habría que hostearlo detrás de una URL (bridge tipo
+> `supergateway`) y agregarlo como conector remoto — pesado. Este script evita todo eso.
 
 ---
 

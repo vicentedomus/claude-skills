@@ -6,7 +6,7 @@ Skills compartidos de Claude Code (ver [`CLAUDE.md`](CLAUDE.md) para convencione
 
 | Skill | Qué hace |
 |-------|----------|
-| [battlemap](battlemap/) | Genera battlemaps top-down para D&D/TTRPG con Gemini Image (prompt engineering + edición iterativa); integración opcional con QuestKeep |
+| [battlemap](battlemap/) | Genera battlemaps top-down para D&D/TTRPG con Gemini Image (prompt engineering + edición iterativa); fallback por API directo (`scripts/gen-image.sh`) si el MCP no está; integración opcional con QuestKeep |
 | [dnd-compendium](dnd-compendium/) | Hace crecer libro a libro un compendio de referencia D&D como grafo graphify persistente (lore, dominios, géneros de horror, darklords, criaturas), fusionando por entidad canónica — la "musa" de inspiración, separada del mundo de campaña — **requiere la skill `graphify` al lado + un clon de `questkeep` (renderers del ETL); el grafo vive en `questkeep/compendium/`** |
 | [dnd-worldbuilder](dnd-worldbuilder/) | Genera y mejora entidades narrativas de campañas D&D (NPCs, ciudades, lugares, quests, combates, items) con principios profesionales + framework Encounter Axis — **consulta `dnd-compendium` (la musa) como primera fuente de inspiración (Paso 0.5) si está disponible** |
 | [dream](dream/) | Consolidación de memoria estilo "auto-dream": escanea transcripciones de sesiones y fusiona learnings en archivos de memoria persistentes |
