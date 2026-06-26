@@ -28,7 +28,82 @@ Hooks de shell compartidos y fuente de verdad central. Otros repos los
 sincronizan desde aquí vía su propio `sync-hooks.sh` (que descarga cada hook
 desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<archivo>.sh`).
 
-_(Sin hooks compartidos por ahora.)_
+| Hook | Qué hace |
+|------|----------|
+| [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
+
+## Cableado del sync de skills en cualquier repo
+
+Para que un repo consumidor cargue skills de aquí en cada sesión (incluido
+Claude Code on the web, donde el contenedor se re-clona limpio cada vez), se
+cablea un SessionStart hook. Cinco pasos:
+
+**1. Copia el template del hook** a `.claude/hooks/sync-skills.sh` y dale el bit
+ejecutable:
+
+```bash
+mkdir -p .claude/hooks
+curl -sSL https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/sync-skills.sh \
+  -o .claude/hooks/sync-skills.sh
+chmod +x .claude/hooks/sync-skills.sh
+```
+
+**2. Declara qué skills quieres** en `.claude/skills.txt` (whitelist; una por
+línea, `#` para comentarios). Es el ÚNICO knob per-repo: lo que no esté listado
+no se materializa en disco → no carga en contexto.
+
+```
+# .claude/skills.txt
+test-web
+ui-ux-pro-max
+```
+
+**3. Regístralo como SessionStart** en `.claude/settings.json` (comiteado, no en
+`settings.local.json` — en la web solo lo versionado sobrevive entre sesiones):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-skills.sh\"",
+            "statusMessage": "Sincronizando skills desde claude-skills..."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**4. Ignora las skills materializadas** — no se comitean, se regeneran cada
+sesión. En `.gitignore`:
+
+```
+.claude/skills/
+```
+
+**5. (Opcional) Comitea el hook y el whitelist**, y abre PR. En la siguiente
+sesión web el hook corre solo y deja las skills disponibles (emite
+`reloadSkills:true`, así cargan en ESA misma sesión).
+
+### Por qué tarball en la web y `git clone` en local
+
+En Claude Code on the web, `git clone`/`git fetch` se reescriben a un **relay de
+git scopeado** que solo autoriza los repos del scope de sesión — da **403 hasta
+para repos propios** (`claude-skills` incluido), ni por dueño ni por fase. Las
+descargas HTTPS normales sí pasan, así que en la nube el hook baja el **tarball
+de `codeload.github.com`** (árbol completo a un commit consistente, con
+`scripts/`/`references/` y bit ejecutable preservados vía `cp -a`). En local, sin
+relay scopeado, usa `git clone`. Si todo falla, cae a bajar solo cada `SKILL.md`
+por `curl` a `raw.githubusercontent.com` (sin assets) como último recurso.
+
+> **Requisito**: el repo de skills debe ser **público** (el tarball de codeload y
+> el fallback de raw.github van sin auth). Cambia `OWNER`/`REPO`/`REF` arriba del
+> hook si lo sirves desde otro repo.
 
 ### Hooks retirados
 
