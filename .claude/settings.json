@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__github__merge_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/pr-summary-on-merge.sh\"",
+            "statusMessage": "Preparando resumen del PR mergeado..."
+          }
+        ]
+      }
+    ]
+  }
+}

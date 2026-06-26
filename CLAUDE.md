@@ -56,6 +56,30 @@ This applies regardless of how the skill arrived: migrated from another
 location, installed via `npx skills`, or written from scratch in this repo.
 Keep the table alphabetical for easy scanning.
 
+## Resumen de PR al mergear
+
+Cuando **tú (Claude) mergeas un PR** vía `mcp__github__merge_pull_request`, un hook
+`PostToolUse` (`.claude/hooks/pr-summary-on-merge.sh`) te recuerda automáticamente,
+con el número de PR ya resuelto, que actualices ese PR. **El hook no escribe el
+resumen** — lo escribes tú, que tienes el contexto. Inmediatamente tras el merge,
+**sobrescribe por completo** el título y el cuerpo de ese PR con
+`mcp__github__update_pull_request`, en español:
+
+- **Título**: resumen conciso, imperativo y con scope (ej. "hooks: template
+  sync-skills repo-agnóstico + doc de cableado").
+- **Cuerpo** (Markdown), en este orden:
+  1. `## Resumen` — 1-3 frases: qué se hizo y por qué.
+  2. `## Índice de implementaciones` — lista **numerada**; cada ítem = feature +
+     descripción breve + archivos/commits clave.
+  3. `## PRs relacionados` — los `#NNN` que detectes en commits/contexto (GitHub
+     los autolinkea). Omite la sección si no hay.
+  4. `## Verificación` — `bash -n` de los hooks, validación de SKILL.md, etc.
+  - Footer: el enlace de sesión `https://claude.ai/code/session_…` que ya usas en
+    commits y PRs.
+
+Reglas: descarta el contenido previo (overwrite total), hazlo sin preguntar salvo
+que el merge haya fallado, y aplica a cualquier PR que mergees (normalmente a `main`).
+
 ## skills-lock.json
 
 Managed automatically by `npx skills`. Do not edit manually.
