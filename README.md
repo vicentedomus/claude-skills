@@ -31,6 +31,7 @@ desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<
 | Hook | Qué hace |
 |------|----------|
 | [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
+| [`pr-summary-on-merge.sh`](hooks/pr-summary-on-merge.sh) | **Template repo-agnóstico.** PostToolUse hook (matcher `mcp__github__merge_pull_request`) que, al mergear un PR, le recuerda a Claude reescribir título+cuerpo de ese PR con el formato estándar de resumen. No escribe el resumen, solo inyecta la instrucción con el `#NNN` resuelto. Ver el cableado abajo. |
 
 ## Cableado del sync de skills en cualquier repo
 
@@ -104,6 +105,53 @@ por `curl` a `raw.githubusercontent.com` (sin assets) como último recurso.
 > **Requisito**: el repo de skills debe ser **público** (el tarball de codeload y
 > el fallback de raw.github van sin auth). Cambia `OWNER`/`REPO`/`REF` arriba del
 > hook si lo sirves desde otro repo.
+
+## Cableado del resumen de PR al mergear en cualquier repo
+
+Para que, al mergear un PR vía la tool MCP de GitHub, Claude reescriba
+automáticamente el título+cuerpo de ese PR con un formato de resumen consistente.
+Tres pasos:
+
+**1. Copia el template** a `.claude/hooks/pr-summary-on-merge.sh` y dale el bit
+ejecutable:
+
+```bash
+mkdir -p .claude/hooks
+curl -sSL https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/pr-summary-on-merge.sh \
+  -o .claude/hooks/pr-summary-on-merge.sh
+chmod +x .claude/hooks/pr-summary-on-merge.sh
+```
+
+**2. Regístralo como PostToolUse** en `.claude/settings.json` (comiteado), con el
+matcher de la tool de merge:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__github__merge_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/pr-summary-on-merge.sh\"",
+            "statusMessage": "Preparando resumen del PR mergeado..."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**3. Documenta la convención** en el `CLAUDE.md` del repo, bajo una sección
+"Resumen de PR al mergear" (qué secciones lleva el cuerpo, en qué idioma, footer
+de sesión, cualquier regla propia del repo). El hook solo **recuerda**; el formato
+concreto lo define el `CLAUDE.md` y lo redacta Claude, que tiene el contexto.
+
+El hook lee el `pullNumber` del payload del evento e inyecta la instrucción vía
+`additionalContext` (no bloquea el merge). Si el payload no trae número de PR, no
+emite nada. Necesita `jq` en el entorno.
 
 ### Hooks retirados
 
