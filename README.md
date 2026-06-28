@@ -28,6 +28,16 @@ Hooks de shell compartidos y fuente de verdad central. Otros repos los
 sincronizan desde aquí vía su propio `sync-hooks.sh` (que descarga cada hook
 desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<archivo>.sh`).
 
+> **Requisito de entorno (clave en Claude Code on the web): la sesión debe
+> rootear en el repo, no en un padre.** Claude Code carga los hooks de
+> `.claude/settings.json` solo desde `$CLAUDE_PROJECT_DIR` (el repo rooteado). Si
+> el entorno rootea en un **padre multi-repo** (p. ej. `/home/user` con varios
+> repos al lado), esos repos entran como *additional directories*: se carga su
+> `CLAUDE.md` pero **no sus hooks** → los SessionStart **no disparan** (ni sync ni
+> ponytail). Diagnóstico: revisa `.claude/.hooks.log`; si no existe, el hook no
+> corrió. Fix: rootear el environment en el repo. (Para trabajo cruzado entre
+> repos, ese entorno multi-repo sirve, pero ahí los hooks per-repo no corren.)
+
 | Hook | Qué hace |
 |------|----------|
 | [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
@@ -152,7 +162,8 @@ tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array:
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-skills.sh\"",
-            "statusMessage": "Sincronizando skills desde claude-skills..."
+            "statusMessage": "Sincronizando skills desde claude-skills...",
+            "timeout": 300
           }
         ]
       },
@@ -161,7 +172,8 @@ tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array:
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-upstream-skills.sh\"",
-            "statusMessage": "Materializando skills upstream (tarball)..."
+            "statusMessage": "Materializando skills upstream (tarball)...",
+            "timeout": 300
           }
         ]
       }
@@ -169,6 +181,11 @@ tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array:
   }
 }
 ```
+
+> **`timeout: 300`** en los hooks de sync: bajan tarballs por el proxy, y el
+> default (~60s) puede cortarse a media descarga y abortar la cadena `SessionStart`
+> (síntoma típico: unas skills sí, otras no, y los hooks siguientes no corren). El
+> hook ya acota cada `curl` con `--max-time`, pero dale aire al hook igual.
 
 **4. Ignora las skills materializadas** (lo comparte con `sync-skills.sh`; si aún
 no está) y **comitea el hook + el `.txt`**:

@@ -29,6 +29,9 @@ log() { echo "[ponytail-mode] $*" >&2; }
 payload="$(cat)"
 event="$(printf '%s' "$payload" | jq -r '.hook_event_name // empty' 2>/dev/null)"
 
+echo "$(date -u +%FT%TZ) [ponytail-mode] event=$event skill=$([ -f "$SKILL_MD" ] && echo yes || echo no)" \
+  >> "$CLAUDE_PROJECT_DIR/.claude/.hooks.log" 2>/dev/null
+
 read_mode() { [ -f "$MODE_FILE" ] && cat "$MODE_FILE" 2>/dev/null || echo "$DEFAULT_MODE"; }
 set_mode()  { mkdir -p "$(dirname "$MODE_FILE")"; printf '%s' "$1" > "$MODE_FILE"; }
 
