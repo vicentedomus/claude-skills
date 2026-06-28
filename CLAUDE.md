@@ -56,6 +56,12 @@ This applies regardless of how the skill arrived: migrated from another
 location, installed via `npx skills`, or written from scratch in this repo.
 Keep the table alphabetical for easy scanning.
 
+**Excepción — skills de upstream (Superpowers):** las skills de `obra/Superpowers`
+**no** se vendorizan en este repo ni entran al índice de skills. Se distribuyen vía
+el hook-template `hooks/sync-superpowers.sh` (que las baja por tarball en cada
+sesión de la nube) y se documentan solo en la sección `hooks/` del README. No
+agregues filas por cada una al índice de skills curadas.
+
 ## Resumen de PR al mergear
 
 Cuando **tú (Claude) mergeas un PR** vía `mcp__github__merge_pull_request`, un hook

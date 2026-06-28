@@ -31,6 +31,7 @@ desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<
 | Hook | Qué hace |
 |------|----------|
 | [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
+| [`sync-superpowers.sh`](hooks/sync-superpowers.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` **todas** las skills de [`obra/Superpowers`](https://github.com/obra/Superpowers) vía tarball de codeload (solo en la nube; en local va el plugin nativo). Nombres planos, sin inyección agresiva. Knobs `OWNER/REPO/REF`. Ver el cableado abajo. |
 | [`pr-summary-on-merge.sh`](hooks/pr-summary-on-merge.sh) | **Template repo-agnóstico.** PostToolUse hook (matcher `mcp__github__merge_pull_request`) que, al mergear un PR, le recuerda a Claude reescribir título+cuerpo de ese PR con el formato estándar de resumen. No escribe el resumen, solo inyecta la instrucción con el `#NNN` resuelto. Ver el cableado abajo. |
 
 ## Cableado del sync de skills en cualquier repo
@@ -105,6 +106,78 @@ por `curl` a `raw.githubusercontent.com` (sin assets) como último recurso.
 > **Requisito**: el repo de skills debe ser **público** (el tarball de codeload y
 > el fallback de raw.github van sin auth). Cambia `OWNER`/`REPO`/`REF` arriba del
 > hook si lo sirves desde otro repo.
+
+## Cableado de superpowers en cualquier repo
+
+Para cargar **todas** las skills de [`obra/Superpowers`](https://github.com/obra/Superpowers)
+(brainstorming, test-driven-development, writing-skills, …) en cada sesión de la
+nube. Es un SessionStart hook independiente del de skills compartidas — se cablea
+**en paralelo** a `sync-skills.sh` (dos bloques `SessionStart`). Cuatro pasos:
+
+**1. Copia el template del hook** a `.claude/hooks/sync-superpowers.sh` y dale el
+bit ejecutable:
+
+```bash
+mkdir -p .claude/hooks
+curl -sSL https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/sync-superpowers.sh \
+  -o .claude/hooks/sync-superpowers.sh
+chmod +x .claude/hooks/sync-superpowers.sh
+```
+
+**2. Regístralo como SessionStart** en `.claude/settings.json` (comiteado). Si ya
+tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array
+`SessionStart`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-skills.sh\"",
+            "statusMessage": "Sincronizando skills desde claude-skills..."
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-superpowers.sh\"",
+            "statusMessage": "Materializando skills de Superpowers (tarball)..."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**3. Ignora las skills materializadas** (las comparte el `.gitignore` con
+`sync-skills.sh`; si aún no está):
+
+```
+.claude/skills/
+```
+
+**4. Comitea el hook y abre PR.** En la siguiente sesión web el hook corre solo y
+deja las skills disponibles (emite `reloadSkills:true`, así cargan en ESA misma
+sesión).
+
+### Notas
+
+- **Solo nube.** El hook corre únicamente con `CLAUDE_CODE_REMOTE=true`. En local
+  conviene instalar el **plugin nativo de Superpowers** (la inyección agresiva del
+  plugin sí aplica allí); el hook hace `skip`.
+- **Sin whitelist:** materializa el set completo de `skills/` del tarball. A
+  diferencia de `sync-skills.sh`, no hay `.txt` per-repo — es todo o nada.
+- **Rama `main`, sin pin:** trae siempre lo último de upstream (posible drift
+  entre sesiones). Cambia `REF` arriba del hook para fijar a un tag/commit.
+- **Nombres planos** (`brainstorming`, …; sin prefijo `superpowers:`) y **sin
+  inyección agresiva**: quedan disponibles por su `description` y se encadenan por
+  sus cross-referencias, pero no se fuerzan en cada mensaje.
 
 ## Cableado del resumen de PR al mergear en cualquier repo
 
