@@ -279,6 +279,11 @@ skill es la única fuente de verdad y el hook solo la mantiene prendida.
   mode" incidental).
 - El nivel persiste en `.claude/.ponytail-mode` durante la sesión; en la nube se
   re-clona limpio, así que cada sesión vuelve al default.
+- **Carve-outs automáticos** (vienen en el contexto inyectado, sin togglear): el
+  modo acota la escalera a **código de producción** — los **tests nunca** se
+  recortan/omiten para ser mínimos, y en **fase de diseño** (brainstorm/plan) no
+  poda: explora primero y aplica la escalera solo al implementar. Resuelve de raíz
+  las dos fricciones de combinar ponytail con skills de proceso (Superpowers).
 
 ### Notas
 

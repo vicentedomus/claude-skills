@@ -69,8 +69,12 @@ case "$event" in
     [ -f "$MODE_FILE" ] || set_mode "$mode"      # fija el default la 1ª vez
     [ "$mode" = "off" ] && exit 0                 # off → no inyecta nada
     emit "PONYTAIL MODE: $mode — active every response. Apply the ladder below to
-every code change until told 'stop ponytail' / 'normal mode'. Levels: lite (light
+PRODUCTION code until told 'stop ponytail' / 'normal mode'. Levels: lite (light
 touch), full (default), ultra (most aggressive).
+SCOPE — tests: test code is never 'unnecessary'. Never trim, skip, or delete tests
+to be minimal; the ladder governs production code only.
+PHASE — design: while brainstorming, planning, or designing, do NOT prune or
+pre-shrink. Explore options first; apply the ladder only when writing the implementation.
 
 $(ladder)"
     ;;
@@ -99,7 +103,9 @@ $(ladder)"
   SubagentStart)
     mode="$(read_mode)"
     [ "$mode" = "off" ] && exit 0
-    emit "PONYTAIL MODE: $mode (inherited). Apply the ladder below to every change.
+    emit "PONYTAIL MODE: $mode (inherited). Apply the ladder below to PRODUCTION code.
+SCOPE — tests: never trim, skip, or delete tests to be minimal. PHASE — design:
+explore before pruning; apply the ladder only to implementation code.
 
 $(ladder)"
     ;;
