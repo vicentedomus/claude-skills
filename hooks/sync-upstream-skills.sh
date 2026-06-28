@@ -30,7 +30,10 @@
 SKILLS_DIR="$CLAUDE_PROJECT_DIR/.claude/skills"
 SOURCES_TXT="$CLAUDE_PROJECT_DIR/.claude/upstream-skills.txt"
 
-log() { echo "[sync-upstream-skills] $*" >&2; }
+LOG_FILE="$CLAUDE_PROJECT_DIR/.claude/.hooks.log"
+log() { echo "$(date -u +%FT%TZ) [sync-upstream] $*" | tee -a "$LOG_FILE" >&2; }
+
+log "start (remote=$CLAUDE_CODE_REMOTE)"
 
 # En local no hacemos nada (los plugins nativos son la vía allí).
 if [ "$CLAUDE_CODE_REMOTE" != "true" ]; then
@@ -56,7 +59,7 @@ while read -r src wl; do
 
   TMP=$(mktemp -d)
   # codeload acepta el shorthand /tar.gz/<ref> para rama, tag o sha.
-  if ! curl -sSL "https://codeload.github.com/$slug/tar.gz/$ref" -o "$TMP/src.tar.gz" \
+  if ! curl -sSL --max-time 120 "https://codeload.github.com/$slug/tar.gz/$ref" -o "$TMP/src.tar.gz" \
      || ! tar -xzf "$TMP/src.tar.gz" -C "$TMP" --strip-components=1 2>/dev/null; then
     log "✗ $slug@$ref: descarga/extracción falló; skip"
     rm -rf "$TMP"; continue
