@@ -31,7 +31,7 @@ desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<
 | Hook | Qué hace |
 |------|----------|
 | [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
-| [`sync-superpowers.sh`](hooks/sync-superpowers.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` **todas** las skills de [`obra/Superpowers`](https://github.com/obra/Superpowers) vía tarball de codeload (solo en la nube; en local va el plugin nativo). Nombres planos, sin inyección agresiva. Knobs `OWNER/REPO/REF`. Ver el cableado abajo. |
+| [`sync-upstream-skills.sh`](hooks/sync-upstream-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` skills de repos de **terceros** con layout `skills/*/` ([`obra/Superpowers`](https://github.com/obra/Superpowers), [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail), …) vía tarball de codeload (solo nube; en local, plugins nativos). Manejado por `.claude/upstream-skills.txt`: **doble whitelist** — qué repos clonar y qué skills de cada uno. Nombres planos, sin inyección agresiva. Ver el cableado abajo. |
 | [`ponytail-mode.sh`](hooks/ponytail-mode.sh) | **Template repo-agnóstico.** Un solo script en TRES eventos (SessionStart/UserPromptSubmit/SubagentStart) que mantiene el "modo ponytail" **siempre activo**, como plantea el SKILL.md de [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) (MIT): inyecta el *ladder* como contexto persistente, conmuta con `/ponytail lite\|full\|ultra\|off` y apaga con "stop ponytail". Bash puro (sin node, sin código de terceros por prompt); lee el ladder de la skill `ponytail` si está sincronizada, o de un fallback embebido. Ver el cableado abajo. |
 | [`pr-summary-on-merge.sh`](hooks/pr-summary-on-merge.sh) | **Template repo-agnóstico.** PostToolUse hook (matcher `mcp__github__merge_pull_request`) que, al mergear un PR, le recuerda a Claude reescribir título+cuerpo de ese PR con el formato estándar de resumen. No escribe el resumen, solo inyecta la instrucción con el `#NNN` resuelto. Ver el cableado abajo. |
 
@@ -108,26 +108,40 @@ por `curl` a `raw.githubusercontent.com` (sin assets) como último recurso.
 > el fallback de raw.github van sin auth). Cambia `OWNER`/`REPO`/`REF` arriba del
 > hook si lo sirves desde otro repo.
 
-## Cableado de superpowers en cualquier repo
+## Cableado de skills upstream (terceros, con whitelist) en cualquier repo
 
-Para cargar **todas** las skills de [`obra/Superpowers`](https://github.com/obra/Superpowers)
-(brainstorming, test-driven-development, writing-skills, …) en cada sesión de la
-nube. Es un SessionStart hook independiente del de skills compartidas — se cablea
-**en paralelo** a `sync-skills.sh` (dos bloques `SessionStart`). Cuatro pasos:
+Para cargar skills de repos **de terceros** con layout `skills/*/` (Superpowers,
+ponytail, …) en cada sesión de la nube. Un solo SessionStart hook genérico
+manejado por `.claude/upstream-skills.txt`, que es **doble whitelist**: qué repos
+clonar y qué skills de cada uno. Se cablea **en paralelo** a `sync-skills.sh` (el
+de nuestro propio repo). Cuatro pasos:
 
-**1. Copia el template del hook** a `.claude/hooks/sync-superpowers.sh` y dale el
-bit ejecutable:
+**1. Copia el template del hook** a `.claude/hooks/sync-upstream-skills.sh` y dale
+el bit ejecutable:
 
 ```bash
 mkdir -p .claude/hooks
-curl -sSL https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/sync-superpowers.sh \
-  -o .claude/hooks/sync-superpowers.sh
-chmod +x .claude/hooks/sync-superpowers.sh
+curl -sSL https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/sync-upstream-skills.sh \
+  -o .claude/hooks/sync-upstream-skills.sh
+chmod +x .claude/hooks/sync-upstream-skills.sh
 ```
 
-**2. Regístralo como SessionStart** en `.claude/settings.json` (comiteado). Si ya
-tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array
-`SessionStart`:
+**2. Declara las fuentes** en `.claude/upstream-skills.txt`. Una línea por repo;
+los nombres tras el repo son el whitelist de skills (sin nombres = todas). **Una
+línea = "clona este repo"; sin línea = no se clona** (whitelist de repos):
+
+```
+# .claude/upstream-skills.txt
+#   owner/repo[@ref]   [skill1 skill2 ...]
+obra/Superpowers          brainstorming test-driven-development writing-skills
+DietrichGebert/ponytail   ponytail ponytail-review
+```
+
+Si este repo solo quiere ponytail, deja **solo** su línea (Superpowers no se
+menciona → no se baja). `@ref` opcional fija rama/tag/commit (sin él, `main`).
+
+**3. Regístralo como SessionStart** en `.claude/settings.json` (comiteado). Si ya
+tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array:
 
 ```json
 {
@@ -146,8 +160,8 @@ tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-superpowers.sh\"",
-            "statusMessage": "Materializando skills de Superpowers (tarball)..."
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-upstream-skills.sh\"",
+            "statusMessage": "Materializando skills upstream (tarball)..."
           }
         ]
       }
@@ -156,29 +170,31 @@ tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array
 }
 ```
 
-**3. Ignora las skills materializadas** (las comparte el `.gitignore` con
-`sync-skills.sh`; si aún no está):
+**4. Ignora las skills materializadas** (lo comparte con `sync-skills.sh`; si aún
+no está) y **comitea el hook + el `.txt`**:
 
 ```
 .claude/skills/
 ```
 
-**4. Comitea el hook y abre PR.** En la siguiente sesión web el hook corre solo y
-deja las skills disponibles (emite `reloadSkills:true`, así cargan en ESA misma
-sesión).
+En la siguiente sesión web el hook corre solo y deja las skills disponibles
+(emite `reloadSkills:true`, así cargan en ESA misma sesión).
 
 ### Notas
 
-- **Solo nube.** El hook corre únicamente con `CLAUDE_CODE_REMOTE=true`. En local
-  conviene instalar el **plugin nativo de Superpowers** (la inyección agresiva del
-  plugin sí aplica allí); el hook hace `skip`.
-- **Sin whitelist:** materializa el set completo de `skills/` del tarball. A
-  diferencia de `sync-skills.sh`, no hay `.txt` per-repo — es todo o nada.
-- **Rama `main`, sin pin:** trae siempre lo último de upstream (posible drift
-  entre sesiones). Cambia `REF` arriba del hook para fijar a un tag/commit.
-- **Nombres planos** (`brainstorming`, …; sin prefijo `superpowers:`) y **sin
-  inyección agresiva**: quedan disponibles por su `description` y se encadenan por
-  sus cross-referencias, pero no se fuerzan en cada mensaje.
+- **Solo nube.** Corre únicamente con `CLAUDE_CODE_REMOTE=true`. En local conviene
+  instalar los **plugins nativos** (la inyección agresiva del plugin sí aplica
+  allí); el hook hace `skip`.
+- **Doble whitelist en un archivo:** la lista de líneas decide los repos; los
+  nombres por línea, las skills. Skill pedida que no existe en el repo → log a
+  stderr y sigue (no rompe la sesión).
+- **Rama `main` por defecto, pin por fuente** con `@ref` (posible drift si sigues
+  `main`).
+- **Colisión de nombres** entre fuentes (o con las de `sync-skills.sh`) → gana la
+  última escrita; el orden del archivo manda.
+- **Nombres planos** y **sin inyección agresiva**: quedan disponibles por su
+  `description` y se encadenan por sus cross-referencias, pero no se fuerzan en
+  cada mensaje. (Para el modo *always-on* de ponytail, ver la sección siguiente.)
 
 ## Cableado de ponytail always-on en cualquier repo
 
