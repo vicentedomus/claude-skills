@@ -32,6 +32,7 @@ desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<
 |------|----------|
 | [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
 | [`sync-superpowers.sh`](hooks/sync-superpowers.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` **todas** las skills de [`obra/Superpowers`](https://github.com/obra/Superpowers) vía tarball de codeload (solo en la nube; en local va el plugin nativo). Nombres planos, sin inyección agresiva. Knobs `OWNER/REPO/REF`. Ver el cableado abajo. |
+| [`ponytail-mode.sh`](hooks/ponytail-mode.sh) | **Template repo-agnóstico.** Un solo script en TRES eventos (SessionStart/UserPromptSubmit/SubagentStart) que mantiene el "modo ponytail" **siempre activo**, como plantea el SKILL.md de [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) (MIT): inyecta el *ladder* como contexto persistente, conmuta con `/ponytail lite\|full\|ultra\|off` y apaga con "stop ponytail". Bash puro (sin node, sin código de terceros por prompt); lee el ladder de la skill `ponytail` si está sincronizada, o de un fallback embebido. Ver el cableado abajo. |
 | [`pr-summary-on-merge.sh`](hooks/pr-summary-on-merge.sh) | **Template repo-agnóstico.** PostToolUse hook (matcher `mcp__github__merge_pull_request`) que, al mergear un PR, le recuerda a Claude reescribir título+cuerpo de ese PR con el formato estándar de resumen. No escribe el resumen, solo inyecta la instrucción con el `#NNN` resuelto. Ver el cableado abajo. |
 
 ## Cableado del sync de skills en cualquier repo
@@ -178,6 +179,101 @@ sesión).
 - **Nombres planos** (`brainstorming`, …; sin prefijo `superpowers:`) y **sin
   inyección agresiva**: quedan disponibles por su `description` y se encadenan por
   sus cross-referencias, pero no se fuerzan en cada mensaje.
+
+## Cableado de ponytail always-on en cualquier repo
+
+A diferencia de una skill "disponible" (opt-in, se activa al invocarla), esto
+mantiene el **modo ponytail SIEMPRE ACTIVO** tal como plantea su SKILL.md: lazy
+senior dev, *active every response*, default `full`, conmutable y con off-switch.
+Lo logra una capa de hooks en bash que **inyecta el ladder como contexto** (mismo
+canal `additionalContext` que el resto) — sin node, sin correr código de terceros
+en cada prompt. Un solo script registrado en **tres** eventos. Cuatro pasos:
+
+**1. Copia el template del hook** a `.claude/hooks/ponytail-mode.sh` y dale el bit
+ejecutable:
+
+```bash
+mkdir -p .claude/hooks
+curl -sSL https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/ponytail-mode.sh \
+  -o .claude/hooks/ponytail-mode.sh
+chmod +x .claude/hooks/ponytail-mode.sh
+```
+
+**2. Regístralo en `.claude/settings.json`** en **tres** eventos (el mismo script
+ramifica por `hook_event_name`):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/ponytail-mode.sh\"",
+            "statusMessage": "Activando modo ponytail..."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/ponytail-mode.sh\""
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/ponytail-mode.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+> Si ya tienes bloques `SessionStart` (p. ej. `sync-skills.sh`), añade el de
+> ponytail como **otro objeto** del array, no lo reemplaces.
+
+**3. Ignora el flag de estado** en `.gitignore` (lo escribe el hook para recordar
+el nivel activo dentro de la sesión):
+
+```
+.claude/.ponytail-mode
+```
+
+**4. (Recomendado) Sincroniza también la skill `ponytail`** vía el sync de skills
+upstream. Si está en `.claude/skills/ponytail/SKILL.md`, el hook inyecta **ese
+cuerpo verbatim** (cero drift); si no, usa un ladder embebido de fallback. Así la
+skill es la única fuente de verdad y el hook solo la mantiene prendida.
+
+### Uso
+
+- Por defecto arranca en `full` cada sesión. Conmuta el nivel con `/ponytail lite`,
+  `/ponytail full`, `/ponytail ultra`. Apaga con `/ponytail off`, `stop ponytail`
+  o `normal mode` (frase exacta, para no apagarlo a media tarea por un "normal
+  mode" incidental).
+- El nivel persiste en `.claude/.ponytail-mode` durante la sesión; en la nube se
+  re-clona limpio, así que cada sesión vuelve al default.
+
+### Notas
+
+- **Requiere `jq`** (igual que `pr-summary-on-merge.sh`). Si falta, el hook no
+  bloquea: no emite contexto.
+- **Cambia el default** con la env var `PONYTAIL_DEFAULT_MODE` (`lite|full|ultra`).
+- **Límite honesto:** el hook *inyecta* el ruleset con fuerza, pero no obliga a
+  nivel de token — el modelo igual debe honrarlo (misma base que ponytail nativo).
+- **Local / fidelidad total:** para statusline + modos del plugin original,
+  instala el **plugin nativo de ponytail** en local; este template cubre el
+  always-on en la nube, donde los plugins están desactivados.
 
 ## Cableado del resumen de PR al mergear en cualquier repo
 
