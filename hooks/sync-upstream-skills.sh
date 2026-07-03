@@ -1,8 +1,9 @@
 #!/bin/bash
 # SessionStart hook — TEMPLATE repo-agnóstico.
 # Materializa en .claude/skills/ skills de repos de TERCEROS (layout skills/*/,
-# como obra/Superpowers o DietrichGebert/ponytail), bajando cada repo por TARBALL
-# de codeload (HTTPS). DOS niveles de whitelist en UN archivo .claude/upstream-skills.txt:
+# como obra/Superpowers o DietrichGebert/ponytail), bajando cada repo por `git clone`
+# vía el relay del entorno, con TARBALL de codeload como fallback. DOS niveles de
+# whitelist en UN archivo .claude/upstream-skills.txt:
 #
 #   # una línea por fuente:  owner/repo[@ref]   [skill1 skill2 ...]
 #   #   - sin skills listadas → trae TODAS las del skills/ de ese repo
@@ -17,11 +18,14 @@
 # upstream"). El archivo upstream-skills.txt es el ÚNICO knob per-repo: decide a la
 # vez QUÉ repos y QUÉ skills de cada uno.
 #
-# Por qué tarball y no git clone / plugin: el relay git del entorno web da 403 para
-# repos AJENOS; codeload.github.com pasa por el proxy y trae el árbol completo a un
-# commit consistente. Los plugins están desactivados en la web (SKIP_PLUGIN_MARKETPLACE).
-# Nombres PLANOS (sin prefijo), cp -a preserva references/ y scripts/ ejecutables.
-# Colisión de nombres entre fuentes → gana la última escrita (el orden del archivo manda).
+# Doble transporte (la política de red varía entre entornos): primero `git clone`
+# vía el relay del entorno, y si falla, TARBALL de codeload como fallback. Se observó
+# que algunos entornos autorizan el relay para repos AJENOS pero dan 403 en codeload,
+# y otros al revés — probar ambos hace el hook resiliente a cualquiera de las dos.
+# (Pin por SHA: `git clone --branch` no acepta SHA; ese caso cae al tarball, que sí.)
+# Los plugins están desactivados en la web (SKIP_PLUGIN_MARKETPLACE). Nombres PLANOS
+# (sin prefijo), cp -a preserva references/ y scripts/ ejecutables. Colisión de
+# nombres entre fuentes → gana la última escrita (el orden del archivo manda).
 #
 # Solo corre en la nube: en local conviene instalar los plugins nativos. El JSON del
 # hook es lo ÚNICO en stdout; los logs van a stderr. Emite reloadSkills:true si
@@ -58,14 +62,20 @@ while read -r src wl; do
   esac
 
   TMP=$(mktemp -d)
-  # codeload acepta el shorthand /tar.gz/<ref> para rama, tag o sha.
-  if ! curl -sSL --max-time 120 "https://codeload.github.com/$slug/tar.gz/$ref" -o "$TMP/src.tar.gz" \
-     || ! tar -xzf "$TMP/src.tar.gz" -C "$TMP" --strip-components=1 2>/dev/null; then
-    log "✗ $slug@$ref: descarga/extracción falló; skip"
+  ROOT=""
+  # Transporte 1: git clone (shallow) vía el relay del entorno.
+  if git clone --quiet --depth 1 --branch "$ref" "https://github.com/$slug.git" "$TMP/clone" 2>/dev/null; then
+    ROOT="$TMP/clone"
+  # Transporte 2 (fallback): tarball de codeload. Shorthand /tar.gz/<ref> (rama/tag/sha).
+  elif curl -sSL --max-time 120 "https://codeload.github.com/$slug/tar.gz/$ref" -o "$TMP/src.tar.gz" \
+       && tar -xzf "$TMP/src.tar.gz" -C "$TMP" --strip-components=1 2>/dev/null; then
+    ROOT="$TMP"
+  else
+    log "✗ $slug@$ref: git clone y codeload fallaron; skip"
     rm -rf "$TMP"; continue
   fi
-  if [ ! -d "$TMP/skills" ]; then
-    log "✗ $slug@$ref: el tarball no trae skills/; skip"
+  if [ ! -d "$ROOT/skills" ]; then
+    log "✗ $slug@$ref: el árbol no trae skills/; skip"
     rm -rf "$TMP"; continue
   fi
 
@@ -82,11 +92,11 @@ while read -r src wl; do
 
   if [ -z "$wl" ]; then
     # Sin whitelist → todas las skills del repo.
-    for d in "$TMP"/skills/*/; do copy_skill "$d"; done
+    for d in "$ROOT"/skills/*/; do copy_skill "$d"; done
   else
     # Whitelist por fuente → solo las listadas.
     for name in $wl; do
-      if [ -d "$TMP/skills/$name" ]; then copy_skill "$TMP/skills/$name"
+      if [ -d "$ROOT/skills/$name" ]; then copy_skill "$ROOT/skills/$name"
       else log "  ✗ $name (no está en $slug@$ref)"; fi
     done
   fi
