@@ -40,7 +40,7 @@ desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<
 
 | Hook | Qué hace |
 |------|----------|
-| [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
+| [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. `git clone` vía relay (con reintento) primero, tarball de codeload como fallback de nube, `raw` SKILL.md como último recurso. Ver el cableado abajo. |
 | [`sync-upstream-skills.sh`](hooks/sync-upstream-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` skills de repos de **terceros** con layout `skills/*/` ([`obra/Superpowers`](https://github.com/obra/Superpowers), [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail), …) vía `git clone` con fallback a tarball de codeload (solo nube; en local, plugins nativos). Manejado por `.claude/upstream-skills.txt`: **doble whitelist** — qué repos clonar y qué skills de cada uno. Nombres planos, sin inyección agresiva. Ver el cableado abajo. |
 | [`ponytail-mode.sh`](hooks/ponytail-mode.sh) | **Template repo-agnóstico.** Un solo script en TRES eventos (SessionStart/UserPromptSubmit/SubagentStart) que mantiene el "modo ponytail" **siempre activo**, como plantea el SKILL.md de [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) (MIT): inyecta el *ladder* como contexto persistente, conmuta con `/ponytail lite\|full\|ultra\|off` y apaga con "stop ponytail". Bash puro (sin node, sin código de terceros por prompt); lee el ladder de la skill `ponytail` si está sincronizada, o de un fallback embebido. Ver el cableado abajo. |
 | [`pr-summary-on-merge.sh`](hooks/pr-summary-on-merge.sh) | **Template repo-agnóstico.** PostToolUse hook (matcher `mcp__github__merge_pull_request`) que, al mergear un PR, le recuerda a Claude reescribir título+cuerpo de ese PR con el formato estándar de resumen. No escribe el resumen, solo inyecta la instrucción con el `#NNN` resuelto. Ver el cableado abajo. |
@@ -103,16 +103,21 @@ sesión. En `.gitignore`:
 sesión web el hook corre solo y deja las skills disponibles (emite
 `reloadSkills:true`, así cargan en ESA misma sesión).
 
-### Por qué tarball en la web y `git clone` en local
+### Transporte: `git clone` primero, codeload de fallback, `raw` último recurso
 
-En Claude Code on the web, `git clone`/`git fetch` se reescriben a un **relay de
-git scopeado** que solo autoriza los repos del scope de sesión — da **403 hasta
-para repos propios** (`claude-skills` incluido), ni por dueño ni por fase. Las
-descargas HTTPS normales sí pasan, así que en la nube el hook baja el **tarball
-de `codeload.github.com`** (árbol completo a un commit consistente, con
-`scripts/`/`references/` y bit ejecutable preservados vía `cp -a`). En local, sin
-relay scopeado, usa `git clone`. Si todo falla, cae a bajar solo cada `SKILL.md`
-por `curl` a `raw.githubusercontent.com` (sin assets) como último recurso.
+La política de red **varía entre entornos de Claude Code on the web** y la premisa
+vieja ("el relay git da 403, codeload pasa") quedó **invertida** en varios: se
+observó que el **relay git autoriza el clone** (incluso repos ajenos) mientras
+`codeload.github.com` da **403 host-wide** (hasta para tu propio `claude-skills`).
+Por eso el hook usa **triple cascada**:
+
+1. **`git clone` (shallow) vía el relay, con reintento** — trae el árbol completo
+   con `scripts/`/`references/` (preservados vía `cp -a`). El reintento cubre el
+   *flake* transitorio del relay en el cold-start de la sesión.
+2. **Fallback de nube: tarball de `codeload.github.com`** — para entornos donde el
+   relay sí esté scopeado y codeload pase.
+3. **Último recurso: cada `SKILL.md` por `curl` a `raw.githubusercontent.com`**
+   (sin assets), para que la skill siga cargando aunque 1 y 2 fallen.
 
 > **Requisito**: el repo de skills debe ser **público** (el tarball de codeload y
 > el fallback de raw.github van sin auth). Cambia `OWNER`/`REPO`/`REF` arriba del

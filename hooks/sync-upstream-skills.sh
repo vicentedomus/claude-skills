@@ -50,6 +50,15 @@ fi
 mkdir -p "$SKILLS_DIR"
 total=0
 
+# git clone --depth 1 con hasta 3 intentos: el relay puede fallar transitoriamente
+# en el cold-start ("no caliente") y ahí el reintento lo rescata. $1=slug $2=ref $3=dst.
+clone_retry() {
+  local n=0
+  until git clone --quiet --depth 1 --branch "$2" "https://github.com/$1.git" "$3" 2>/dev/null; do
+    n=$((n + 1)); [ "$n" -ge 3 ] && return 1; sleep "$n"
+  done
+}
+
 # Lee el archivo: primer token = owner/repo[@ref]; el resto = whitelist de skills.
 # grep quita comentarios (#) y líneas en blanco antes del while.
 while read -r src wl; do
@@ -63,15 +72,15 @@ while read -r src wl; do
 
   TMP=$(mktemp -d)
   ROOT=""
-  # Transporte 1: git clone (shallow) vía el relay del entorno.
-  if git clone --quiet --depth 1 --branch "$ref" "https://github.com/$slug.git" "$TMP/clone" 2>/dev/null; then
+  # Transporte 1: git clone (shallow) vía el relay del entorno, con reintento.
+  if clone_retry "$slug" "$ref" "$TMP/clone"; then
     ROOT="$TMP/clone"
   # Transporte 2 (fallback): tarball de codeload. Shorthand /tar.gz/<ref> (rama/tag/sha).
   elif curl -sSL --max-time 120 "https://codeload.github.com/$slug/tar.gz/$ref" -o "$TMP/src.tar.gz" \
        && tar -xzf "$TMP/src.tar.gz" -C "$TMP" --strip-components=1 2>/dev/null; then
     ROOT="$TMP"
   else
-    log "✗ $slug@$ref: git clone y codeload fallaron; skip"
+    log "✗ $slug@$ref: git clone (con reintento) y codeload fallaron; skip"
     rm -rf "$TMP"; continue
   fi
   if [ ! -d "$ROOT/skills" ]; then

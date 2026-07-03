@@ -9,16 +9,15 @@
 # "Cableado del sync de skills en cualquier repo"). Los únicos knobs son las
 # variables de arriba y .claude/skills.txt.
 #
-# CÓMO SE BAJA EL REPO:
-#   - En la NUBE (Claude Code on the web, CLAUDE_CODE_REMOTE=true): TARBALL de
-#     codeload por HTTPS. El relay git del entorno web reescribe git clone/fetch
-#     y da 403 hasta para repos PROPIOS — autoriza solo los del scope de sesión,
-#     ni por dueño ni por fase. codeload.github.com sí pasa por el proxy y trae el
-#     árbol completo a un commit consistente. El repo debe ser PÚBLICO (sin auth).
-#   - En LOCAL: git clone (shallow). Ahí el relay no está scopeado.
-#
-# FALLBACK último recurso: si la vía principal no materializa nada, baja cada
-# SKILL.md por curl a raw.github (sin assets) para que la skill siga cargando.
+# CÓMO SE BAJA EL REPO (doble transporte; la política de red varía entre entornos):
+#   1. git clone (shallow) vía el relay del entorno, CON REINTENTO — funciona
+#      incluso donde codeload da 403 (se observó que el relay autoriza el repo y
+#      codeload está bloqueado host-wide; la premisa vieja "relay 403, codeload
+#      pasa" quedó INVERTIDA en esos entornos). Trae el árbol completo con assets.
+#   2. Fallback en la NUBE: TARBALL de codeload por HTTPS (para entornos donde el
+#      relay sí esté scopeado y codeload pase). El repo debe ser PÚBLICO (sin auth).
+#   3. Último recurso: baja cada SKILL.md por curl a raw.github (SIN assets) para
+#      que la skill siga cargando aunque 1 y 2 fallen.
 #
 # El JSON del hook es lo ÚNICO en stdout → todos los logs van a stderr. Al final
 # emite reloadSkills:true para que Claude Code cargue las skills en ESTA sesión
@@ -63,21 +62,25 @@ materialize_from() {
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-if [ "$CLAUDE_CODE_REMOTE" = "true" ]; then
-  # Nube: tarball de codeload (HTTPS sortea el relay git scopeado).
-  if curl -sSL "$TARBALL_URL" -o "$TMP/cs.tar.gz" \
+# git clone --depth 1 con hasta 3 intentos: el relay puede fallar transitoriamente
+# en el cold-start de la sesión ("no caliente"), y ahí el reintento lo rescata.
+clone_retry() {
+  local n=0
+  until git clone --quiet --depth 1 --branch "$REF" "$REPO_URL" "$1" 2>/dev/null; do
+    n=$((n + 1)); [ "$n" -ge 3 ] && return 1; sleep "$n"
+  done
+}
+
+# Transporte 1: git clone vía el relay (trae assets; funciona donde codeload da 403).
+if clone_retry "$TMP/clone"; then
+  materialize_from "$TMP/clone"
+# Transporte 2 (fallback de nube): tarball de codeload.
+elif [ "$CLAUDE_CODE_REMOTE" = "true" ] \
+     && curl -sSL --max-time 120 "$TARBALL_URL" -o "$TMP/cs.tar.gz" \
      && tar -xzf "$TMP/cs.tar.gz" -C "$TMP" --strip-components=1 2>/dev/null; then
-    materialize_from "$TMP"
-  else
-    log "⚠ sync-skills: tarball falló (descarga/extracción)"
-  fi
+  materialize_from "$TMP"
 else
-  # Local: git clone shallow.
-  if git clone --quiet --depth 1 --branch "$REF" "$REPO_URL" "$TMP/clone" 2>/dev/null; then
-    materialize_from "$TMP/clone"
-  else
-    log "⚠ sync-skills: git clone falló"
-  fi
+  log "⚠ sync-skills: git clone (con reintento) y codeload fallaron"
 fi
 
 # Último recurso: si la vía principal no materializó nada, baja cada SKILL.md por
