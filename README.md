@@ -41,7 +41,7 @@ desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<
 | Hook | Qué hace |
 |------|----------|
 | [`sync-skills.sh`](hooks/sync-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` las skills listadas en `.claude/skills.txt`, bajándolas de este repo. Tarball de codeload en la nube, `git clone` en local. Ver el cableado abajo. |
-| [`sync-upstream-skills.sh`](hooks/sync-upstream-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` skills de repos de **terceros** con layout `skills/*/` ([`obra/Superpowers`](https://github.com/obra/Superpowers), [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail), …) vía tarball de codeload (solo nube; en local, plugins nativos). Manejado por `.claude/upstream-skills.txt`: **doble whitelist** — qué repos clonar y qué skills de cada uno. Nombres planos, sin inyección agresiva. Ver el cableado abajo. |
+| [`sync-upstream-skills.sh`](hooks/sync-upstream-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` skills de repos de **terceros** con layout `skills/*/` ([`obra/Superpowers`](https://github.com/obra/Superpowers), [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail), …) vía `git clone` con fallback a tarball de codeload (solo nube; en local, plugins nativos). Manejado por `.claude/upstream-skills.txt`: **doble whitelist** — qué repos clonar y qué skills de cada uno. Nombres planos, sin inyección agresiva. Ver el cableado abajo. |
 | [`ponytail-mode.sh`](hooks/ponytail-mode.sh) | **Template repo-agnóstico.** Un solo script en TRES eventos (SessionStart/UserPromptSubmit/SubagentStart) que mantiene el "modo ponytail" **siempre activo**, como plantea el SKILL.md de [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) (MIT): inyecta el *ladder* como contexto persistente, conmuta con `/ponytail lite\|full\|ultra\|off` y apaga con "stop ponytail". Bash puro (sin node, sin código de terceros por prompt); lee el ladder de la skill `ponytail` si está sincronizada, o de un fallback embebido. Ver el cableado abajo. |
 | [`pr-summary-on-merge.sh`](hooks/pr-summary-on-merge.sh) | **Template repo-agnóstico.** PostToolUse hook (matcher `mcp__github__merge_pull_request`) que, al mergear un PR, le recuerda a Claude reescribir título+cuerpo de ese PR con el formato estándar de resumen. No escribe el resumen, solo inyecta la instrucción con el `#NNN` resuelto. Ver el cableado abajo. |
 
@@ -186,6 +186,15 @@ tienes el bloque de `sync-skills.sh`, este es un **segundo** objeto en el array:
 > default (~60s) puede cortarse a media descarga y abortar la cadena `SessionStart`
 > (síntoma típico: unas skills sí, otras no, y los hooks siguientes no corren). El
 > hook ya acota cada `curl` con `--max-time`, pero dale aire al hook igual.
+
+> **Transporte (doble, resiliente a la política de red).** El hook intenta primero
+> `git clone` vía el relay del entorno y, si falla, el tarball de
+> `codeload.github.com`. La política de egress **varía entre entornos**: algunos
+> autorizan el relay para repos **ajenos** (Superpowers/ponytail no están en el
+> scope de la sesión) pero dan **403 en codeload**, y otros al revés. Probar ambos
+> evita tener que reconfigurar la política de red del environment. Síntoma del bug
+> que esto resuelve: `.hooks.log` con `materializadas 0 skills upstream` pese a que
+> el resto del cableado (sync-skills propio, ponytail-mode) sí levantó.
 
 **4. Ignora las skills materializadas** (lo comparte con `sync-skills.sh`; si aún
 no está) y **comitea el hook + el `.txt`**:
