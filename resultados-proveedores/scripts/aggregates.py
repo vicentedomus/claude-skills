@@ -92,8 +92,17 @@ def dona(pairs, total):
         print(f'    <div class="item"><span class="swatch" style="background:{CAT[i%9]}"></span>{lab} — {n} ({n/total*100:.1f}%)</div>')
 
 
+def work_days(r):
+    """Días hábiles de trabajo (programación → terminado), con piso en 0.
+    Un tiempo de trabajo negativo no es válido: pasa cuando la fecha de
+    programación se capturó DESPUÉS del cierre (dato mal registrado). En ese
+    caso se cuenta como 0 (mismo día). Ver footnote del deck."""
+    dt = bizdays(d(r["fecha_programacion"]), d(r["fecha_terminado"]))
+    return max(0, dt) if dt is not None else None
+
+
 def kpis(term):
-    trab = [bizdays(d(r["fecha_programacion"]), d(r["fecha_terminado"])) for r in term]
+    trab = [work_days(r) for r in term]
     prog = [bizdays(d(r["fecha_reporte"]), d(r["fecha_programacion"])) for r in term]
     trab = [x for x in trab if x is not None]
     prog = [x for x in prog if x is not None]
@@ -158,7 +167,7 @@ def main():
     # ---- arrays JS ----
     print("\n## ARRAY TERMINADOS (slide 9, modales de KPI)")
     for r in terminados:
-        dt = bizdays(d(r["fecha_programacion"]), d(r["fecha_terminado"]))
+        dt = work_days(r)
         dp = bizdays(d(r["fecha_reporte"]), d(r["fecha_programacion"]))
         print(f'  {{lote:"{lote_label(r)}", zona:"{r["zona"]}", desc:"{jstr(r["descripcion"])}", '
               f'prioridad:"{r["prioridad"]}", recurrencia:{str(bool(r.get("recurrencia"))).lower()}, '
