@@ -1,6 +1,6 @@
 ---
 name: test-web
-description: Run Playwright E2E tests to verify that web app changes work correctly in a real browser. Use this skill whenever changes are pushed to a test branch, after editing front-end files (HTML, CSS, JS, TS), when the user asks to test or verify changes, or when a hook triggers it after git push. Also use it when the user says "test", "verify", "check if it works", "run tests", or "testear". Repo-agnostic: it discovers the repo's test-user setup by convention.
+description: Run Playwright E2E tests to verify that web app changes work correctly in a real browser. Invoke this skill in exactly two situations, and no others — (1) the user explicitly asks for a web test / test-web / to "testear la web" (or clearly asks to run a browser/E2E test); or (2) Claude has proposed an end-to-end (E2E) browser test and the user agreed to it. Do NOT auto-invoke merely because front-end files (HTML, CSS, JS, TS) were edited, because a branch was pushed, or because a hook fired — a file change or push alone is never a trigger. Repo-agnostic: it discovers the repo's test-user setup by convention.
 allowed-tools: Bash(npx playwright *), Bash(node *), Bash(env), Bash(git *), Bash(npm ci), Bash(npm install), Bash(npm run *), Bash(lsof *), Bash(ls *), Bash(curl *), Read, Glob, Grep, Write, Edit
 argument-hint: [test-filter]
 ---
