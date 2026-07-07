@@ -144,6 +144,10 @@ Programar · 11. Siguientes pasos.
   respetar un deck previo horneado a mano.
 - **Severidad y recurrencia** se calculan sobre los **terminados** del mes.
 - **Outliers**: por defecto inclúyelos tal cual y acláralo en el footnote.
+- **Tiempo de trabajo negativo = 0**: cuando la fecha de programación se capturó
+  DESPUÉS del cierre (programación > terminado), el tiempo de trabajo no es válido;
+  `aggregates.py` lo cuenta como 0 (mismo día). Si hay varios, acláralo en el footnote
+  (p. ej. "N tickets con programación capturada tras el cierre → trabajo contado como 0").
 - **Regla de oro**: el desarrollo SIEMPRE viene del join a `proyectos`, nunca del lote.
 
 ## Perfeccionar / ampliar
