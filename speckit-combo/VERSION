@@ -1,0 +1,6 @@
+spec-kit @ v0.12.8 (integration: claude, ai_skills)
+vendorizado con: uvx --from git+https://github.com/github/spec-kit.git@v0.12.8 specify init . --integration claude
+capa core (payload/skills, payload/specify/{templates/*.md,scripts,workflows,integrations,init-options.json,integration.json})
+  = INTACTA respecto a upstream — sobrescribir al actualizar.
+capa nuestra (weave) = payload/specify/memory/constitution.md (Artículos I–III + Governance).
+  = NO se sobrescribe al actualizar upstream.
