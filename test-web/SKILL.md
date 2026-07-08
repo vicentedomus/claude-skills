@@ -1,7 +1,7 @@
 ---
 name: test-web
 description: Run Playwright E2E tests to verify that web app changes work correctly in a real browser. Invoke this skill in exactly two situations, and no others — (1) the user explicitly asks for a web test / test-web / to "testear la web" (or clearly asks to run a browser/E2E test); or (2) Claude has proposed an end-to-end (E2E) browser test and the user agreed to it. Do NOT auto-invoke merely because front-end files (HTML, CSS, JS, TS) were edited, because a branch was pushed, or because a hook fired — a file change or push alone is never a trigger. Repo-agnostic: it discovers the repo's test-user setup by convention.
-allowed-tools: Bash(npx playwright *), Bash(node *), Bash(env), Bash(git *), Bash(npm ci), Bash(npm install), Bash(npm run *), Bash(lsof *), Bash(ls *), Bash(curl *), Read, Glob, Grep, Write, Edit
+allowed-tools: Bash(npx playwright *), Bash(node *), Bash(env), Bash(git *), Bash(npm ci), Bash(npm install), Bash(npm run *), Bash(lsof *), Bash(ls *), Bash(cat *), Bash(curl *), Read, Glob, Grep, Write, Edit
 argument-hint: [test-filter]
 ---
 
@@ -11,15 +11,41 @@ Run end-to-end browser tests to verify that changes to a web app work correctly.
 
 ## How it works
 
-This skill creates **ephemeral tests** specific to what changed, runs them in a real browser via Playwright, and cleans up when they pass. This avoids accumulating obsolete tests.
+This skill creates **ephemeral tests** specific to what changed, runs them in a real browser via Playwright, and **always deletes them** when done — pass or fail-then-fixed. Tests are never graduated to a permanent suite; the repo keeps no `.spec.ts` that this skill authored. This keeps every run targeted and avoids accumulating obsolete tests.
+
+**The only thing that persists between runs are gotchas** — hard-won facts that make future runs faster. They come in **two tiers** (see "Sistema de gotchas en dos niveles" below): general environment gotchas that ship with the skill, and repo-specific gotchas that live in the consuming repo. The skill reads both at the start (Step 0) and proposes saving newly-discovered ones at the end (Step 5).
 
 The skill is **repo-agnostic**: it does not assume any particular set of user roles. It discovers the repo's test users from the environment by convention (Step 0), then drives whatever auth/projects that repo defines. Some repos have many user types (e.g. one per role/department); others have a single user or no auth at all. Adapt to what you find — don't hardcode role names from memory.
 
+## Sistema de gotchas en dos niveles
+
+Un *gotcha* es un hecho no-obvio que costó descubrir y que acelera (o desbloquea) las próximas corridas. Se guardan en dos lugares según su alcance:
+
+1. **Gotchas generales del entorno** → [`references/gotchas.md`](references/gotchas.md), **parte de la skill**. Aplican a cualquier repo detrás del proxy de Claude Code on the web (cert MITM, browser no ruteado por el proxy CONNECT-only, static-vs-bundler, versión de Chromium). Ya están documentados ahí; consúltalos cuando el entorno falle, y **añade uno nuevo** solo si es genuinamente general (no específico de un repo).
+2. **Gotchas específicos del repo** → `tests/QA-NOTES.md` **en el repo consumidor** (no en esta skill). Cosas que solo valen para *ese* repo: rol primario, qué permisos gatean qué UI, selectores y comportamiento de modales, branch base/deploy, qué deps CDN carga, el nombre de su knob TLS. La skill **lee este archivo en el Paso 0** y **propone añadirle** lo que aprenda en el Paso 5. Si no existe, lo crea al guardar el primer gotcha.
+
+Regla para clasificar: *"¿esto sería cierto en otro repo detrás del mismo proxy?"* Sí → general (skill). No, solo aplica a este repo → `tests/QA-NOTES.md`.
+
 ## Workflow
 
-### Step 0: Discover the repo's test setup
+### Step 0: Discover the repo's test setup and read the gotchas
 
-Before anything else, learn how *this* repo authenticates and names its Playwright projects. Two sources of truth — read both, don't assume:
+**First, read both gotcha sources** — they may already answer the exact problem you're about to hit, saving a full debug cycle:
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+# 1. General environment gotchas (ship with the skill): proxy/TLS/bundler/Chromium.
+#    Path is relative to the skill's install dir (e.g. .claude/skills/test-web/).
+#    If you can't resolve it, they're summarized in Step 3 and "Important notes".
+cat references/gotchas.md 2>/dev/null || echo "read the skill's references/gotchas.md"
+
+# 2. Repo-specific gotchas (live in the consuming repo). Absent on first-ever run.
+cat tests/QA-NOTES.md 2>/dev/null || echo "no repo gotchas yet — Step 5 will offer to create it"
+```
+
+Treat what you find as the current truth, but **re-verify repo-specific facts each run** — they drift (see Step 5 on keeping `tests/QA-NOTES.md` honest).
+
+Then learn how *this* repo authenticates and names its Playwright projects. Two sources of truth — read both, don't assume:
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
@@ -116,11 +142,14 @@ ls tests/.auth/ 2>/dev/null || echo "no auth yet — setup project will create i
 
 If `npx playwright install` or the auth setup fails, fix that before running tests — don't try to interpret downstream failures. A common auth failure is a missing `TEST_<ROLE>_EMAIL` / `TEST_USER_PASSWORD` — re-check Step 0.
 
-**Behind a TLS-intercepting proxy (common in remote/cloud execution), the setup project times out waiting for the login form even though credentials are fine.** Many apps pull runtime deps from CDNs via `<script src>` (Supabase client, jspdf, web fonts). A MITM proxy re-signs TLS with a CA the browser rejects, so those subresources fail with `ERR_CERT_AUTHORITY_INVALID`, the app never boots, and `setup-<role>` hangs on a *hidden* `#login-form` / a stuck splash screen. **Symptom→cause:** a setup timeout on a hidden login form is almost never bad credentials — it's subresource cert failures. Confirm by loading the app once and checking the browser console for `ERR_CERT_AUTHORITY_INVALID` / `<lib> is not defined`. The fix is a browser-level cert bypass — look for the repo's existing knob rather than editing the config (Domus Hub: `export PLAYWRIGHT_IGNORE_TLS=1`, which the config maps to `ignoreHTTPSErrors` + `--ignore-certificate-errors`).
+**If the environment itself blocks the app from booting** — the `setup-<role>` project hangs on a *hidden* `#login-form` / a stuck splash, or a failure screenshot shows the app rendered but `#app.visible` timed out — it's almost never bad credentials. It's one of the general environment gotchas, all diagnosed by symptom in [`references/gotchas.md`](references/gotchas.md):
 
-**When TLS-ignore alone doesn't fix it — the browser never routes through the proxy at all.** In some remote environments the blocker is one level deeper than certs: Chromium gets `ERR_CONNECTION_CLOSED` (not `ERR_CERT_*`) for CDN/backend hosts *even with* `--ignore-certificate-errors`, because the env's egress is **CONNECT-only via `$HTTPS_PROXY`** and Chromium does **not** use that proxy unless explicitly told to (`curl` works — it honors `HTTPS_PROXY` — but the browser doesn't). **Symptom→cause:** console shows `ERR_CONNECTION_CLOSED` for `*.jsdelivr.net` / your `*.supabase.co` (etc.), `curl -s "$HTTPS_PROXY/__agentproxy/status"` succeeds, yet the app stays on the splash → the browser isn't routed. Things that look like the fix but **don't work** in this Chromium: `--proxy-server=...` (the HTTPS CONNECT never reaches the proxy), Playwright's `proxy.bypass` (doesn't exclude localhost → the local dev server gets proxied and dies with **405**, since the proxy is CONNECT-only and rejects a plain-HTTP GET), and a PAC in a `data:` URL. **What works:** route the browser via `--proxy-pac-url` pointing at a **`file://`** PAC that sends *localhost DIRECT and everything else through the proxy*, plus `--ignore-certificate-errors`. This skill ships a ready, repo-agnostic helper that does exactly this, **gated by detection** (no-op in local/CI): copy [`assets/playwright.remote-env.ts`](assets/playwright.remote-env.ts) to the repo root and wire it into the Playwright config:
+- **`ERR_CERT_AUTHORITY_INVALID` / `<lib> is not defined` in the console** → CDN deps fail cert validation behind the MITM proxy (gotcha 1). Fix: the repo's TLS knob (`export PLAYWRIGHT_IGNORE_TLS=1`) or the helper below.
+- **`ERR_CONNECTION_CLOSED` for CDN/backend hosts *even with* TLS-ignore** → the browser isn't routed through the CONNECT-only proxy (gotcha 2). Fix: drop in [`assets/playwright.remote-env.ts`](assets/playwright.remote-env.ts) and wire it into the config (below); it's the same fix every repo behind this proxy needs, and it also covers the Chromium version-mismatch (gotcha 4).
+- **App fully rendered but both `#app.visible` and `#login-form` time out, with 404s for `/config.js`-style paths or a `video/mp2t` MIME error** → a static `webServer` can't boot a bundler app (gotcha 3). Fix: start the repo's real bundler preview yourself and let `reuseExistingServer: true` adopt it.
 
 ```ts
+// Wiring for assets/playwright.remote-env.ts (gated by detection — no-op in local/CI):
 import { ignoreTLS, remoteLaunchOptions } from './playwright.remote-env';
 // ...
 use: {
@@ -129,9 +158,7 @@ use: {
 },
 ```
 
-It also auto-points `executablePath` at the pre-installed `/opt/pw-browsers/chromium` (the env forbids `playwright install`), so it covers the version-mismatch failure too. Prefer dropping in this helper over hand-hacking proxy flags; it's the same fix every repo behind this proxy needs. (If the config is plain `.js`, either convert it to `.ts` so it can import the helper, or transpile the helper to `.js` — Playwright loads `.ts` configs and their relative imports natively.)
-
-**A static-file `webServer` won't boot a bundler app (Vite/Next/webpack), so it hangs the same way — `#login-form` hidden, `#app.visible` never appears.** Some Playwright configs (often a *separate mobile config*) start the server with a plain static server — `npx serve .`, `http-server`, `python -m http.server`. That serves raw repo files, but a bundler app needs its own dev/preview server to (a) resolve bare/module imports, (b) serve `publicDir` assets at `/` (e.g. `/config.js`), and (c) transpile `.ts`/`.tsx` on the fly. Under a static server those all fail: app-referenced files like `/config.js` return 404 and source modules are served with the wrong MIME (`.ts` → `video/mp2t`, which strict MIME checking blocks), so the bundle never executes and boot stalls. **Symptom→cause:** the failure screenshot shows the app *fully rendered* yet both `#app.visible` and `#login-form` timed out, and the console shows 404s for `/config.js`-style paths and/or a `video/mp2t` module-MIME error → it's a static-server-vs-bundler mismatch, not a bug in your test. **Fix:** don't edit the committed config — start the repo's real bundler server on the expected port yourself and let the config's `reuseExistingServer: true` adopt it. Detect the bundler from `package.json` / `vite.config.*` / `next.config.*` and run its production preview (closest to what ships); for Vite that's `npm run build && npm run preview` (Domus Hub pins both dev and preview to `:3000` in `vite.config.ts`), then `curl -sf localhost:3000/config.js` to confirm assets resolve before running the suite. Flag the broken config to the user as preexisting tech debt to fix separately (e.g. point its `webServer.command` at the bundler's preview instead of `serve .`).
+Read `references/gotchas.md` for the full symptom→cause→fix of each, plus what *looks* like the fix but doesn't work. Also check the repo's `tests/QA-NOTES.md` — a past run may have already recorded which of these this repo needs.
 
 Force the JSON reporter via CLI so the results file always exists, regardless of what the config sets. `--reporter=line,json` keeps console progress visible *and* writes the file; `PLAYWRIGHT_JSON_OUTPUT_NAME` controls where it lands (Step 4 reads exactly this path). Two more flags pull their weight on every run:
 
@@ -165,7 +192,7 @@ Read `test-results/results.json` and present a summary table. Use the JSON's per
 | AC: range filter updates list | PASS | 3.2s |
 | AC: supervisor cannot edit date | FLAKY (passed on retry 2) | 8.1s |
 
-A flaky test is not a green light: it points at a race or unstable selector. Note it for the user, stabilize it if it's cheap, and **do not promote a flaky test** to the permanent suite (Step 5) until it passes deterministically.
+A flaky test is not a green light: it points at a race or unstable selector. Note it for the user and stabilize it if it's cheap. A test that only passes on retry hasn't verified its acceptance criterion deterministically — treat the criterion as unproven until the test is stable.
 
 If there are failures, for each one:
 1. Read the screenshot: `test-results/*/test-failed-1.png`
@@ -179,15 +206,19 @@ If there are failures, for each one:
 6. Apply the fix and re-run. You may edit app code directly without asking — *unless* the fix is destructive or hard to reverse (deleting code paths, schema/migration changes, touching auth or other tests). In that case, stop and confirm with the user first.
 7. **Cap the loop at 3 fix attempts.** If the tests still fail after the third attempt, stop — don't keep changing code. Report what you tried, the current failure, and your best hypothesis, and hand back to the user.
 
-### Step 5: Clean up and push
+### Step 5: Save gotchas, clean up, and push
 
 **Only run this step once all tests actually pass.** Stopping after the 3-attempt cap in Step 4 is *not* a finish line — it's a pause to fix the underlying problem and re-test. In that case do **not** clean up or push: leave `tests/temp/` in place so the failure can be reproduced and debugged, and hand back to the user.
 
 When everything is green:
 
-1. **Consider promoting critical-path tests to the regression suite *before* deleting them.** Ephemeral-by-default keeps the suite lean, but throwing away *every* test leaves the repo with no regression net. If a temp test covers a **critical flow** — login/auth, a permission gate, creation/edit of key data, anything whose breakage would be high-impact — offer to **graduate** it: move it out of `tests/temp/` into the permanent `tests/` dir under the right prefix (`<role>.<feature>.spec.ts` or `shared.<feature>.spec.ts`, dropping the `verify-`/`temp` naming) so it runs on every future change. Only promote deterministic tests — never a test flagged FLAKY in Step 4. Default to promoting for critical flows and ask the user when it's a judgment call; routine, low-risk checks stay ephemeral.
-2. **Delete whatever remains in `tests/temp/`.** Tests not promoted in (1) are scaffolding and are never committed — remove the directory so nothing under `tests/temp/` is ever staged.
-3. **Commit the app-code fix and any promoted test.** If a fix in Step 4 changed application code, commit *that* with a clear message describing the fix; include any test graduated in (1) in the same commit. Never stage anything still under `tests/temp/`. If nothing changed and nothing was promoted (tests passed on the first run), there's nothing to commit — just report success.
+1. **Propose saving any gotcha you learned this run — this is the skill's memory, and the only thing that persists.** Since no tests are kept, gotchas are how the *next* run gets faster. If during this run you discovered a non-obvious fact — the exact selector for a modal, which permission flag gates a UI element, the primary role, the base/deploy branch, which CDN deps this app loads, the name of the repo's TLS knob, an async-load quirk — offer to record it. Classify it first (see "Sistema de gotchas en dos niveles"):
+   - **Repo-specific** (true only for this repo) → append it to `tests/QA-NOTES.md` in the consuming repo. Create the file if it doesn't exist (a short Markdown doc, grouped by topic: roles, permissions, selectors, server/build, environment). Keep entries terse and factual; if a note contradicts what you re-verified this run, **update it rather than stacking a second version** — stale gotchas are worse than none.
+   - **General environment** (would be true for any repo behind this proxy) → these are rare and usually already in the skill's `references/gotchas.md`. Only if you hit a genuinely new one, tell the user it belongs in the skill itself (a change to `test-web/references/gotchas.md`), not in the repo — don't silently write repo-local notes for it.
+
+   Default to offering; let the user confirm before writing. A run that discovered nothing new saves nothing — that's fine.
+2. **Delete everything under `tests/temp/`.** Every test this skill wrote is scaffolding and is never committed or graduated — remove the directory so nothing under `tests/temp/` is ever staged. The repo keeps no `.spec.ts` authored by this skill.
+3. **Commit the app-code fix and any gotcha note.** If a fix in Step 4 changed application code, commit *that* with a clear message describing the fix; include the `tests/QA-NOTES.md` update from (1) in the same commit (or its own commit if there was no code fix). Never stage anything under `tests/temp/`. If nothing changed and no gotcha was recorded (tests passed on the first run), there's nothing to commit — just report success.
 4. **Decide where to push based on the environment:**
    - **Claude Code on the web / cloud:** always start a *new* branch and open a pull request for the fix — never push directly. (This matches the always-new-PR workflow configured for cloud sessions.)
    - **Local / anywhere else:** ask the user which branch to push to before pushing. Do not assume a production-looking branch.
@@ -197,7 +228,7 @@ When everything is green:
 - **E2E is the tip of the testing pyramid — reach for it last, not first.** Browser tests are the slowest and most fragile rung; they earn their cost only when verifying a real UI flow end to end. If the change is pure logic (a calculation, a formatter, a permission predicate, a data transform), a unit or integration test pins it faster and more reliably — prefer pushing the verification down to that level and reserve this skill for behavior that genuinely needs a rendered browser.
 - **Test users are discovered by convention, not hardcoded.** `TEST_<ROLE>_EMAIL` + shared `TEST_USER_PASSWORD` define them; the Playwright config turns each into `setup-<role>` / `<role>-tests` projects automatically. Adding a user is just adding an env var — never edit the config to add a role.
 - The Playwright config usually auto-starts a local server (commonly port 3000) and tests run against it, not a deployed URL.
-- **Remote-env proxy routing (Claude Code on the web).** If the app loads CDN deps or calls an external backend from the browser, and you see `ERR_CONNECTION_CLOSED` (even with TLS-ignore) so the app never boots, the browser isn't routed through the env's CONNECT-only proxy. Drop in `assets/playwright.remote-env.ts` and wire it into the config (see Step 3, "When TLS-ignore alone doesn't fix it"). It's gated by detection, so it's safe to leave committed — a no-op in local/CI. This supersedes setting `PLAYWRIGHT_IGNORE_TLS` by hand: the helper autodetects the proxy and also pins `executablePath` to the pre-installed Chromium.
+- **Remote-env proxy routing (Claude Code on the web).** If the app loads CDN deps or calls an external backend from the browser, and you see `ERR_CONNECTION_CLOSED` (even with TLS-ignore) so the app never boots, the browser isn't routed through the env's CONNECT-only proxy. Drop in `assets/playwright.remote-env.ts` and wire it into the config (see Step 3 and [`references/gotchas.md`](references/gotchas.md), gotcha 2). It's gated by detection, so it's safe to leave committed — a no-op in local/CI. This supersedes setting `PLAYWRIGHT_IGNORE_TLS` by hand: the helper autodetects the proxy and also pins `executablePath` to the pre-installed Chromium.
 - Auth credentials live in `.env` (gitignored); session storage states land in `tests/.auth/<role>.json` (gitignored).
 - Data often loads asynchronously — use the repo's `waitForDataLoad()` (or equivalent) helper rather than fixed sleeps.
-- **Repo-specific facts must be re-verified each run** (they drift): the primary role, which permission flags gate which UI, modal/close behavior, and exact selectors. For Domus Hub at time of writing: primary role is `direccion`; permissions follow a 2D `departamento × rango` model in `public/permissions.js` (e.g. `editFechaFinProgramada` is true for `direccion`/`*_gerente`, false for supervisors); modals are `#modal-overlay.open` and close via overlay click (no Escape handler); the deploy/base branch is `cambios-en-produccion`. In Claude Code on the web: run `npm ci` before `npx playwright install`, and `export PLAYWRIGHT_IGNORE_TLS=1` — without it every test fails at auth setup because the app's CDN `<script>` deps (Supabase/jspdf/fonts) fail cert validation behind the MITM proxy.
+- **Repo-specific facts live in the repo's `tests/QA-NOTES.md`, not in this skill, and must be re-verified each run** (they drift): the primary role, which permission flags gate which UI, modal/close behavior, exact selectors, the base/deploy branch, which TLS knob the repo uses. Read that file in Step 0 and keep it honest in Step 5 — don't memorize these facts here. *Example of what a repo's `QA-NOTES.md` might hold* (Domus Hub, illustrative — verify against the live repo): primary role `direccion`; permissions follow a 2D `departamento × rango` model in `public/permissions.js` (e.g. `editFechaFinProgramada` true for `direccion`/`*_gerente`, false for supervisors); modals are `#modal-overlay.open`, close via overlay click (no Escape handler); deploy/base branch `cambios-en-produccion`; run `npm ci` before `npx playwright install` and `export PLAYWRIGHT_IGNORE_TLS=1` so CDN `<script>` deps don't fail cert validation behind the MITM proxy.
