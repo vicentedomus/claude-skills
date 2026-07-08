@@ -44,6 +44,7 @@ desde `https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/<
 | [`sync-upstream-skills.sh`](hooks/sync-upstream-skills.sh) | **Template repo-agnóstico.** SessionStart hook que materializa en `.claude/skills/` skills de repos de **terceros** con layout `skills/*/` ([`obra/Superpowers`](https://github.com/obra/Superpowers), [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail), …) vía `git clone` con fallback a tarball de codeload (solo nube; en local, plugins nativos). Manejado por `.claude/upstream-skills.txt`: **doble whitelist** — qué repos clonar y qué skills de cada uno. Nombres planos, sin inyección agresiva. Ver el cableado abajo. |
 | [`ponytail-mode.sh`](hooks/ponytail-mode.sh) | **Template repo-agnóstico.** Un solo script en TRES eventos (SessionStart/UserPromptSubmit/SubagentStart) que mantiene el "modo ponytail" **siempre activo**, como plantea el SKILL.md de [`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail) (MIT): inyecta el *ladder* como contexto persistente, conmuta con `/ponytail lite\|full\|ultra\|off` y apaga con "stop ponytail". Bash puro (sin node, sin código de terceros por prompt); lee el ladder de la skill `ponytail` si está sincronizada, o de un fallback embebido. Ver el cableado abajo. |
 | [`pr-summary-on-merge.sh`](hooks/pr-summary-on-merge.sh) | **Template repo-agnóstico.** PostToolUse hook (matcher `mcp__github__merge_pull_request`) que, al mergear un PR, le recuerda a Claude reescribir título+cuerpo de ese PR con el formato estándar de resumen. No escribe el resumen, solo inyecta la instrucción con el `#NNN` resuelto. Ver el cableado abajo. |
+| [`sync-speckit.sh`](hooks/sync-speckit.sh) | **Template repo-agnóstico.** SessionStart hook que materializa el **combo spec-kit vendorizado** ([`speckit-combo/`](speckit-combo/): [github/spec-kit](https://github.com/github/spec-kit) pineado + weave con superpowers) — skills `speckit-*` + scaffold `.specify/`. Mismo transporte (git clone→codeload). **Partición durable/regenerable:** el core se refresca siempre; `.specify/memory/constitution.md` y `specs/` no se pisan (contenido del proyecto). Knob per-repo `.claude/speckit.txt`. Ver el cableado abajo. |
 
 ## Cableado del sync de skills en cualquier repo
 
@@ -373,6 +374,82 @@ concreto lo define el `CLAUDE.md` y lo redacta Claude, que tiene el contexto.
 El hook lee el `pullNumber` del payload del evento e inyecta la instrucción vía
 `additionalContext` (no bloquea el merge). Si el payload no trae número de PR, no
 emite nada. Necesita `jq` en el entorno.
+
+## Cableado de spec-kit (combo vendorizado) en cualquier repo
+
+Para dar a un repo el flujo **Spec-Driven Development** de spec-kit **ya tejido** con la
+disciplina de superpowers (TDD, verificación, code review), sin correr `specify init` ni
+tejer nada a mano. El combo vive vendorizado en [`speckit-combo/`](speckit-combo/) (ver su
+README) y se materializa por hook cada sesión de la nube. Cuatro pasos:
+
+**1. Copia el template del hook** a `.claude/hooks/sync-speckit.sh` y dale el bit
+ejecutable:
+
+```bash
+mkdir -p .claude/hooks
+curl -sSL https://raw.githubusercontent.com/vicentedomus/claude-skills/main/hooks/sync-speckit.sh \
+  -o .claude/hooks/sync-speckit.sh
+chmod +x .claude/hooks/sync-speckit.sh
+```
+
+**2. Crea el knob** `.claude/speckit.txt` (su sola existencia activa el combo; vacío =
+versión vendorizada por defecto; una línea `@<tag>` pinea otra versión del combo desde
+claude-skills):
+
+```
+# .claude/speckit.txt — vacío usa el combo de main; @v0.12.8 pinea una versión
+```
+
+**3. Regístralo como SessionStart** en `.claude/settings.json` (comiteado). Si ya tienes
+un bloque `SessionStart` (p. ej. `sync-skills.sh`), añade este `command` a la misma lista:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-speckit.sh\"",
+            "statusMessage": "Materializando combo spec-kit..."
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**4. Separa durable de regenerable** en `.gitignore` — el core se regenera cada sesión;
+la constitución y las specs son contenido del proyecto y **se comitean**:
+
+```
+# regenerable (lo refresca el hook cada sesión)
+.claude/skills/
+.specify/templates/
+.specify/scripts/
+.specify/workflows/
+.specify/integrations/
+.specify/init-options.json
+.specify/integration.json
+# NO ignorar (contenido del proyecto, se comitea):
+#   .specify/memory/constitution.md   ← sembrada con el weave la 1ª vez, luego tuya
+#   specs/
+```
+
+> **Dependencia del weave (opcional pero recomendada):** los Artículos I–III de la
+> constitución referencian skills de superpowers *"si están disponibles"*. Para tenerlas,
+> cablea también `sync-upstream-skills.sh` con una línea en `.claude/upstream-skills.txt`:
+> ```
+> obra/Superpowers   test-driven-development verification-before-completion requesting-code-review
+> ```
+> Sin superpowers el weave sigue vigente como disciplina inline (degrada con gracia).
+
+Tras esto, en cualquier repo nuevo basta decir *"quiero cablear spec-kit en este repo
+desde claude-skills"*: Claude sigue esta receta. Uso: `/speckit-constitution` (completa la
+constitución sembrada) → `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` →
+`/speckit-implement`. Actualizar la vendorización: ver [`speckit-combo/README.md`](speckit-combo/README.md).
 
 ### Hooks retirados
 

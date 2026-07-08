@@ -64,6 +64,18 @@ repo ni entran al índice de skills. Se distribuyen vía el hook-template
 nube) y se documentan solo en la sección `hooks/` del README. No agregues filas por
 cada una al índice de skills curadas.
 
+**Carve-out — `speckit-combo/` (spec-kit vendorizado):** [github/spec-kit](https://github.com/github/spec-kit)
+es un caso aparte que **sí se vendoriza** en `speckit-combo/` (pineado a una versión) con
+un *weave* a la disciplina de superpowers. No encaja en la regla de arriba: no es un repo
+con layout `skills/*/` (es un CLI que scaffoldea un subsistema: skills `speckit-*` +
+`.specify/`), y le montamos un weave encima (parchear una dependencia viva sería frágil).
+Por eso se congela y se distribuye por su propio hook-template `hooks/sync-speckit.sh`
+(knob `.claude/speckit.txt`). **No** entra al índice de skills; se documenta en
+[`speckit-combo/README.md`](speckit-combo/) y en la sección de cableado del README raíz.
+El weave vive en `speckit-combo/payload/specify/memory/constitution.md` (aditivo, no
+parchea archivos core → updates de spec-kit = overwrite mecánico del core). Cómo cablearlo
+en un repo destino: sección "Cableado de spec-kit" del `README.md`.
+
 ## Resumen de PR al mergear
 
 Cuando **tú (Claude) mergeas un PR** vía `mcp__github__merge_pull_request`, un hook
