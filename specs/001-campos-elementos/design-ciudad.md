@@ -24,7 +24,8 @@ También es **el contenedor** del mundo: de aquí cuelgan npcs, establecimientos
 | Campo | Qué es | Ve |
 |---|---|---|
 | `nombre` · `region/reino` (`estado`) | — | 👥 |
-| **`escala`** ✨ | aldea → capital (calibra tono) | 👥 |
+| **`categoria`** ✨ | **aldea · pueblo · ciudad · macropolis** (taxonomía del hexplorer/`tiendas.js`) | 👥 |
+| `poblacion` | número de sabor (la `categoria` da el tier) | 👥 |
 | **`bioma_clima`** ✨ | pantano/taiga/costa… (clima como personaje) | 👥 |
 | `subtipo` | **dirige el perfil** | 👥 |
 | `descripcion` (fluida: llegada→calles→ancla) | textarea | 👥 |
@@ -81,7 +82,15 @@ masa**: el líder de cada ciudad se vuelve NPC **cuando el session-prep llegue a
 
 ---
 
-## 7. Decisiones abiertas
+## 7. `categoria` — enganchada al hexplorer (decisión cerrada 2026-07-10)
 
-1. Set final de `subtipo` de ciudad (¿los 7 + Otro, o falta/sobra alguno para Halo?).
-2. `escala` como select (Aldea · Pueblo · Ciudad · Ciudad grande · Capital) vs derivarla de `poblacion`.
+El tamaño = **`categoria`** (`aldea · pueblo · ciudad · macropolis`), la taxonomía que ya usa el sistema
+y que **determina mecánicas reales**:
+- **Inventario de tiendas** (`REGLAS_POR_CATEGORIA` en `data/tiendas.js`): aldea → 1 item Common,
+  costoMax 100 · pueblo → Common/Uncommon, 500 · ciudad → +Rare, 5 000 · macropolis → +Very Rare,
+  50 000. → **cross-link Ciudad→Establecimiento**: la rareza que vende un local depende de la categoría.
+- **Radio de seguridad del hexplorer** (`hex-difficulty.js`): macropolis 4 · ciudad 3 · pueblo/aldea 1.
+
+## 8. Decisiones abiertas
+
+1. Set final de `subtipo` de ciudad — **arranque con los 7 + Otro, extensible** por sesiones futuras.

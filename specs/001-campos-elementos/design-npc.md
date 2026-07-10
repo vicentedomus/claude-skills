@@ -101,14 +101,15 @@ o solo puebla `custom_data`?)
 
 Barrido de la tabla completa `npcs` (todas las campañas): 11 oficios sólidos + cola corta de basura.
 
-**Options canónicas (15):** `'' · Comerciante · Tabernero · Herrero · Alquimista · Arcanista ·
-Místico · Bibliotecario · Cazador · Religioso · Proxeneta · Gremio · Gremio de Ladrones ·
-Líder político · Otro`.
+**Options canónicas (13, cerrado 2026-07-10):** `'' · Comerciante · Tabernero · Herrero · Alquimista ·
+Arcanista · Bibliotecario · Cazador · Religioso · Proxeneta · Gremio · Líder político · Otro`.
+- `Místico` → **fold en Arcanista** (misma taxonomía).
+- `Gremio de Ladrones` → **fold en `Gremio` + campo `clase_de_gremio`** (Ladrones · Mercaderes ·
+  Artesanos · Inventores · Arcano · Aventureros…), consistente con Establecimiento. Un NPC
+  `tipo:Gremio` lleva `clase_de_gremio`.
 
-**Cleanup de datos pendiente (2 filas basura, requiere target del DM antes del UPDATE):**
-- `BEG` (1) → no es oficio (boss/antagonista) → reclasificar.
-- `Secundario` (1) → no es oficio (importancia narrativa) → reclasificar.
-- *(abierto)* `Místico` (1): ¿fold en Arcanista o mantener campo propio?
+**Cleanup de datos (decisión del DM: NO reclasificar por ahora):** `BEG` (1) y `Secundario` (1) se
+dejan como están. El único `Místico` (1) → migración perezosa a Arcanista cuando se toque.
 
 > El array `options` real vive en `app.js` (`FORM_SCHEMAS.npcs`, frontend de QuestKeep) — fuera del
 > alcance skills+Supabase; se entrega la lista lista para aplicar allá.

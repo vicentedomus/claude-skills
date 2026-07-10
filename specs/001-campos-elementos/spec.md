@@ -273,16 +273,24 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
 
 ---
 
-## Decisiones abiertas para `/speckit-clarify` (checkpoint)
+## Decisiones cerradas (2026-07-10)
 
-1. ~~**Piloto vs. big-bang (FR-012):**~~ **RESUELTO** — piloto **NPC** primero, luego replicar
-   (ver `design-npc.md`).
-2. **¿Las skills crean estructura o solo la proponen (FR-013)?** ¿Escriben `entity_schemas`
-   (overlay) tras confirmación, o el DM define los campos en QuestKeep y las skills solo
-   pueblan `custom_data` + proponen qué campos convendría añadir? *(sigue abierta)*
-3. **Cleanup de datos:** a qué `tipo_npc` reclasificar las filas basura `BEG` y `Secundario`;
-   `Místico` ¿fold en Arcanista o campo propio?
-4. **Alcance de tipos en v1:** tras el piloto NPC, ¿los 5 restantes de una o por tandas?
+- **FR-012** — piloto NPC, luego los 6 tipos co-diseñados (ver los `design-*.md`).
+- **FR-013** — la skill **sí escribe** overlay `entity_schemas` + homebrew de catálogo tras confirmación.
+- **Gremios** — `Gremio de Ladrones` → `Gremio` + `clase_de_gremio` (en `tipo_npc` **y** Establecimiento).
+- **`Místico`** → fold en Arcanista.
+- **Cleanup `tipo_npc`** — `BEG`/`Secundario` se dejan como están (no reclasificar).
+- **Ciudad `categoria`** — `aldea·pueblo·ciudad·macropolis` (taxonomía del hexplorer/`tiendas.js`;
+  determina inventario de tiendas + radio de seguridad).
+- **Quest `recompensa`** — posible item + posible oro, ambos opcionales.
+- **Hazard** (Lugar/Quest) — campo libre, menú Encounter Axis como sugerencia.
+- **Sets de `subtipo`** — arranque con los propuestos, extensibles por sesiones futuras.
+- **Item — narrativa del tipo homebrew** — dónde viven los 4 campos: **diferido a `plan`**.
+
+## Decisiones abiertas (para `plan`)
+
+- Dónde viven los 4 campos narrativos del tipo homebrew de Item (`descripcion` estructurada vs
+  `custom_data` en `items_catalog`).
 
 ## Artefactos de co-diseño (los 6 tipos)
 

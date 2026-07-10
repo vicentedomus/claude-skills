@@ -37,7 +37,7 @@ recompensa es un item, su antagonista es un statblock. La quest es lo que convie
 
 | Campo | Cambio |
 |---|---|
-| **`recompensa`** → rel a **item** ✨ | `recompensa_gp`(texto) → item real (+ gp opcional) |
+| **`recompensa`** ✨ | **posible item (rel) + posible oro (`gp`)** — ambos opcionales; `recompensa_gp` texto → estructurado |
 | **`antagonista`** → **statblock**/npc ✨ | quién se opone, con su stat (modelo ETL) |
 | `pistas` (múltiples caminos) 🎩 · `misterio_mayor` 🎩→ | estructurados |
 | `lugares` · `ciudades` · `establecimientos` · `inspiracion` | conexiones |
@@ -69,7 +69,7 @@ A diferencia de Lugar/Ciudad, aquí el **spine es universal** y el `subtipo` sol
 
 ---
 
-## 6. Decisiones abiertas
+## 6. Decisiones (cerradas 2026-07-10)
 
-1. `recompensa` — ¿solo item(rel), o item + gp opcional en el mismo bloque?
-2. Set final de subtipos de quest (¿los 5 + Otro?).
+1. `recompensa` = posible item(rel) + posible oro(`gp`), ambos opcionales.
+2. Subtipos de quest — **arranque con los 5 + Otro, extensible** por sesiones futuras.
