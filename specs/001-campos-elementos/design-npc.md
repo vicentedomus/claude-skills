@@ -124,7 +124,9 @@ QuestKeep carga como `SRD5E.bestiary`. El campo `statblock` referencia con ref t
 `{kind:'official', name, source}` u `{kind:'homebrew', id}`.
 
 La skill corre server-side con acceso al repo → lee `data/5e/bestiary.json`, elige `name`+`source`
-por `tipo_npc`, y escribe `{kind:'official', name, source}`. Homebrew solo para lo custom.
+por `tipo_npc`, y escribe `{kind:'official', name, source}`. Para reskin/custom, **crea homebrew** en
+`monstruos` (`base`=oficial del ETL) — **modelo simétrico al de Item** (ver `design-item.md`: tipo
+oficial-ETL vs tipo homebrew vs instancia). La mecánica nunca se inventa; `base` deja el rastro.
 
 **Default de statblock por vocación** (la skill preselecciona; el DM cambia; es el statblock **base**
 que un combate puede reskin-ear):

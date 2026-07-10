@@ -203,9 +203,14 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
   `{kind:'homebrew', id}`. Esto **corrige un bug existente** del flujo de combate de
   `halo-session-prep` (la regla "monstruos solo del catálogo `monstruos`" apunta a una tabla casi
   vacía) y habilita el `statblock` obligatorio por NPC.
-- **FR-013**: El grado de automatización al crear estructura (overlay) es
-  [NEEDS CLARIFICATION: ¿las skills escriben `entity_schemas` tras confirmación, o solo pueblan
-  `custom_data` sobre campos que el DM define en QuestKeep, y las skills solo proponen?].
+- **FR-013**: **RESUELTO** — la skill **sí escribe estructura** tras confirmación del DM: el overlay
+  `entity_schemas` (definición del "genoma" por tipo) **y** las filas homebrew de catálogo
+  (`items_catalog`/`monstruos` con `base` al oficial del ETL). Nunca sin aprobación explícita.
+- **FR-015**: La fuente de **tesoros** DEBE ser el **catálogo 5e vigente** (`data/5e/items.json`, 1941,
+  incl. Common/Artifact) — **no** la tabla `items_catalog` (669 filas `DMG'24` huérfanas, magic-only,
+  sin commons). Corrige el mismo bug que FR-014 en el flujo de tesoros de `halo-session-prep`. El
+  homebrew de item se guarda en `items_catalog` (`es_homebrew`, `base`); la instancia en `items`
+  (`custom_data`). Ver `design-item.md`.
 
 ### Key Entities
 
