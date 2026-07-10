@@ -284,8 +284,23 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
    `Místico` ¿fold en Arcanista o campo propio?
 4. **Alcance de tipos en v1:** tras el piloto NPC, ¿los 5 restantes de una o por tandas?
 
-## Artefactos de co-diseño
+## Artefactos de co-diseño (los 6 tipos)
 
-- `design-npc.md` — diseño completo de la ficha de NPC (piloto): genoma de identidad, enrutamiento
-  de extracción por combinación, campos núcleo/situacional, `tipo_npc` canónico + barrido,
-  `statblock` (pool real + default por vocación + bug de combate destapado).
+- `design-npc.md` — genoma de identidad, enrutamiento de extracción por combinación, campos
+  núcleo/situacional, `tipo_npc` canónico + barrido, `statblock` (pool ETL + default por vocación).
+- `design-item.md` — modelo tipo/instancia, ancla a catálogo (ETL vigente vs `items_catalog` homebrew),
+  `item_base` ref, split apariencia/sensación/historia.
+- `design-lugar.md` — punto de interés definido por su propósito; patrón **subtipo→perfil** para tipos
+  heterogéneos (dungeon/cueva/naturaleza/zona urbana).
+- `design-establecimiento.md` — lugar comercial anclado al dueño(NPC); perfiles por tipo; gremios
+  unificados (tipo:Gremio + clase).
+- `design-ciudad.md` — heterogénea (subtipo→perfil) + bioma/escala transversal; contenedor del mundo;
+  `lider`→NPC con migración perezosa.
+- `design-quest.md` — la espina/tejido conectivo; spine universal (premisa/dilema/consecuencias) +
+  subtipo ligero; recompensa→item, antagonista→statblock.
+
+**Patrones transversales que emergieron:** (a) **ancla a catálogo ETL** (NPC-statblock, Item, y
+statblocks de Lugar/Quest) con homebrew en Supabase (`base` al oficial); (b) **subtipo→perfil** para
+tipos heterogéneos (Lugar, Ciudad, Establecimiento); (c) **desenterrar los blobs** de prosa en campos
+estructurados; (d) **sembrar cross-links** al nacer; (e) campo `inspiracion` (procedencia del grafo) y
+visibilidad gated `_hidden` en todos.
