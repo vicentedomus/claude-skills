@@ -1,74 +1,82 @@
 # NPC — Referencia de Entidad
 
-## Campos en Supabase
+Un NPC se genera con el **genoma de identidad** (`genome.md`): 5 átomos try-and-tested del grafo,
+limados y fusionados con coherencia. La ficha ya **no** son dos blobs de prosa — son campos
+estructurados y glanceables para que el DM **describa e interprete ágil** en mesa.
 
-| Campo | Qué es | Quién lo ve |
-|-------|--------|-------------|
-| `primera_impresion` | Lo que el DM narra al conocer al NPC | Todos |
-| `notas_roleplay` | Comportamientos, muletillas, reacciones | Solo DM |
-| `edad` | Edad numérica coherente con lifespan de la raza | Todos |
-| `raza` | Raza D&D 5e | Todos |
-| `rol` | Función narrativa (aliado, comerciante, antagonista, etc.) | Todos |
-| `nombre` | Nombre del NPC | Todos |
+## Genoma → campos
 
-## Estructura del output
+| Slot | Campo |
+|------|-------|
+| 1 · Vocación | `tipo_npc` (routea la extracción del grafo) |
+| 2 · Motor | `cf_motivacion` |
+| 3 · Distintivo | `cf_distintivo` |
+| 4 · Twist | `cf_secreto` (magnitud según `rol`) |
+| 5 · Voz / motif | `cf_forma_de_hablar` |
 
-### Primera impresión
+## Campos de la ficha
 
-Lo que el DM dice en voz alta cuando los jugadores conocen al NPC. Debe:
+### Núcleo (siempre)
 
-- Describir al NPC **en movimiento** — haciendo algo, no posando
-- Incluir un detalle ancla (manierismo memorable)
-- Reflejar su personalidad a través de acciones, no adjetivos
-- Mínimo 2 sentidos (visual + uno más)
-- 2-4 oraciones, máximo
+| Campo | Capa | Tipo | Ve | Nota |
+|-------|------|------|----|------|
+| `nombre` `raza` `edad` `avatar_url` | base | text/number/avatar | 👥 | identidad |
+| `tipo_npc` | base | select (13, ver abajo) | 👥 | vocación; routea el genoma |
+| `rol` | base | select (Neutral/Aliado/Enemigo) | 👥 | disposición; dial del twist |
+| `estado` | base | select (Vivo/Muerto) | 👥 | |
+| `cf_descripcion_fisica` | custom | text | 👥 | *describir* — el look breve |
+| `cf_distintivo` | custom | text | 👥 | *describir* — el detalle/manierismo ancla |
+| `cf_forma_de_hablar` | custom | text | 🎩 | *interpretar* — cómo suena |
+| `cf_statblock` | custom | statblock (ref) | 🎩 | **siempre**; default por vocación (`catalogos.md`) |
+| `ciudad` | base | select-rel | 👥 | vínculo sembrado |
+| `conocido_jugadores` | base | checkbox | — | nace `false` |
 
-**Ejemplo validado (Flimz, gnoma de Sleh):**
-> Cuando llegas al mostrador, Flimz no levanta la vista — está desenredando un carrete
-> de hilo mecánico con los dientes mientras con la otra mano anota algo en un libro de
-> cuentas. Huele a aceite de máquina y lavanda. "Un momento", dice sin soltar el hilo,
-> y el momento dura exactamente el tiempo que le toma ganar la pelea contra el carrete.
+### Situacional (solo cuando aplica)
 
-### Notas de roleplay
+`cf_motivacion` (textarea, 🎩) · `cf_secreto` (textarea, 🎩→ `_hidden`) · `cf_relacion_party`
+(select Hostil→Desconfía→Neutral→Cordial→Aliado, 🎩) · `cf_inspiracion` (text, 🎩) ·
+`cf_clase_de_gremio` (select, solo `tipo=Gremio`) · rels sembradas: `establecimiento`, `faccion`,
+`familia`, `items_magicos`, `quests`, `lugares`.
 
-Solo para el DM. Incluir:
+### Deprecados (coexistencia, no borrar)
 
-- **Patrón de habla:** cómo estructura frases, muletillas, ritmo
-- **Manierismo físico:** qué hace con las manos, cómo se mueve
-- **Reacciones clave:** qué pasa si le preguntan sobre X, si lo amenazan, si le ofrecen algo
-- **Relación con otros NPCs:** cómo habla de ellos, qué opina
+`primera_impresion`, `notas_roleplay`, `frase` → su contenido se descompone en los `cf_*`. Los NPCs
+viejos los conservan; los nuevos usan los campos estructurados. Migración perezosa al tocar la fila.
 
-**Ejemplo:**
-> - Habla en oraciones cortas y definitivas. Nunca usa "tal vez" o "quizás".
-> - Siempre tiene algo en las manos — hilo, herramienta, moneda. Si no tiene nada,
->   se inquieta visiblemente.
-> - Si le mencionan a Bimble: "La presidenta sabe lo que hace. Yo sé lo que hago.
->   Funciona." (orgullo profesional, no político)
-> - Si alguien toca la mercancía sin permiso: congela la sonrisa y dice "Eso tiene precio."
+## `tipo_npc` — options canónicas (13)
 
-### Edad
+`'' · Comerciante · Tabernero · Herrero · Alquimista · Arcanista · Bibliotecario · Cazador · Religioso ·
+Proxeneta · Gremio · Líder político · Otro`.
 
-Coherente con el lifespan de la raza en D&D 5e:
-- Humanos: 60-80 años
-- Elfos: 700-750 años
-- Enanos: 350-400 años
-- Gnomos: 350-500 años
-- Medianos: 150 años
-- Medio-elfos: 180 años
-- Medio-orcos: 60-75 años
-- Tieflings: 80-100 años
-- Dragonborn: 80 años
+- `Místico` → **Arcanista**. `Gremio de Ladrones` → `Gremio` + `cf_clase_de_gremio` (Ladrones ·
+  Mercaderes · Artesanos · Inventores · Arcano · Aventureros…).
 
-La edad debe hacer sentido con el rol del NPC. Un gnomo de 45 años es un adolescente;
-un humano de 45 es maduro.
+## Cómo se genera
+
+1. **Semilla** desde el grafo por `tipo_npc × rol` (`genome.md`): cotidiano → comunidad/god-node de
+   oficio; villano → hyperedge. Limar setting.
+2. **Vocación** fija el `tipo_npc` y el **statblock default** (`catalogos.md`).
+3. **Fusión coherente:** `cf_motivacion` explica la vocación · `cf_distintivo` la expresa ·
+   `cf_secreto` tensiona el `rol` · `cf_forma_de_hablar` la tiñe (humor coherente con la cultura).
+4. **Describir vs interpretar:** `cf_descripcion_fisica` + `cf_distintivo` (público, lo que el DM
+   narra) vs `cf_forma_de_hablar` + `cf_motivacion` + `cf_secreto` (DM, cómo lo actúa).
+5. **Sembrar** ciudad/establecimiento/facción/items/quests desde el nacimiento.
+6. Si tomaste una semilla específica, anota `cf_inspiracion`.
+
+### Ejemplo de fusión (comerciante gnomo de Sleh)
+
+Vocación *Magic as Industry* · motor *Innovation Gone Awry* (no puede dejar de "mejorar" su mercancía) ·
+distintivo *ajusta un artefacto mientras te habla, nunca lo da por terminado* · secreto (neutral →
+pequeño) *esconde el prototipo que sí falló y lastimó a alguien* · voz *gnómica: solemnidad absurda ante
+un defecto trivial*. Statblock: Commoner. Ninguna pieza es de Halo; todas son canon.
 
 ## Checklist de calidad
 
-- [ ] Está haciendo algo al conocerlo (no posando)
-- [ ] Tiene detalle ancla (manierismo que los jugadores recordarán)
-- [ ] Primera impresión usa mínimo 2 sentidos
-- [ ] Notas de roleplay incluyen patrón de habla + reacciones
-- [ ] Humor coherente con su cultura/raza
-- [ ] Edad coherente con lifespan de la raza
-- [ ] Conecta con al menos una otra entidad (ciudad, quest, establecimiento)
-- [ ] El lore del lugar se refleja en su personalidad
+- [ ] `cf_distintivo` memorable (lo que los jugadores repiten)
+- [ ] `cf_descripcion_fisica` breve, en acción (no retrato estático)
+- [ ] `cf_forma_de_hablar` da la voz sin monólogos
+- [ ] `cf_statblock` resuelto contra el ETL (nunca inventado), default por vocación
+- [ ] humor coherente con cultura/raza · edad coherente con lifespan
+- [ ] ≥1 cross-link sembrado (ciudad/establecimiento/quest…)
+- [ ] campos sensibles (forma_de_hablar/motivacion/secreto/statblock) marcados `_hidden`
+- [ ] lore del lugar reflejado, no dicho

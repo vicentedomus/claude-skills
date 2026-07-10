@@ -4,19 +4,43 @@
     {
       "id": 1,
       "prompt": "Mejora al NPC Thrain de Moria, hazlo más interesante y con más profundidad narrativa.",
-      "expected_output": "Primera impresión en movimiento (no retrato), notas de roleplay con patrón de habla y reacciones, edad coherente con raza, mínimo 2 sentidos, detalle ancla, humor coherente con cultura, conexiones con entidades relacionadas. Tabla comparativa original vs propuesta.",
+      "expected_output": "Ficha rediseñada (no dos blobs de prosa): campos cf_descripcion_fisica + cf_distintivo (público) y cf_forma_de_hablar + cf_motivacion + cf_secreto (DM). cf_statblock resuelto contra el ETL (nunca inventado) con default por vocación. tipo_npc de las 13 options canónicas. Campos sensibles marcados _hidden. ≥1 cross-link sembrado. Semilla del grafo por combinación (genome.md), limando setting. Tabla comparativa original vs propuesta.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "Crea una quest nueva para Sleh, algo que los jugadores puedan encontrar la próxima sesión.",
-      "expected_output": "Quest con premisa (stakes claros), dilema moral, mínimo 2 NPCs conectados, consecuencias múltiples (no binarias), misterio menor que conecte con lore, pistas con múltiples caminos. Coherente con cultura gnómica de Sleh y el lore de Gnomalia.",
+      "expected_output": "Spine: cf_premisa (stakes), cf_dilema_moral, cf_consecuencias por rama. quest_npcs con ≥2 (quien pide + quien complica). cf_recompensa_item (rel al ETL/catálogo) y/o cf_recompensa_gp, ambos opcionales. cf_antagonista como statblock del ETL (nunca inventado). cf_pistas múltiples caminos, cf_misterio_mayor. No es fetch quest. Coherente con cultura gnómica de Sleh.",
       "files": []
     },
     {
       "id": 3,
       "prompt": "Mejora todos los establecimientos de Rockwood, están muy genéricos.",
-      "expected_output": "Modo batch: lista establecimientos de Rockwood, pregunta si procesar todos o seleccionar, procesa uno por uno con exterior+interior, cada uno con 3 sentidos, detalle ancla, gancho interacción, humor coherente con cultura local, personalidad del dueño reflejada. Coherencia entre establecimientos.",
+      "expected_output": "Modo batch: lista establecimientos, pregunta si procesar todos o seleccionar, procesa uno por uno. Cada uno anclado a su dueno (NPC), exterior+interior sensoriales, cf_detalle_ancla + cf_gancho_interaccion como campos propios. Perfil según tipo (Gremio unificado usa cf_clase_de_gremio). cf_inventario acorde a la categoria de la ciudad. Coherencia entre establecimientos.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Genera un item mágico como recompensa para un party nivel 4.",
+      "expected_output": "item_base referencia un item oficial del ETL (data/5e/items.json, incluye commons) — nunca inventa mecánica. Si reskin: fila homebrew en items_catalog (es_homebrew, base al oficial, misma mecánica), narrativa en descripcion del tipo (Apariencia/Sensación/Historia/Costo). Instancia con cf_item_base, portador, cf_cargas si aplica. flag match_directo|reskin. La magia se siente, no se anuncia.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Crea un lugar nuevo: las bodegas del canal bajo de Sleh, donde ocurrirá una escena de la sesión.",
+      "expected_output": "Punto de interés definido por cf_proposito (qué pasa ahí), no por geografía. cf_subtipo='Zona urbana' → solo su perfil poblado (cf_controla, cf_actividad, cf_acceso, cf_rumor); los perfiles de dungeon/cueva/naturaleza en _hidden. cf_atmosfera breve. dentro_de por campos separados (region/ciudad/cf_lugar_padre). Cross-links a npcs/quests/escena.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Genera una ciudad nueva: una aldea de pescadores en un pantano.",
+      "expected_output": "cf_categoria='aldea' (taxonomía hexplorer), cf_bioma_clima='pantano', cf_subtipo='Aldea rural' → perfil de aislamiento/superstición/peligro del entorno. descripcion fluida (llegada→calles→ancla) con cf_detalle_ancla propio, gobierno/cultura que se siente. lider como rel a un NPC (no texto). Cross-links de contenedor. Semilla de bioma del grafo, limando setting.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Diseña un combate para el party en las bodegas del canal bajo.",
+      "expected_output": "Encounter Axis (1 Protein + ≥2 ejes). Monstruos resueltos contra el ETL (data/5e/bestiary.json), no la tabla monstruos de 6 filas — flag match_directo|reskin. Dificultad calibrada con la tabla XP XDMG 2024 contra el party real. Reskin como homebrew (base) si aplica, con las 3 capas sensoriales.",
       "files": []
     }
   ]

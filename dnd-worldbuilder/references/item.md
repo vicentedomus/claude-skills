@@ -1,58 +1,65 @@
 # Item — Referencia de Entidad
 
-## Campos en Supabase
+Un item = **mecánica prestada de un catálogo** (nunca inventada) + **alma reskin-eada**. Gemelo del
+NPC (que ancla a statblock). Ver `catalogos.md` para la resolución ETL/homebrew.
 
-| Campo | Qué es | Quién lo ve |
-|-------|--------|-------------|
-| `nombre` | Nombre del item | Todos |
-| `tipo` | Arma, armadura, poción, objeto maravilloso, etc. | Todos |
-| `rareza` | Común, poco común, raro, muy raro, legendario | Todos |
-| `descripcion` | Descripción narrativa | Todos |
-| `personaje_id` | Personaje jugador que lo posee | Sistema |
-| `npc_portador_id` | NPC que lo posee | Sistema |
-| `conocido_jugadores` | Si los jugadores lo conocen | Sistema |
+## Arquitectura: tipo vs instancia
 
-## Estructura del output
+| Capa | Qué es | Dónde |
+|------|--------|-------|
+| **TIPO — oficial** | la lista vigente (mecánica) | ETL `questkeep/data/5e/items.json` (1941) |
+| **TIPO — homebrew** | tu item customizado, reutilizable | `items_catalog` (`es_homebrew`, `base`) |
+| **INSTANCIA** | lo que un PJ trae en la bolsa | tabla `items` (`personaje_id`/`npc_portador_id`, `custom_data`) |
 
-### Descripción
+**Flujo del DM:** catálogo (ETL) → tomas un base → lo modificas (reskin) → se guarda como **homebrew** →
+los jugadores lo añaden a su bolsa (instancia) e interactúan.
 
-Tres capas:
+## Campos
 
-1. **Apariencia** — cómo se ve en reposo. No es una ficha de catálogo — es lo que
-   notas cuando lo ves por primera vez. El detalle ancla visual.
-2. **Sensación** — qué pasa al tocarlo o usarlo. Peso, temperatura, textura, sonido.
-   Los items mágicos deben *sentirse* mágicos sin decir "es mágico".
-3. **Historia/leyenda** — de dónde viene, quién lo hizo, por qué importa. No toda
-   la historia — solo lo que se sabe o se rumorea. Dejar huecos.
+### Identidad del item (el TIPO homebrew → `items_catalog`)
 
-**Principios específicos para items:**
+`base` (oficial ETL) · `nombre` (reskin) · `tipo`/`rareza`/`requiere_sintonizacion` (heredados del
+base) · y la **narrativa en `descripcion`** como bloque estructurado:
 
-- El detalle ancla es sensorial (cómo se siente, qué sonido hace, qué cambia al usarlo)
-- El gancho es el costo o la consecuencia inesperada
-- La rareza se refleja en la descripción, no se anuncia
-- Items legendarios DEBEN conectar con la historia del mundo
-- No decir "brilla mágicamente" — describir la manifestación concreta
+1. **Apariencia** — cómo se ve en reposo. El detalle ancla visual.
+2. **Sensación** — qué pasa al tocarlo/usarlo (peso, temperatura, sonido). *Se siente* mágico sin decir
+   "es mágico".
+3. **Historia** — de dónde viene, con huecos (invita a investigar).
+4. **Costo/consecuencia** — el gancho: qué cuesta usarlo.
 
-**Ejemplo:**
-> **Apariencia:** Un anillo de hierro sin adornos, excepto por una grieta que lo
-> recorre de punta a punta — como si alguien lo hubiera roto y soldado mal.
-> La grieta cambia de posición cada vez que lo miras.
->
-> **Sensación:** Pesa más de lo que debería. Al ponértelo, el dedo se enfría
-> y escuchas un susurro — no palabras, más bien la intención de palabras.
-> El susurro se calla si lo ignoras. Se intensifica si prestas atención.
->
-> **Historia:** Los enanos de Kord lo llaman "la Opinión". Dicen que perteneció
-> a un juez que nunca se equivocó — hasta que lo hizo. Nadie cuenta qué pasó
-> después. Lo que sí cuentan es que el anillo gritó "no eres digno" al último
-> que intentó ponérselo en la feria de Grimholt.
+### Instancia en la bolsa (`items.custom_data`)
+
+`cf_item_base` (ref al catálogo, `catalogos.md`) · `cf_cargas` (number, tracker de usos) ·
+`cf_origen_lugar`/`cf_origen_quest` (rel, 🎩) · `cf_inspiracion` (🎩). Base: `personaje_id`/
+`npc_portador_id` (portador), `conocido_jugadores`.
+
+**Deprecado (coexistencia):** el blob `descripcion`/`contenido_html` de la instancia → la narrativa vive
+en el tipo; la instancia lleva lo interactivo/campaña.
+
+## Flujo de resolución (regla dura)
+
+**match_directo** (item oficial del ETL tal cual) **>** **reskin** (fila homebrew en `items_catalog`,
+`es_homebrew=true`, `base`=oficial, **misma mecánica**, flavor nuevo) **>** **nunca inventar**. Si falta
+un oficial (raro, el ETL trae commons/artifacts), darlo de alta verbatim primero. Cada tesoro lleva
+`flag: match_directo | reskin` + el flavor si aplica.
+
+## Ejemplo (reskin)
+
+Base ETL: *Ring of Protection*. Reskin homebrew:
+> **Apariencia:** anillo de hierro con una grieta que lo recorre y cambia de posición al mirarlo.
+> **Sensación:** pesa de más; al ponértelo el dedo se enfría y escuchas la *intención* de palabras.
+> **Historia:** los enanos de [lugar limado] lo llaman "la Opinión"; perteneció a un juez que nunca
+> erró — hasta que erró.
+> **Costo:** susurra juicios; si le prestas atención, se intensifican.
+
+Mecánica = idéntica al Ring of Protection (base). Cero stats inventadas.
 
 ## Checklist de calidad
 
-- [ ] Detalle ancla sensorial (no solo visual)
+- [ ] `base` apunta a un oficial real del ETL (mecánica nunca inventada)
+- [ ] Apariencia con detalle ancla sensorial (no solo visual)
 - [ ] La magia se siente, no se anuncia
-- [ ] Tiene consecuencia o costo al usarlo (gancho)
-- [ ] Historia con huecos (invita a investigar)
-- [ ] Rareza reflejada en la descripción, no etiquetada
-- [ ] Conecta con el mundo (quién lo hizo, de dónde viene)
-- [ ] Si es legendario, conecta con lore mayor
+- [ ] Tiene costo/consecuencia (gancho)
+- [ ] Historia con huecos
+- [ ] `flag` match_directo|reskin correcto; reskin conserva la mecánica del base
+- [ ] Instancia: portador/origen/cargas sembrados donde apliquen
