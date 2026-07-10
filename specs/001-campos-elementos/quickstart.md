@@ -57,5 +57,22 @@ rediseñada) pasan.
 
 ## Gate de cierre
 
-- [ ] Escenarios 1–7 verificados con evidencia (fila/overlay/homebrew reales).
-- [ ] `/code-review` sobre el diff — 0 críticos.
+- [x] Escenarios 1–7 verificados con evidencia (fila/overlay/homebrew reales).
+- [x] `/code-review` sobre el diff — 0 críticos.
+
+## E2E ejecutado (2026-07-10) — datos de prueba aislados, validados y borrados
+
+Corrido contra Supabase + ETL reales, con una campaña temporal `e2e_test` (aislada de `halo` por el FK
+`campaign_slug→campaigns`), y **limpieza total al final** (todas las tablas en 0):
+
+| # | Escenario | Evidencia | ✓ |
+|---|-----------|-----------|---|
+| 1 | NPC ficha rediseñada | `custom_data` round-trip: `cf_distintivo`, `cf_statblock.name='Commoner'`, `_hidden` array, `cd_type=object` | ✅ |
+| 2 | Consistencia entre skills | overlay `entity_schemas` single-source (una fila por `section`); el set `cf_*` = el de `npc.md` | ✅ |
+| 3 | Item tipo/instancia | instancia→`cf_item_base`(homebrew)→`items_catalog` (`es_homebrew`, `base='Ring of Protection'`, narrativa estructurada) | ✅ |
+| 4 | Lugar subtipo→perfil | `cf_subtipo='Zona urbana'`; perfil urbano poblado; otros perfiles en `_hidden`; campo dungeon ausente | ✅ |
+| 5 | Combate desde el ETL | Commoner + Guard/Bandit Captain/Gladiator resuelven en `bestiary.json` (711) | ✅ |
+| 6 | Coexistencia | 274 NPCs viejos de `halo` con `custom_data='{}'` y `primera_impresion` intacta | ✅ |
+| 7 | Evals | `evals.json` de ambas skills válidos | ✅ |
+
+Cleanup verificado: `campaigns/entity_schemas/npcs/items/items_catalog/lugares` = 0 filas `e2e_test`.
