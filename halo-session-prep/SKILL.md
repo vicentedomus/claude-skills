@@ -113,33 +113,19 @@ FROM npcs n
 WHERE n.ciudad_id = 'uuid_ciudad' AND NOT n.archived AND n.campaign_slug = 'halo';
 ```
 
-**Queries nuevas obligatorias (catálogos de referencia):**
+**Catálogos de referencia (tesoros y monstruos) — SE RESUELVEN CONTRA EL ETL, no contra Supabase.**
 
-```sql
--- Tesoros: SE BUSCAN EN items_catalog (catálogo global 5e ≈668 DMG'24), NO en `items`
--- (`items` = instancias de campaña). Ver reglas duras de Tesoros más abajo.
--- ⚠️ Formato real: el tier `uncommon` (nivel correcto ~4) son casi todos armas/munición +1
--- y armaduras adamantina/mithral; los "Wondrous Item" vistosos (varitas, bolsas…) están
--- catalogados como `rare`. No pierdas queries buscando wands uncommon — no los hay.
-SELECT id, nombre, tipo, rareza, descripcion, requiere_sintonizacion
-FROM items_catalog
-WHERE rareza ILIKE 'uncommon';   -- ajustar rareza al nivel del party
-
--- Monstruos candidatos para combate (ajustar CR y entorno de la escena)
--- ⚠️ Formato real del catálogo: `cr` es un STRING con XP embebido ("2 (XP 450; PB +2)") —
--- NO uses `cr::text = ANY(...)`, no casa y devuelve vacío. Filtra con LIKE. `entorno` son
--- listas en inglés (Urban, Forest…). Los statblocks NPC (Bandit, Tough, Bandit Captain,
--- Mage, Gladiator…) salen por `tipo ILIKE '%Humanoid%'`.
-SELECT id, nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones
-FROM monstruos
-WHERE NOT archived
-  AND (cr LIKE '1/4 (%' OR cr LIKE '1/2 (%' OR cr LIKE '1 (%'
-       OR cr LIKE '2 (%' OR cr LIKE '3 (%' OR cr LIKE '4 (%' OR cr LIKE '5 (%')
-  AND (entorno ILIKE '%Urban%' OR tipo ILIKE '%Humanoid%')  -- ajustar a la escena
-ORDER BY nombre;
-```
-
-Nota: `monstruos` no tiene `campaign_slug` — es un catálogo compartido.
+> ⚠️ **Corrección importante.** El catálogo vigente **NO** es la tabla Supabase `items_catalog`
+> (669 filas `DMG'24` huérfanas, magic-only, sin commons) ni `monstruos` (~6 filas). El pool real es el
+> **ETL** que carga QuestKeep, leído directo del clon:
+>
+> - **Tesoros** → `questkeep/data/5e/items.json` (1941, XDMG 2024, con Common/Artifact).
+> - **Statblocks** → `questkeep/data/5e/bestiary.json` (711, XMM 2025; trae Commoner, Guard, Mage,
+>   Bandit Captain, Gladiator…).
+>
+> Delegar la resolución a `../dnd-worldbuilder/references/catalogos.md` (match_directo · reskin=homebrew
+> con `base` · nunca inventar). Las tablas `monstruos`/`items_catalog` quedan **solo** como destino de
+> homebrew (`es_homebrew`, `base`). Filtrar el ETL por substring (`cr`/`tipo` son strings compuestos).
 
 ```sql
 -- Party real (para calibrar combate): nivel/clase de los PJs

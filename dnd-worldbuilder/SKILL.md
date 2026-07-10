@@ -33,9 +33,11 @@ profesional. Los datos viven en Supabase (PostgreSQL). Todas las consultas usan 
 
 ## Paso 0: Cargar contexto
 
-1. Lee `references/principles.md` — los principios narrativos que guían toda generación.
-2. Identifica el **tipo de entidad** que el usuario quiere crear/mejorar.
-3. Lee la referencia correspondiente:
+1. Lee `references/principles.md` — los principios narrativos (incl. §16, el modelo de campos).
+2. Lee `references/genome.md` — el método de generación (genoma + extracción de la musa).
+3. Si la entidad lleva statblock/item, lee `references/catalogos.md` — resolución ETL + homebrew.
+4. Identifica el **tipo de entidad** que el usuario quiere crear/mejorar.
+5. Lee la referencia correspondiente:
    - NPC → `references/npc.md`
    - Establecimiento → `references/establishment.md`
    - Ciudad → `references/city.md`
@@ -150,10 +152,24 @@ Si el DM aprueba, confirmar exactamente qué se va a escribir en la BD antes de 
 
 ## Paso 5: Escribir a Supabase
 
-Ejecutar el UPDATE o INSERT según corresponda. Los campos específicos por entidad están
-documentados en cada referencia.
+**Nunca escribir sin confirmación explícita del DM.** El modelo de campos (ver `principles.md` §16) se
+escribe en tres capas:
 
-Confirmar la escritura al DM con un resumen de lo que se guardó.
+1. **Overlay `entity_schemas`** (una vez por tipo/campaña): la definición de los campos `cf_*` (el
+   "genoma" del tipo) en `entity_schemas` (`campaign_slug`, `section`). Idempotente: no dupliques un
+   `cf_*` existente ni pises el overlay del DM. Solo si faltan campos y tras confirmación.
+2. **Valores en `custom_data`** (jsonb) de la fila de la entidad: los `cf_*` poblados. Los campos base
+   (columnas fijas) van como siempre. Marca los campos sensibles en `custom_data._hidden`.
+3. **Homebrew de catálogo** (si hubo reskin de statblock/item): fila en `monstruos`/`items_catalog`
+   (`es_homebrew=true`, `base`=oficial del ETL). Ver `catalogos.md`.
+
+Para tipos con `subtipo→perfil` (Lugar, Ciudad, Establecimiento): puebla solo los `cf_*` del perfil del
+`subtipo`; manda el resto a `_hidden`.
+
+**Coexistencia:** aditivo — no borres ni migres en masa columnas de otros registros. Migraciones
+perezosas solo donde se acordó (p. ej. `lider`→NPC de ciudad, `Místico`→Arcanista) al tocar la fila.
+
+Confirmar la escritura al DM con un resumen de lo que se guardó (fila + `cf_*` + homebrew si aplica).
 
 ---
 
