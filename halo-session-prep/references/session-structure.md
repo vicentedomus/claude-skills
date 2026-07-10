@@ -103,9 +103,10 @@ objetivos. No vale dejarlo vacío.
 | [Nombre] | **Nuevo** | ... | ... | ... | ... |
 | [Nombre] | **Nuevo** | ... | ... | ... | ... |
 
-Para cada NPC **nuevo**, además de la tabla, generar bloque narrativo con:
-- `primera_impresion` (2-4 oraciones sensoriales, siguiendo `../dnd-worldbuilder/references/npc.md`)
-- `notas_roleplay` (muletillas, patrones de habla, reacciones típicas)
+Para cada NPC **nuevo**, además de la tabla, generar la **ficha rediseñada** (`../dnd-worldbuilder/references/npc.md`):
+- `cf_descripcion_fisica` + `cf_distintivo` (público — lo que el DM narra)
+- `cf_forma_de_hablar` + `cf_motivacion` + `cf_secreto` (DM; sensibles → `_hidden`)
+- `cf_statblock` (del ETL, por vocación) — ya **no** `primera_impresion`/`notas_roleplay`
 
 En el Paso 4 del skill, el DM confirma si estos 2 NPCs se guardan en la tabla `npcs`. Si sí,
 la transición `nuevo → existente` ocurre ahí (INSERT con `conocido_jugadores=false`,

@@ -98,7 +98,7 @@ FROM quests q
 WHERE q.campaign_slug = 'halo' AND q.nombre ILIKE '%nombre_quest%' AND NOT q.archived;
 
 -- NPCs vinculados a la quest
-SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad, c.nombre as ciudad
+SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad, n.custom_data, c.nombre as ciudad
 FROM npcs n
 JOIN npcs_quests nq ON n.id = nq.npc_id
 LEFT JOIN ciudades c ON n.ciudad_id = c.id
@@ -116,7 +116,7 @@ LEFT JOIN npcs d ON e.dueno_id = d.id
 WHERE e.ciudad_id = 'uuid_ciudad' AND NOT e.archived;
 
 -- NPCs de esas ciudades (para completar los 4 existentes)
-SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad
+SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad, n.custom_data
 FROM npcs n
 WHERE n.ciudad_id = 'uuid_ciudad' AND NOT n.archived AND n.campaign_slug = 'halo';
 ```
@@ -348,12 +348,18 @@ Antes de insertar el `session_plan`, pregunta al DM:
 Si el DM aprueba:
 
 ```sql
-INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, primera_impresion, notas_roleplay,
-                  edad, conocido_jugadores, campaign_slug)
-VALUES ('Nombre', 'Raza', 'tipo', 'Rol', 'uuid_ciudad_o_NULL', 'primera_impresion...',
-        'notas_roleplay...', 42, false, 'halo')
+-- Ficha rediseñada: los campos narrativos van en custom_data (cf_*), NO en las columnas
+-- primera_impresion/notas_roleplay (deprecadas). Los sensibles se listan en _hidden.
+INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, edad, conocido_jugadores, campaign_slug, custom_data)
+VALUES ('Nombre', 'Raza', 'tipo_npc (13 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
+  '{"cf_descripcion_fisica":"...","cf_distintivo":"...","cf_forma_de_hablar":"...",
+    "cf_statblock":{"kind":"official","name":"Noble","source":"XMM"},
+    "cf_motivacion":"...","cf_secreto":"...",
+    "_hidden":["cf_forma_de_hablar","cf_statblock","cf_motivacion","cf_secreto"]}'::jsonb)
 RETURNING id;
 ```
+El overlay `entity_schemas` (section='npcs') debe existir con esos `cf_*` — lo escribe `dnd-worldbuilder`
+tras confirmación (una vez por campaña). El `cf_statblock` se resuelve por vocación contra el ETL.
 
 Captura el `id` devuelto por cada INSERT. Usa esos `npc_id` reales en el bloque `bloque_npcs`
 del session_plan.
