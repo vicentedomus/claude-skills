@@ -193,10 +193,16 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
 
 *Requisitos con decisión pendiente (a cerrar en `/speckit-clarify`):*
 
-- **FR-012**: El **catálogo concreto de campos por tipo** (qué campos base se conservan/ocultan
-  y qué campos interactivos se añaden por cada uno de los 6 tipos) está
-  [NEEDS CLARIFICATION: se co-diseñará tipo por tipo con el DM; ¿arrancamos por NPC como piloto
-  y luego replicamos el patrón al resto?].
+- **FR-012**: El **catálogo concreto de campos por tipo** se co-diseña **tipo por tipo**,
+  arrancando por **NPC como piloto** (resuelto 2026-07-10 — ver `design-npc.md`). El patrón del
+  piloto (genoma de identidad + enrutamiento de extracción por combinación + campos núcleo/
+  situacional) se replica luego a lugar/quest/item/ciudad/establecimiento.
+- **FR-014**: La skill DEBE resolver los statblocks contra el **catálogo 5e real**
+  (`questkeep/data/5e/bestiary.json`, 711 statblocks) — **no** contra la tabla Supabase `monstruos`
+  (6 filas, store homebrew). Referencia con ref tipado `{kind:'official', name, source}` u
+  `{kind:'homebrew', id}`. Esto **corrige un bug existente** del flujo de combate de
+  `halo-session-prep` (la regla "monstruos solo del catálogo `monstruos`" apunta a una tabla casi
+  vacía) y habilita el `statblock` obligatorio por NPC.
 - **FR-013**: El grado de automatización al crear estructura (overlay) es
   [NEEDS CLARIFICATION: ¿las skills escriben `entity_schemas` tras confirmación, o solo pueblan
   `custom_data` sobre campos que el DM define en QuestKeep, y las skills solo proponen?].
@@ -260,11 +266,17 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
 
 ## Decisiones abiertas para `/speckit-clarify` (checkpoint)
 
-1. **Piloto vs. big-bang (FR-012):** ¿co-diseñamos la ficha rediseñada **tipo por tipo**
-   arrancando por **NPC** (el más rico y el que session-prep más usa) y replicamos el patrón,
-   o definimos los 6 de una?
+1. ~~**Piloto vs. big-bang (FR-012):**~~ **RESUELTO** — piloto **NPC** primero, luego replicar
+   (ver `design-npc.md`).
 2. **¿Las skills crean estructura o solo la proponen (FR-013)?** ¿Escriben `entity_schemas`
    (overlay) tras confirmación, o el DM define los campos en QuestKeep y las skills solo
-   pueblan `custom_data` + proponen qué campos convendría añadir?
-3. **Alcance de tipos en v1:** ¿los 6 tipos, o un subconjunto (p. ej. NPC + lugar + item)
-   para la primera iteración?
+   pueblan `custom_data` + proponen qué campos convendría añadir? *(sigue abierta)*
+3. **Cleanup de datos:** a qué `tipo_npc` reclasificar las filas basura `BEG` y `Secundario`;
+   `Místico` ¿fold en Arcanista o campo propio?
+4. **Alcance de tipos en v1:** tras el piloto NPC, ¿los 5 restantes de una o por tandas?
+
+## Artefactos de co-diseño
+
+- `design-npc.md` — diseño completo de la ficha de NPC (piloto): genoma de identidad, enrutamiento
+  de extracción por combinación, campos núcleo/situacional, `tipo_npc` canónico + barrido,
+  `statblock` (pool real + default por vocación + bug de combate destapado).
