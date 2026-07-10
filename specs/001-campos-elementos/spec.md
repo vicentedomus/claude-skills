@@ -211,6 +211,10 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
   sin commons). Corrige el mismo bug que FR-014 en el flujo de tesoros de `halo-session-prep`. El
   homebrew de item se guarda en `items_catalog` (`es_homebrew`, `base`); la instancia en `items`
   (`custom_data`). Ver `design-item.md`.
+- **FR-016**: Los tipos de elemento **heterogéneos** (empezando por `lugares`) DEBEN modelarse con
+  **núcleo mínimo + `subtipo` que activa un perfil de campos**: el overlay define el superset de campos
+  de todos los perfiles; la skill puebla solo los del `subtipo` del elemento y marca el resto oculto.
+  Ver `design-lugar.md`. Patrón reusable (candidato: `establecimiento`).
 
 ### Key Entities
 
