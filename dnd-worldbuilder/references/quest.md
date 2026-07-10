@@ -1,61 +1,54 @@
 # Quest — Referencia de Entidad
 
-## Campos en Supabase
+La **espina que ata las entidades al desarrollo de la sesión** (su premisa referencia NPCs, sus escenas
+ocurren en lugares, su recompensa es un item, su antagonista es un statblock). El gancho **no es**
+"alguien te pide un favor" — es una situación donde **no actuar tiene consecuencias visibles**. El
+**dilema moral** es lo que la hace memorable; sin dilema es fetch quest.
 
-| Campo | Qué es | Quién lo ve |
-|-------|--------|-------------|
-| `nombre` | Nombre de la quest | Todos |
-| `estado` | Activa / Completada / En pausa | Sistema |
-| `resumen` | Resumen breve (1-2 oraciones) | Todos |
-| `contenido_html` | Descripción completa con detalles narrativos | DM |
+## Núcleo — la espina (universal)
 
-## Estructura del output
+| Campo | Tipo | Ve |
+|-------|------|----|
+| `nombre` · `estado`(select) | base | 👥 |
+| `resumen` (el gancho, 1-2 líneas) | base | 👥 |
+| `cf_premisa` (qué está en juego, quién pierde) | textarea | 🎩 |
+| `cf_dilema_moral` (la decisión sin respuesta fácil) | textarea | 🎩 |
+| `cf_consecuencias` (ramas: si ignoran / fallan / eligen lado) | textarea | 🎩 |
+| `quest_npcs` (rel-multi: **quien pide + quien complica**) | base | mixto |
+| `conocido_jugadores` | base | — |
 
-### Resumen
+**Deprecado:** el blob `contenido_html` → `cf_premisa`/`cf_dilema_moral`/`cf_consecuencias`.
 
-1-2 oraciones que capturan la esencia. Debe funcionar como gancho — al leerlo,
-el DM sabe inmediatamente de qué trata y por qué importa.
+## Situacional
 
-### Contenido (para `contenido_html`)
+| Campo | Tipo | Ve |
+|-------|------|----|
+| `cf_recompensa_item` (rel item) + `cf_recompensa_gp` (number) — **ambos opcionales** | rel/number | — |
+| `cf_antagonista` (**statblock** / rel npc; `catalogos.md`) | statblock/rel | 🎩 |
+| `cf_pistas` (múltiples caminos) · `cf_misterio_mayor` (enlaza a lore/otra quest) | textarea | 🎩→ |
+| `cf_subtipo` (Investigación·Rescate·Recuperación·Eliminación·Escolta/Defensa·Otro) | select | — |
+| `cf_inspiracion` | text | 🎩 |
+| `lugares` · `ciudades` · `establecimientos` | base rels | mixto |
 
-Tres capas:
+**Subtipo ligero:** el spine pesa más que la actividad; el `cf_subtipo` solo añade 1-2 campos de énfasis
+(p. ej. Investigación → sospechosos/verdad_oculta/pistas_falsas; Rescate → cautivo/captor/timer).
 
-1. **Premisa** — qué está pasando y por qué los jugadores deberían importarles.
-   No "alguien necesita ayuda" — qué está en juego, quién pierde si no actúan.
-2. **Tensión/dilema** — la decisión difícil o el conflicto moral. Toda buena quest
-   tiene un momento donde no hay respuesta fácil.
-3. **Consecuencias implícitas** — qué pasa si lo ignoran, qué pasa si fallan,
-   qué pasa si eligen un lado. No las digas todas — deja que el DM las revele.
+## Cómo se genera
 
-**Principios específicos para quests:**
-
-- El gancho NO es "alguien te pide un favor" — es una situación donde no actuar
-  tiene consecuencias visibles
-- El dilema moral es lo que la hace memorable. Sin dilema, es un fetch quest
-- Conectar con al menos 2 NPCs (uno que pide, uno que complica)
-- Las pistas deben tener múltiples caminos de descubrimiento
-- Misterio menor: una pista que conecta con otra quest o con lore mayor
-
-**Ejemplo:**
-> **Premisa:** Los pescadores del puerto están desapareciendo de noche. No es el mar
-> — los botes amanecen intactos, pero con marcas de garras en la borda. La familia
-> del último desaparecido ofrece todo lo que tiene.
->
-> **Tensión:** La criatura que los toma resulta ser una madre protegiendo su nido
-> bajo los muelles. Los huevos eclosionan en una semana. Matarla resuelve el problema
-> inmediato; reubicarla es más difícil pero los pescadores y la criatura sobreviven.
-> El líder del gremio de pescadores quiere sangre.
->
-> **Consecuencias:** Si matan a la madre, las crías eclosionan solas y son más
-> agresivas. Si la reubican, el gremio pierde confianza en el party. Si no hacen
-> nada, otro pescador desaparece en 3 días.
+1. Parte de la **premisa con stakes** (no un fetch quest) — qué se pierde si no actúan.
+2. Clava el **dilema moral** y las **consecuencias por rama**.
+3. Ancla **≥2 NPCs** (quien pide / quien complica); siembra lugares, `cf_recompensa_item`(rel),
+   `cf_antagonista`(statblock del ETL).
+4. Flavor del grafo (hooks, crime-intrigue, horror pacing) — limando setting.
+5. Cierra con `cf_pistas` de múltiples caminos + `cf_misterio_mayor` que enlace a lore mayor.
 
 ## Checklist de calidad
 
 - [ ] Premisa con stakes claros (qué se pierde si no actúan)
-- [ ] Tiene dilema moral o decisión sin respuesta fácil
-- [ ] Conecta con mínimo 2 NPCs
-- [ ] Consecuencias múltiples (no solo éxito/fracaso binario)
-- [ ] Tiene misterio menor que conecta con algo mayor
-- [ ] Las pistas tienen múltiples caminos de descubrimiento
+- [ ] Tiene dilema moral / decisión sin respuesta fácil
+- [ ] Conecta ≥2 NPCs (uno pide, uno complica)
+- [ ] Consecuencias múltiples (no binario éxito/fracaso)
+- [ ] `cf_pistas` con múltiples caminos de descubrimiento
+- [ ] `cf_antagonista` resuelto contra el ETL (nunca inventado)
+- [ ] `cf_misterio_mayor` conecta con algo mayor
 - [ ] No es un fetch quest disfrazado

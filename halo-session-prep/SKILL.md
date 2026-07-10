@@ -23,9 +23,17 @@ Skill de preparación de sesiones para la campaña **Halo**. Los datos viven en 
 Todas las consultas y escrituras se hacen con `execute_sql` sobre el proyecto `dwmzchtqjcblupmmklcl`
 y con `campaign_slug = 'halo'` donde aplique.
 
-**Principio central:** cada sesión se **ancla al mundo existente** (reusa NPCs, items y monstruos
-de la BD) y al mismo tiempo **expande el mundo** (2 NPCs nuevos cada sesión). Los tesoros salen
-siempre de la tabla `items` y los monstruos de la tabla `monstruos` — nunca se inventan.
+**Principio central:** cada sesión se **ancla al mundo existente** (reusa NPCs, items y monstruos) y al
+mismo tiempo **expande el mundo** (2 NPCs nuevos cada sesión). Los tesoros y statblocks salen del
+**catálogo 5e vigente (el ETL)**, no de las tablas Supabase casi vacías — nunca se inventan (ver
+`../dnd-worldbuilder/references/catalogos.md`).
+
+**Modelo de campos (rediseño 2026):** las entidades nuevas se generan con la **ficha rediseñada** por
+tipo (`dnd-worldbuilder/references/<tipo>.md` + `data-model` del rediseño): campos `cf_*` en
+`custom_data`, ancla a catálogo ETL, `subtipo→perfil` para tipos heterogéneos, sensibles en `_hidden`.
+**Coexistencia:** aditivo — lo viejo (fichas planas) sigue operando; nada de UPDATE masivo. Migraciones
+perezosas solo donde se acordó (`lider`→NPC de ciudad city-by-city; `Místico`→Arcanista al tocar la
+fila). **Nunca escribir estructura ni datos sin confirmación del DM.**
 
 ---
 
@@ -90,7 +98,7 @@ FROM quests q
 WHERE q.campaign_slug = 'halo' AND q.nombre ILIKE '%nombre_quest%' AND NOT q.archived;
 
 -- NPCs vinculados a la quest
-SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad, c.nombre as ciudad
+SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad, n.custom_data, c.nombre as ciudad
 FROM npcs n
 JOIN npcs_quests nq ON n.id = nq.npc_id
 LEFT JOIN ciudades c ON n.ciudad_id = c.id
@@ -108,38 +116,24 @@ LEFT JOIN npcs d ON e.dueno_id = d.id
 WHERE e.ciudad_id = 'uuid_ciudad' AND NOT e.archived;
 
 -- NPCs de esas ciudades (para completar los 4 existentes)
-SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad
+SELECT n.id, n.nombre, n.raza, n.rol, n.estado, n.primera_impresion, n.notas_roleplay, n.edad, n.custom_data
 FROM npcs n
 WHERE n.ciudad_id = 'uuid_ciudad' AND NOT n.archived AND n.campaign_slug = 'halo';
 ```
 
-**Queries nuevas obligatorias (catálogos de referencia):**
+**Catálogos de referencia (tesoros y monstruos) — SE RESUELVEN CONTRA EL ETL, no contra Supabase.**
 
-```sql
--- Tesoros: SE BUSCAN EN items_catalog (catálogo global 5e ≈668 DMG'24), NO en `items`
--- (`items` = instancias de campaña). Ver reglas duras de Tesoros más abajo.
--- ⚠️ Formato real: el tier `uncommon` (nivel correcto ~4) son casi todos armas/munición +1
--- y armaduras adamantina/mithral; los "Wondrous Item" vistosos (varitas, bolsas…) están
--- catalogados como `rare`. No pierdas queries buscando wands uncommon — no los hay.
-SELECT id, nombre, tipo, rareza, descripcion, requiere_sintonizacion
-FROM items_catalog
-WHERE rareza ILIKE 'uncommon';   -- ajustar rareza al nivel del party
-
--- Monstruos candidatos para combate (ajustar CR y entorno de la escena)
--- ⚠️ Formato real del catálogo: `cr` es un STRING con XP embebido ("2 (XP 450; PB +2)") —
--- NO uses `cr::text = ANY(...)`, no casa y devuelve vacío. Filtra con LIKE. `entorno` son
--- listas en inglés (Urban, Forest…). Los statblocks NPC (Bandit, Tough, Bandit Captain,
--- Mage, Gladiator…) salen por `tipo ILIKE '%Humanoid%'`.
-SELECT id, nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones
-FROM monstruos
-WHERE NOT archived
-  AND (cr LIKE '1/4 (%' OR cr LIKE '1/2 (%' OR cr LIKE '1 (%'
-       OR cr LIKE '2 (%' OR cr LIKE '3 (%' OR cr LIKE '4 (%' OR cr LIKE '5 (%')
-  AND (entorno ILIKE '%Urban%' OR tipo ILIKE '%Humanoid%')  -- ajustar a la escena
-ORDER BY nombre;
-```
-
-Nota: `monstruos` no tiene `campaign_slug` — es un catálogo compartido.
+> ⚠️ **Corrección importante.** El catálogo vigente **NO** es la tabla Supabase `items_catalog`
+> (669 filas `DMG'24` huérfanas, magic-only, sin commons) ni `monstruos` (~6 filas). El pool real es el
+> **ETL** que carga QuestKeep, leído directo del clon:
+>
+> - **Tesoros** → `questkeep/data/5e/items.json` (1941, XDMG 2024, con Common/Artifact).
+> - **Statblocks** → `questkeep/data/5e/bestiary.json` (711, XMM 2025; trae Commoner, Guard, Mage,
+>   Bandit Captain, Gladiator…).
+>
+> Delegar la resolución a `../dnd-worldbuilder/references/catalogos.md` (match_directo · reskin=homebrew
+> con `base` · nunca inventar). Las tablas `monstruos`/`items_catalog` quedan **solo** como destino de
+> homebrew (`es_homebrew`, `base`). Filtrar el ETL por substring (`cr`/`tipo` son strings compuestos).
 
 ```sql
 -- Party real (para calibrar combate): nivel/clase de los PJs
@@ -217,9 +211,10 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 
 - **4 existentes**: selecciona los más relevantes a la quest, ciudad o lugar objetivo de la sesión.
 - **2 nuevos**: genera frescos invocando el flujo de `dnd-worldbuilder` con `references/npc.md`
-  (primera_impresion + notas_roleplay, con las capas sensoriales y manierismos de ese formato).
-  Ese flujo ya consulta el **compendio** primero (su Paso 0.5) — ánclalos a un arquetipo/`theme`
-  del grafo (con nombres propios limados) antes de inventar.
+  (la **ficha rediseñada**: `cf_descripcion_fisica`/`cf_distintivo`/`cf_forma_de_hablar`/`cf_statblock`
+  + situacionales — ya **no** `primera_impresion`/`notas_roleplay`). Ese flujo consulta el **compendio**
+  primero (`genome.md`) — ánclalos a un arquetipo/`theme` del grafo (nombres limados) antes de inventar.
+  El `cf_statblock` sale del ETL por vocación (`catalogos.md`).
 - Cada NPC (existente o nuevo) lleva el campo **"Relación con la sesión"**: qué rol narrativo cumple,
   por qué aparece, cómo se cruza con los objetivos. No vale dejarlo vacío.
 - Marca cada NPC con flag `existente` o `nuevo`. Este flag se preserva como snapshot histórico
@@ -244,22 +239,20 @@ Principios guía (aplican a todas las opciones que ofrezcas):
   recórtala. (Ej. real: "¿por qué Rammel tiene el libro de Torben?" → porque archiva el
   comercio de la ciudad y descifró los manifiestos.)
 
-#### Tesoros — **SOLO items reales del catálogo `items_catalog`**. Regla de prioridad estricta:
+#### Tesoros — **del catálogo 5e VIGENTE (el ETL), nunca inventados.** Regla de prioridad estricta:
 
-> **Fuente correcta:** `items_catalog` es el catálogo global 5e (≈668 items, fuente `DMG'24`),
-> análogo a `monstruos`. La tabla `items` son las **instancias** de campaña (lo que alguien posee,
-> con `personaje_id`/`npc_portador_id`). Para elegir un tesoro se busca en `items_catalog`.
+> **Fuente correcta:** el catálogo vigente es el **ETL** `questkeep/data/5e/items.json` (1941, XDMG
+> 2024, con Common/Artifact) — **no** la tabla `items_catalog` (669 filas `DMG'24` huérfanas, sin
+> commons). La tabla `items` son las **instancias** de campaña; `items_catalog` es el **store de
+> homebrew** (`es_homebrew`, `base`). Delegar a `../dnd-worldbuilder/references/catalogos.md`.
 
-1. **Primero** busca un item en `items_catalog` que satisfaga la necesidad narrativa tal cual.
-   Si encaja (efecto y tono), úsalo sin tocar nada.
-2. **Solo si ningún item del catálogo encaja**, aplica **reskin narrativo** invocando `dnd-worldbuilder`
-   con `references/item.md`. El reskin cambia flavor (nombre, descripción) pero **mantiene el item
-   base como referencia** (mismas stats y efectos).
-3. **Nunca inventar** items. Si la trama exige un item oficial que no está en el catálogo (p. ej.
-   un item 2014 fuera del DMG'24), **darlo de alta primero en `items_catalog`** con su texto
-   oficial verbatim (en inglés, por convención del proyecto) — extraído de la fuente, no de memoria.
+1. **match_directo** — un item oficial del **ETL** que encaja tal cual → referenciarlo, sin escribir.
+2. **reskin** — invocar `dnd-worldbuilder` con `references/item.md`: **fila homebrew** en `items_catalog`
+   (`es_homebrew=true`, `base`=oficial del ETL, **misma mecánica**), flavor nuevo. La instancia va a
+   `items` con `cf_item_base`.
+3. **Nunca inventar.** El ETL ya trae commons/artifacts; si faltara un oficial, darlo de alta verbatim.
 
-Cada tesoro lleva: `item_id` de `items_catalog`, flag `match_directo | reskin`, y si es reskin el flavor aplicado.
+Cada tesoro lleva: `cf_item_base` (ref al ETL/homebrew), flag `match_directo | reskin`, y el flavor si aplica.
 
 #### Combate / Encuentro — invocar `dnd-worldbuilder` con `references/combate.md`
 
@@ -281,13 +274,14 @@ La skill hermana retorna:
 
 **Reglas estrictas para monstruos:**
 
-1. **Primero** busca un monstruo del catálogo oficial que encaje. Si encaja, úsalo sin reskin.
-2. **Solo si nada encaja**, `combate.md` aplica reskin narrativo (cambia flavor, **nunca el
-   stat block**).
+1. **Primero** busca un statblock del **ETL** (`questkeep/data/5e/bestiary.json`, 711) que encaje. Si
+   encaja, úsalo (`kind:official`). **No** la tabla `monstruos` (~6 filas) — es solo store de homebrew.
+2. **Solo si nada encaja**, `combate.md` aplica reskin: **fila homebrew** en `monstruos`
+   (`es_homebrew`, `base`=oficial del ETL, **nunca el stat block**). Ver `catalogos.md`.
 3. **Nunca inventar** stat blocks.
 
-Cada monstruo lleva: `monstruo_id` base, flag `match_directo | reskin`, cantidad, contexto
-narrativo, y si es reskin las 3 capas completas.
+Cada monstruo lleva: ref al statblock base (`{kind, name/id, source}`), flag `match_directo | reskin`,
+cantidad, contexto narrativo, y si es reskin las 3 capas completas.
 
 **Dificultad — calibrar contra el party REAL y mostrar la cuenta:**
 
@@ -354,12 +348,18 @@ Antes de insertar el `session_plan`, pregunta al DM:
 Si el DM aprueba:
 
 ```sql
-INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, primera_impresion, notas_roleplay,
-                  edad, conocido_jugadores, campaign_slug)
-VALUES ('Nombre', 'Raza', 'tipo', 'Rol', 'uuid_ciudad_o_NULL', 'primera_impresion...',
-        'notas_roleplay...', 42, false, 'halo')
+-- Ficha rediseñada: los campos narrativos van en custom_data (cf_*), NO en las columnas
+-- primera_impresion/notas_roleplay (deprecadas). Los sensibles se listan en _hidden.
+INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, edad, conocido_jugadores, campaign_slug, custom_data)
+VALUES ('Nombre', 'Raza', 'tipo_npc (13 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
+  '{"cf_descripcion_fisica":"...","cf_distintivo":"...","cf_forma_de_hablar":"...",
+    "cf_statblock":{"kind":"official","name":"Noble","source":"XMM"},
+    "cf_motivacion":"...","cf_secreto":"...",
+    "_hidden":["cf_forma_de_hablar","cf_statblock","cf_motivacion","cf_secreto"]}'::jsonb)
 RETURNING id;
 ```
+El overlay `entity_schemas` (section='npcs') debe existir con esos `cf_*` — lo escribe `dnd-worldbuilder`
+tras confirmación (una vez por campaña). El `cf_statblock` se resuelve por vocación contra el ETL.
 
 Captura el `id` devuelto por cada INSERT. Usa esos `npc_id` reales en el bloque `bloque_npcs`
 del session_plan.
@@ -459,10 +459,12 @@ Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
   NPC flag=`nuevo` no tiene `npc_id`, es issue crítico (la transición no se hizo).
 - Cada NPC tiene `relacion_sesion` no vacía.
 - Cada locación en `bloque_locaciones` tiene `relacion_sesion` no vacía.
-- Cada tesoro en `bloque_tesoros` tiene `item_id` que existe en `items_catalog` (o, si se dio de
-  alta un item oficial nuevo, que ya esté insertado en `items_catalog`).
-- Cada monstruo en `bloque_monstruos` tiene `monstruo_id` que existe en `monstruos` **y** un
-  `escena_idx` válido (índice 0-based dentro de `bloque_escenas`, apuntando a una escena de combate).
+- Cada tesoro en `bloque_tesoros` tiene `cf_item_base` (ref) a un item **oficial del ETL** o a una fila
+  **homebrew** de `items_catalog` (`es_homebrew`, `base`). Nunca a las 669 filas huérfanas ni inventado.
+- Cada monstruo en `bloque_monstruos` referencia un statblock del **ETL** (`bestiary.json`) o homebrew
+  de `monstruos` (`base`), **y** un `escena_idx` válido (índice 0-based dentro de `bloque_escenas`).
+- Cada NPC nuevo tiene la **ficha rediseñada** en `custom_data` (`cf_descripcion_fisica`, `cf_distintivo`,
+  `cf_forma_de_hablar`, `cf_statblock`); los campos sensibles están en `custom_data._hidden`.
 - Cada tesoro y monstruo tiene flag `match_directo | reskin`. Si es reskin, flavor/capas completas.
 - Cada escena con `tipo='combate'` tiene el campo `ejes` con `protein` + ≥2 ejes adicionales
   (Optimizers/Hazards/Chaos). Regla de Tres cumplida. Si Protein = `Kill Them`, debe tener
@@ -548,7 +550,8 @@ La worldbuilder vive en `../dnd-worldbuilder/` y tiene las referencias narrativa
 | **Combate / encuentro** | `../dnd-worldbuilder/references/combate.md` | Party composition, ubicación, quest/tono, catálogo `monstruos` filtrado |
 
 **Qué esperar:**
-- NPC: bloque con `primera_impresion` y `notas_roleplay`, listo para commit a tabla `npcs`
+- NPC: la **ficha rediseñada** (`cf_descripcion_fisica`/`cf_distintivo`/`cf_forma_de_hablar`/
+  `cf_statblock` + situacionales, en `custom_data`; sensibles en `_hidden`), lista para commit a `npcs`
   y para `bloque_npcs` del session_plan.
 - Item (reskin): flavor nuevo con el `item_id` base preservado, para `bloque_tesoros`.
 - Combate: **dos piezas** — una escena tipo `combate` con campo `ejes` JSONB (Protein +

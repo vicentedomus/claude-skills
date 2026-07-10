@@ -1,8 +1,10 @@
 # Plantilla — Estructura de Sesión
 
-Esta plantilla genera el contenido que luego se commitea en `session_plans` (columnas `bloque_*`
-separadas: `bloque_strong_start`, `bloque_escenas`, `bloque_secretos`, `bloque_npcs`,
-`bloque_locaciones`, `bloque_tesoros`, `bloque_monstruos`).
+Esta plantilla genera el contenido que luego se commitea en `session_plans`, **anidado dentro de la
+columna `bloques` (jsonb)** — `bloques['bloque_strong_start']`, `['bloque_escenas']`, etc. (las columnas
+`bloque_*` sueltas son legacy y la UI las ignora; ver Paso 4b del SKILL). Las **entidades** que el prep
+crea (NPCs, tesoros, locaciones) usan la **ficha rediseñada** por tipo (`cf_*`, ancla a catálogo ETL;
+ver `../dnd-worldbuilder/references/<tipo>.md`).
 
 El estilo es cinematográfico-directo (Matt Mercer al hablar, no al escribir) + principios de
 Lazy DM y DMG 2024.
@@ -101,9 +103,10 @@ objetivos. No vale dejarlo vacío.
 | [Nombre] | **Nuevo** | ... | ... | ... | ... |
 | [Nombre] | **Nuevo** | ... | ... | ... | ... |
 
-Para cada NPC **nuevo**, además de la tabla, generar bloque narrativo con:
-- `primera_impresion` (2-4 oraciones sensoriales, siguiendo `../dnd-worldbuilder/references/npc.md`)
-- `notas_roleplay` (muletillas, patrones de habla, reacciones típicas)
+Para cada NPC **nuevo**, además de la tabla, generar la **ficha rediseñada** (`../dnd-worldbuilder/references/npc.md`):
+- `cf_descripcion_fisica` + `cf_distintivo` (público — lo que el DM narra)
+- `cf_forma_de_hablar` + `cf_motivacion` + `cf_secreto` (DM; sensibles → `_hidden`)
+- `cf_statblock` (del ETL, por vocación) — ya **no** `primera_impresion`/`notas_roleplay`
 
 En el Paso 4 del skill, el DM confirma si estos 2 NPCs se guardan en la tabla `npcs`. Si sí,
 la transición `nuevo → existente` ocurre ahí (INSERT con `conocido_jugadores=false`,
@@ -118,12 +121,13 @@ que no aporte a ninguna escena.]
 | [Nombre] | [Urbano/Naval/etc.] | [Ciudad/Región] | [Qué escena ocurre aquí, qué rol cumple] | [1-2 líneas sensoriales] |
 
 ## 💰 Tesoros y recompensas (bloque_tesoros)
-**Regla dura: SOLO items reales de la tabla `items` de Supabase.**
+**Regla dura: del catálogo 5e VIGENTE (el ETL `data/5e/items.json`), nunca inventados.**
+(Ver `../dnd-worldbuilder/references/catalogos.md`; **no** la tabla `items_catalog` huérfana.)
 
 Prioridad:
-1. Match directo — item existente que satisface la necesidad tal cual. Sin reskin.
-2. Reskin — solo si ningún item existente satisface. Mantiene el item base (mismas stats/efectos)
-   pero con flavor nuevo (siguiendo `../dnd-worldbuilder/references/item.md`).
+1. **match_directo** — item oficial del ETL que satisface tal cual. Sin reskin.
+2. **reskin** — solo si nada encaja: fila homebrew en `items_catalog` (`es_homebrew`, `base`=oficial,
+   mismas stats), flavor nuevo (`../dnd-worldbuilder/references/item.md`).
 3. **Nunca** inventar items.
 
 | Tesoro (nombre narrativo) | Item base (Supabase) | Tipo | Rareza | Portador sugerido | Reskin aplicado |
@@ -141,12 +145,13 @@ Ej: "Sera les revela que el cristal no fue robado — ella lo vendió voluntaria
 - Gancho 2: [opcional]
 
 ## ⚔️ Monstruos / Enemigos (bloque_monstruos)
-**Regla dura: SOLO monstruos de la tabla `monstruos` (catálogo 5e oficial).**
+**Regla dura: del catálogo 5e VIGENTE (el ETL `data/5e/bestiary.json`), nunca inventados.**
+(Ver `../dnd-worldbuilder/references/catalogos.md`; **no** la tabla `monstruos` de ~6 filas.)
 
 Prioridad:
-1. Match directo — monstruo del catálogo que encaja narrativa y mecánicamente. Sin reskin.
-2. Reskin — solo si nada encaja. **Stat block no cambia**, solo flavor (3 capas sensoriales:
-   primera señal, encuentro, comportamiento — ofrecidas proactivamente por `combate.md`).
+1. **match_directo** — statblock del ETL que encaja narrativa y mecánicamente. Sin reskin.
+2. **reskin** — solo si nada encaja: fila homebrew en `monstruos` (`es_homebrew`, `base`). **Stat block
+   no cambia**, solo flavor (3 capas sensoriales — ofrecidas proactivamente por `combate.md`).
 3. **Nunca** inventar stat blocks.
 
 | Enemigo (nombre narrativo) | Stat block base (tabla monstruos) | CR | Cantidad | Tipo | Contexto narrativo |

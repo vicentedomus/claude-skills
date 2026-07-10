@@ -140,3 +140,27 @@ La skill debe consultar estas fuentes (si están disponibles en la campaña):
 - Datos base de ciudades — población, clima, rasgos
 
 Estas son la fuente de verdad. Cualquier descripción que contradiga el lore es un error.
+
+---
+
+## 16. Modelo de campos (rediseño 2026)
+
+Las entidades se generan con un **conjunto de campos estructurados**, no como blobs de prosa. Reglas
+transversales (detalle por tipo en cada `references/<tipo>.md`; método de generación en `genome.md`):
+
+- **Desenterrar la prosa:** el detalle ancla, la motivación, el secreto, el gancho, etc. viven en
+  **campos propios** glanceables — no sepultados en una descripción. Prep = ingredientes, no script.
+- **Campos custom → `cf_*` en `custom_data`** (jsonb) de la entidad; su definición vive en el overlay
+  `entity_schemas` (por `campaign_slug` + `section`). Las skills escriben ambos **tras confirmación**.
+- **Ancla a catálogo (nunca inventar mecánica):** statblocks e items salen del **ETL vigente**
+  (`questkeep/data/5e/bestiary.json` · `items.json`); el reskin se guarda como **homebrew** en
+  `monstruos`/`items_catalog` con `base` al oficial. Ver `catalogos.md`.
+- **subtipo→perfil (tipos heterogéneos):** un `cf_subtipo` enciende el perfil de campos que aplica; el
+  resto va a `custom_data._hidden`. (Lugar, Ciudad, Establecimiento.)
+- **Sembrar cross-links al nacer:** las relaciones (`select-rel`) se pueblan en la generación, no a mano
+  después. El mundo nace tejido.
+- **Visibilidad:** los campos sensibles (notas de roleplay, statblock, secreto, motivación) nacen
+  ocultos a jugadores (`_hidden`); el DM ajusta.
+- **Coexistencia:** aditivo. Nunca se borra ni se migra en masa lo viejo; las fichas planas previas
+  siguen operando. Migraciones perezosas donde se acordó.
+- **`inspiracion`:** si se tomó una semilla específica del grafo, se anota (procedencia); no siempre aplica.

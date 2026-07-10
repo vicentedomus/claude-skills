@@ -1,50 +1,62 @@
 # Lugar — Referencia de Entidad
 
-## Campos en Supabase
+Un Lugar es un **punto de interés definido por su propósito** — lo que puede suceder ahí — no por su
+geografía. A menudo **nace atado a una sesión** (se crea *para* una escena). Su columna vertebral es
+`cf_proposito`, no el bioma.
 
-| Campo | Qué es | Quién lo ve |
-|-------|--------|-------------|
-| `descripcion` | Descripción narrativa del lugar | Todos |
-| `nombre` | Nombre del lugar | Todos |
-| `tipo` | Ruina, cueva, bosque, templo, etc. | Todos |
-| `region` | Región/zona del mapa | Todos |
-| `ciudad_id` | Ciudad asociada (si aplica) | Todos |
-| `conocido_jugadores` | Si los jugadores lo conocen | Sistema |
+## subtipo → perfil (tipo heterogéneo)
 
-## Estructura del output
+Un dungeon, una cueva, un claro y "una zona de una ciudad" tienen campos distintos. Modelo: **núcleo
+mínimo + `cf_subtipo` que enciende su perfil** (los `cf_*` de otros perfiles van a `_hidden`).
 
-### Descripción
+## Núcleo (todo lugar)
 
-Tres capas en orden natural:
+| Campo | Tipo | Ve |
+|-------|------|----|
+| `nombre` · `tipo`(select) · `region`(select) | base | 👥 |
+| `cf_subtipo` (Dungeon/Ruina · Cueva · Naturaleza · Zona urbana · Otro) | custom select | 👥 |
+| `ciudad` (rel) · `cf_lugar_padre` (rel lugares, para anidar) | rel | 👥 |
+| `cf_proposito` — qué puede suceder / por qué existe (liga a quest/escena) | textarea | 🎩→ |
+| `cf_atmosfera` — un gancho sensorial breve | text | 👥 |
+| `estado_exploracion` · `mapa_id` · `conocido_jugadores` | base | — |
 
-1. **Aproximación** — qué perciben antes de llegar (sonidos lejanos, cambio en el aire,
-   señales en el terreno)
-2. **Interior/exploración** — lo que encuentran al entrar o explorar
-3. **Peligros/recompensas implícitas** — señales de lo que habita o se esconde aquí
-   (marcas en las paredes, huesos, brillo en la oscuridad)
+> `dentro_de` va como **campos separados** (`region` / `ciudad` / `cf_lugar_padre`), uno lleno —
+> QuestKeep no soporta relación polimórfica.
 
-**Principios específicos para lugares:**
+**Deprecado:** `descripcion`/`descripcion_exterior`/`descripcion_interior` → `cf_atmosfera` + perfil.
 
-- Los lugares salvajes tienen personalidad propia — el bosque *quiere* algo, la cueva
-  *esconde* algo, la ruina *recuerda* algo
-- Si un monstruo habita aquí, sus marcas deben ser visibles antes del encuentro
-- El peligro se sugiere, no se anuncia
-- Incluir al menos un elemento interactivo (altar, mecanismo, inscripción)
-- Mínimo 3 sentidos, con énfasis en los que generan tensión
+## Perfiles por `cf_subtipo`
 
-**Ejemplo:**
-> El sendero se estrecha y los árboles dejan de hacer ruido. No es silencio — es que
-> algo los calló. El suelo tiene marcas de garras que van en una dirección y no vuelven.
-> Al fondo del claro, una entrada de piedra cubierta de musgo que huele a cobre
-> y algo orgánico. Junto a la entrada, una antorcha apagada — pero el soporte está
-> tibio al tacto.
+| subtipo | campos (`cf_*`) | flavor del grafo |
+|---------|-----------------|------------------|
+| **Dungeon/Ruina** | estructura · trampas · encuentro (**statblock**) · tesoro (rel item) · misterio 🎩 | temas dungeon/ruina |
+| **Cueva** | profundidad_oscuridad · habita (**statblock**) · salida_riesgo | qué habita |
+| **Naturaleza** | terreno_clima · criatura (**statblock**, marcas visibles antes) · recurso_peligro · ruta | god-node de bioma |
+| **Zona urbana** | controla (rel npc/facción) · actividad · acceso · rumor | comunidad-facción/mercado |
+
+`cf_hazard` = campo libre (menú Encounter Axis como sugerencia). Los campos statblock resuelven contra
+el ETL (`catalogos.md`).
+
+## Conexiones (universales)
+
+`npcs` (quién ronda) · `items_magicos` (qué se halla) · `quests` (qué se juega) · la escena/sesión de
+origen · `cf_inspiracion`.
+
+## Cómo se genera
+
+1. Parte del **propósito** (qué escena/quest lo pide), no de la geografía.
+2. Elige **`cf_subtipo`** → carga su perfil.
+3. Saca *flavor* del grafo por subtipo (bioma para naturaleza; facción para zona urbana) — limando setting.
+4. Siembra conexiones a la escena/quest/npcs.
+
+Un lugar con `criatura`/`encuentro` + `cf_hazard` **es un semilla de combate** pre-armada → se enchufa
+al Encounter Axis (`combate.md`).
 
 ## Checklist de calidad
 
-- [ ] Aproximación establece el tono antes de llegar
-- [ ] Mínimo 3 sentidos (priorizando los que generan tensión)
-- [ ] Si hay monstruo residente, sus marcas son visibles
-- [ ] Tiene al menos un elemento interactivo
-- [ ] El peligro se sugiere, no se dice explícitamente
-- [ ] Tiene misterio menor (algo sin explicación inmediata)
-- [ ] Conecta con el contexto del mundo (quién construyó esto, por qué está abandonado)
+- [ ] `cf_proposito` no vacío (un lugar sin propósito es decorado)
+- [ ] solo los `cf_*` del perfil del `subtipo` poblados; el resto en `_hidden`
+- [ ] `cf_atmosfera` con ≥2 sentidos (los que generan tensión)
+- [ ] si hay criatura residente, sus marcas son visibles antes (statblock del ETL)
+- [ ] al menos un elemento interactivo / gancho
+- [ ] misterio menor (algo sin explicación inmediata)

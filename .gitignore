@@ -1,0 +1,6 @@
+# Scaffold del combo spec-kit materializado en sesión (regenerable desde
+# speckit-combo/payload/). El contenido durable del flujo vive en specs/.
+.specify/
+
+# Skills materializadas por los hooks de sync (regenerables)
+.claude/skills/

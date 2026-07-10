@@ -1,60 +1,62 @@
 # Ciudad — Referencia de Entidad
 
-## Campos en Supabase
+Una descripción fluida (llegada → calles → detalle ancla) donde el **gobierno y la cultura se *sienten*,
+no se explican**, y el **bioma/clima es personaje**. Es **heterogénea** (usa `subtipo→perfil`) y es el
+**contenedor** del mundo (de aquí cuelgan npcs, establecimientos, lugares, quests).
 
-| Campo | Qué es | Quién lo ve |
-|-------|--------|-------------|
-| `descripcion` | Descripción narrativa única (no secciones múltiples) | Todos |
-| `nombre` | Nombre de la ciudad | Todos |
-| `lider` | Nombre del líder | Todos |
-| `descripcion_lider` | Primera impresión del líder (misma capa que NPCs) | Todos |
-| `conocida_jugadores` | Si los jugadores la conocen | Sistema |
+## Núcleo (transversal)
 
-Para notas de roleplay del líder → crear NPC separado vinculado a la ciudad.
+| Campo | Tipo | Ve |
+|-------|------|----|
+| `nombre` · `region/reino` (`estado`) | base | 👥 |
+| `cf_categoria` (**aldea · pueblo · ciudad · macropolis**) | custom select | 👥 |
+| `poblacion` (número de sabor; la `categoria` da el tier) | base | 👥 |
+| `cf_bioma_clima` (pantano/taiga/costa… — clima como personaje) | custom text | 👥 |
+| `cf_subtipo` (dirige el perfil) | custom select | 👥 |
+| `descripcion` (fluida: llegada→calles→ancla) | base | 👥 |
+| `cf_detalle_ancla` (lo que la define) | custom text | 👥 |
+| `cf_gobierno_cultura` (cómo se *siente* el poder/cultura) | custom text | 🎩 |
+| `lider` → **rel a NPC** | base (override) | 👥 |
+| `mapa_id` · `conocida_jugadores` | base | — |
 
-## Estructura del output
+> **`cf_categoria`** es la taxonomía del hexplorer (`tiendas.js`) y **determina mecánicas**: tier de
+> inventario de tiendas (aldea=Common/100gp → macropolis=Very Rare/50 000gp) y radio de seguridad del
+> hexplorer. **Cross-link vivo Ciudad→Establecimiento.**
+>
+> **`lider`** es un NPC real (el roleplay vive en su ficha). **Deprecado:** `descripcion_lider` →
+> migración perezosa city-by-city cuando el session-prep llegue a esa ciudad.
 
-### Descripción (campo único)
+## Perfiles por `cf_subtipo`
 
-Una sola descripción rica que fluye naturalmente. NO separar en subsecciones.
-Debe cubrir tres momentos en orden natural:
+| subtipo | campos (`cf_*`) |
+|---------|-----------------|
+| **Portuaria** | puerto · rutas_maritimas · flota_pirateria · control_puerto |
+| **Comercial** | mercados · gremios · rutas_terrestres · riqueza |
+| **Fortaleza/Frontera** | defensas · guarnicion · amenaza_externa · que_protege |
+| **Capital política** | corte · facciones · intriga · leyes |
+| **Religiosa** | templo_mayor (rel) · deidad · peregrinos_clero · dogma |
+| **Minera/Industrial** | recurso · gremios_condiciones · quien_se_enriquece |
+| **Aldea rural** | aislamiento · recurso_local · supersticion · peligro_entorno |
 
-1. **Llegada/horizonte** — qué ves y sientes al aproximarte desde lejos
-2. **Calles/ambiente** — la vida cotidiana al entrar
-3. **Detalle ancla** — el elemento que define esta ciudad y la hace única
+## Situacional + conexiones
 
-**Principios específicos para ciudades:**
+`cf_tension_latente` 🎩→ (el conflicto que hierve — semilla de quests) · `cf_faccion_dominante` (rel) ·
+`cf_deidad_patrona` (rel) · `cf_inspiracion`. **Contenedor:** npcs/establecimientos/lugares (inverse) ·
+quests · `lider`(npc) · facción.
 
-- Calibrar escala: aldea ≠ ciudad comercial ≠ capital. La población y el bioma del
-  lugar dictan el tono
-- El gobierno y la cultura deben *sentirse*, no explicarse
-- Mínimo 3 sentidos, abriendo con uno inesperado
-- Incluir cómo se mueve la gente, qué se oye, qué se huele
-- Si tiene bioma extremo (tundra, desierto, selva), el clima es personaje
+## Cómo se genera
 
-**Ejemplo validado (Sleh, capital gnómica en taiga):**
-> El primer indicio de Sleh son las columnas de vapor que se alzan entre los pinos
-> nevados, como si la montaña respirara. Al cruzar la última colina, no hay murallas
-> — solo talleres que empiezan donde termina el bosque, con poleas que suben piezas
-> al segundo piso directamente desde barcazas en el río. El aire huele a hollín dulce
-> y aceite caliente. En las calles, gnomos con delantales de cuero discuten con las
-> manos llenas de tuercas, un autómata barre la plaza central con más dedicación que
-> gracia, y junto a la estatua del Inventor Anónimo alguien ha dejado un prototipo
-> con una nota: "Si funciona, es mío. Si explota, nunca lo vi."
-
-### Descripción del líder
-
-Misma estructura que `primera_impresion` de NPC (ver `npc.md`). 2-3 oraciones
-de primera impresión. Si necesita notas de roleplay, crear NPC separado.
+1. Fija **`cf_categoria`** (tamaño) → calibra tono.
+2. Elige **`cf_subtipo`** (función) → carga su perfil.
+3. Cultura/gobierno de una **comunidad-facción** del grafo + bioma de un **god-node** (`Magic as
+   Industry` para Sleh) — limando setting.
+4. Teje la descripción fluida con `cf_detalle_ancla` como campo propio; siembra `lider`(npc) + conexiones.
 
 ## Checklist de calidad
 
-- [ ] Descripción es un texto fluido, no secciones separadas
-- [ ] Cubre llegada → calles → detalle ancla en orden natural
-- [ ] Mínimo 3 sentidos (abriendo con uno inesperado)
-- [ ] Escala coherente con la población
-- [ ] El gobierno/cultura se siente sin mencionarse explícitamente
-- [ ] Bioma/clima como personaje (si aplica)
-- [ ] Tiene detalle ancla memorable
-- [ ] Humor coherente con la cultura dominante
-- [ ] Menciona al menos una conexión (comercio, rivalidad, visitantes)
+- [ ] `cf_categoria` de la taxonomía del hexplorer (aldea/pueblo/ciudad/macropolis)
+- [ ] `cf_subtipo` con su perfil poblado; el resto en `_hidden`
+- [ ] descripción fluida (llegada→calles→ancla), ≥3 sentidos abriendo con uno inesperado
+- [ ] gobierno/cultura se siente sin decirse; bioma/clima como personaje
+- [ ] `lider` es rel a un NPC (no texto)
+- [ ] ≥1 conexión (comercio, rivalidad, visitantes)

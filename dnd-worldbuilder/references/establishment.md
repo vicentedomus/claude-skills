@@ -1,69 +1,55 @@
 # Establecimiento — Referencia de Entidad
 
-## Campos en Supabase
+Un **lugar comercial/servicio que se define por su dueño** (un NPC separado que el local *refleja*).
+Hereda **subtipo→perfil** (por `tipo`) como Lugar. Exterior primero (el primer gancho), interior que
+continúa la experiencia, un gancho de interacción, un misterio menor.
 
-| Campo | Qué es | Quién lo ve |
-|-------|--------|-------------|
-| `descripcion_exterior` | Lo que ves/oyes/hueles desde la calle | Todos |
-| `descripcion_interior` | Lo que encuentras al entrar | Todos |
-| `nombre` | Nombre del establecimiento | Todos |
-| `tipo` | Taberna, tienda, templo, gremio, etc. | Todos |
-| `ciudad_id` | Ciudad donde está | Todos |
-| `dueno_id` | NPC dueño (FK a npcs) | Todos |
+## Núcleo (todo establecimiento)
 
-El dueño se genera/mejora como NPC separado (ver `npc.md`). La descripción del
-establecimiento debe reflejar la personalidad del dueño sin duplicar su ficha.
+| Campo | Tipo | Ve |
+|-------|------|----|
+| `nombre` · `tipo`(select — dirige el perfil) · `ciudad`(rel) | base | 👥 |
+| `dueno` (rel → NPC) | base | 👥 · **ancla de identidad** |
+| `exterior` (sensorial breve — primer gancho) | base | 👥 |
+| `interior` (continúa la experiencia) | base | 👥 |
+| `cf_detalle_ancla` (el letrero, lo memorable del exterior) | custom text | 👥 |
+| `cf_gancho_interaccion` (algo que tocar/probar/pedir) | custom text | 👥 |
+| `mapa_id` · `conocido_jugadores` | base | — |
 
-## Estructura del output
+**`tipo`:** `Taberna · Comercio/Tienda · Herrería · Librería · Templo · Gremio · Otro`.
 
-### Descripción exterior
+## Perfiles por `tipo`
 
-Lo que los jugadores perciben al acercarse. Es el **primer gancho** — determina si
-entran o no. Debe:
+| tipo | campos (`cf_*`) |
+|------|-----------------|
+| **Taberna** | especialidad · clientela · rumores |
+| **Comercio/Herrería/Objetos mágicos** | inventario (rel items) · especialidad · precios |
+| **Librería** | coleccion · pieza_rara |
+| **Templo** | deidad (rel) · servicios · clero |
+| **Gremio** | `cf_clase_de_gremio` (Ladrones·Mercaderes·Artesanos·Inventores·Arcano·Aventureros…) · jerarquia · fachada_vs_actividad 🎩 |
 
-- Abrir con un sentido inesperado (sonido o aroma desde la calle)
-- Dar pistas de qué hay adentro
-- Incluir el detalle ancla del exterior (letrero, arquitectura, algo fuera de lugar)
-- 2-3 oraciones
+`Gremio de Ladrones` = `tipo:Gremio` + `cf_clase_de_gremio:Ladrones` (el patrón subtipo recursa).
+`cf_inventario` respeta el tier de la **`categoria` de la ciudad** (`tiendas.js`: aldea=Common →
+macropolis=Very Rare).
 
-**Ejemplo validado (GnomeDepot, tienda en Sleh):**
-> Antes de ver el letrero ya hueles el aceite de máquina mezclado con lavanda. Un cartel
-> de madera con engranajes reales que giran dice "SI NO GIRA, NO SIRVE — GnomeDepot".
-> La puerta tiene una manivela en vez de picaporte, y al girarla suena una campanilla
-> que toca tres notas distintas cada vez.
+## Conexiones
 
-### Descripción interior
+`ciudad` · **`dueno`(npc)** · `empleados` (inverse npcs) · `items` (inventario) · `quests` ·
+`cf_misterio` 🎩→ · `cf_inspiracion`.
 
-Lo que encuentras al cruzar la puerta. Debe:
+## Cómo se genera
 
-- Continuar la experiencia sensorial del exterior (no reiniciar)
-- Incluir al menos 3 sentidos
-- Tener un gancho de interacción (algo que el jugador puede tocar/usar/probar)
-- Reflejar la personalidad del dueño en el orden, decoración y estado del lugar
-- 3-5 oraciones
-
-**Ejemplo:**
-> Adentro, el desorden tiene sistema: cajones etiquetados con símbolos que solo Flimz
-> entiende, carretes de hilo mecánico colgando del techo como cortinas, y una vitrina
-> con tres manivelas — cada una sirve un tipo distinto de aceite de engranaje.
-> Al fondo, una gaveta dorada cerrada con un candado que no tiene cerradura visible.
-> "No preguntes por la gaveta", dice Flimz antes de que preguntes.
-
-### Conexiones sugeridas
-
-Al generar un establecimiento, sugerir al menos una conexión:
-- Item especial que conecta con una quest
-- NPC que frecuenta el lugar (además del dueño)
-- Rumor o pista que se puede descubrir aquí
-- Rivalidad o relación con otro establecimiento de la ciudad
+1. Ancla al **dueño** (genera/toma primero su ficha de NPC; el local lo refleja).
+2. Elige **`tipo`** → carga su perfil (Gremio pide `cf_clase_de_gremio`).
+3. Flavor del grafo por tipo (mercado/gremio para tiendas; deidad para templo) + la cultura de la
+   `ciudad`, limando setting.
+4. Sesga exterior→interior con `cf_detalle_ancla` y `cf_gancho_interaccion` como campos propios.
 
 ## Checklist de calidad
 
-- [ ] Exterior abre con sentido no-visual
-- [ ] Exterior tiene detalle ancla (letrero, sonido, algo memorable)
-- [ ] Interior usa mínimo 3 sentidos
-- [ ] Interior tiene gancho de interacción
-- [ ] La personalidad del dueño se siente en el espacio
-- [ ] Humor coherente con la cultura del lugar
-- [ ] Al menos un misterio menor ("la gaveta sin cerradura")
-- [ ] Conecta con al menos una otra entidad
+- [ ] Exterior abre con un sentido no-visual y tiene `cf_detalle_ancla`
+- [ ] Interior usa ≥3 sentidos y tiene `cf_gancho_interaccion`
+- [ ] La personalidad del `dueno` se siente en el espacio (sin duplicar su ficha)
+- [ ] humor coherente con la cultura del lugar; un misterio menor
+- [ ] perfil del `tipo` poblado; inventario acorde a la `categoria` de la ciudad
+- [ ] ≥1 conexión (item/quest/rumor/rivalidad)
