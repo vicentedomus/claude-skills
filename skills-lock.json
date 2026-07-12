@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "SKILL.md",
       "computedHash": "526877a25f05d0b24d5b1a86413595b196e12affb83be7c50992f90d63596c76"
+    },
+    "notebooklm": {
+      "source": "teng-lin/notebooklm-py",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "dfdc302e08d0a1173b595911bc44087f08e7c43cb6c9f597656a6bb68e39b4f5"
     }
   }
 }

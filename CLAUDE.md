@@ -39,6 +39,18 @@ git rm -r .agents/
 
 Commit, push to a branch, open a PR, and merge to main.
 
+**Skill de tercero vendorizada + envoltura `repo-local`:** cuando la skill es un
+repo de **un solo `SKILL.md` raíz** instalable con `npx skills add` que además
+**envuelve un paquete PyPI** (p. ej. `notebooklm` → `teng-lin/notebooklm-py`, como
+`graphify` → `graphifyy`), sí se vendoriza e indexa (no aplica la excepción de
+upstream `skills/*/` de más abajo). Si le agregamos notas propias del repo
+(instalación/auth específicas de nuestros entornos), van en un bloque fenced
+`<!-- BEGIN repo-local … -->` … `<!-- END repo-local -->` cerca del inicio del
+`SKILL.md`, dejando el resto del cuerpo **idéntico a upstream**. Esto convierte el
+archivo en un fork ligero → `skills-lock.json` marcará drift de hash (esperado).
+**Para actualizar:** re-corre `npx skills add <owner>/<repo>` y **reaplica** el
+bloque `repo-local` (no lo pierdas en el overwrite).
+
 ## Maintain the README skills index
 
 `README.md` carries a table of every skill in the repo. **Whenever a skill is
