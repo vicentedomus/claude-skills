@@ -1,6 +1,12 @@
 ---
 name: test-web
-description: Run Playwright E2E tests to verify that web app changes work correctly in a real browser. Invoke this skill in exactly two situations, and no others — (1) the user explicitly asks for a web test / test-web / to "testear la web" (or clearly asks to run a browser/E2E test); or (2) Claude has proposed an end-to-end (E2E) browser test and the user agreed to it. Do NOT auto-invoke merely because front-end files (HTML, CSS, JS, TS) were edited, because a branch was pushed, or because a hook fired — a file change or push alone is never a trigger. Repo-agnostic: it discovers the repo's test-user setup by convention.
+description: >-
+  Corre tests E2E de Playwright para verificar en un navegador real que los cambios de la web
+  app funcionan. Invócala SOLO en dos casos: (1) el usuario pide explícitamente testear la web /
+  test-web / correr un test E2E o de navegador; o (2) Claude propuso un test E2E y el usuario
+  aceptó. NO auto-invocar por editar archivos front-end (HTML/CSS/JS/TS), por hacer push, ni
+  porque un hook haya disparado: un cambio de archivo o un push NUNCA es disparador.
+  Repo-agnóstica: descubre el test-user del repo por convención.
 allowed-tools: Bash(npx playwright *), Bash(node *), Bash(env), Bash(git *), Bash(npm ci), Bash(npm install), Bash(npm run *), Bash(lsof *), Bash(ls *), Bash(cat *), Bash(curl *), Read, Glob, Grep, Write, Edit
 argument-hint: [test-filter]
 ---

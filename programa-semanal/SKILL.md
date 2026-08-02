@@ -1,6 +1,11 @@
 ---
 name: programa-semanal
-description: Genera el Programa Semanal de coordinación de TAREAS ESTRATÉGICAS de un desarrollo de Domus (Gran Bosco por defecto) — un calendario PDF Lun-Vie POR ACTOR (cada supervisor/gerente recibe el suyo) con acciones concretas de coordinación, leyendo datos en vivo de Supabase. Úsala siempre que el usuario pida el programa semanal, el plan de la semana de su gente, los pendientes estratégicos por persona/actor/responsable, o ayudar a alguien a coordinar su semana — aunque no diga "programa" ni "calendario". Frases típicas, "arma el programa semanal de Gran Bosco", "qué le toca a Fernando la siguiente semana", "genera los calendarios de la semana para los supervisores", "el plan de la semana de Daniel", "mándale a mi gente sus pendientes estratégicos de la semana". NO es el deck de junta de avance de obra (eso es tareas-deck) ni el de garantías (garantias-deck) — este es un calendario operativo individual, uno por responsable.
+description: >-
+  Programa Semanal de un desarrollo de Domus (Gran Bosco por defecto), un calendario PDF Lun-Vie
+  POR ACTOR (uno por supervisor/gerente) con acciones concretas de coordinación de tareas
+  estratégicas, desde Supabase. Dispara con "programa semanal", "el plan de la semana de mi
+  gente", "qué le toca a <persona> la siguiente semana", "pendientes estratégicos por
+  responsable". NO es tareas-deck (junta de avance de obra) ni garantias-deck.
 ---
 
 # Programa Semanal de Tareas Estratégicas (por actor)

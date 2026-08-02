@@ -1,18 +1,11 @@
 ---
 name: dream
 description: >-
-  Consolidación de memoria para Claude Code (estilo "auto-dream"). Escanea las
-  transcripciones de sesiones recientes buscando correcciones, decisiones,
-  preferencias y patrones, y los fusiona en archivos de memoria persistentes
-  (preferences.md, decisions.md, corrections.md, patterns.md, facts.md + un
-  índice MEMORY.md), deduplicando, reemplazando datos contradichos y
-  normalizando fechas relativas a YYYY-MM-DD. Úsala cuando el usuario pida
-  "dream", "consolidar memoria", "run dream", limpiar/condensar la memoria, o
-  cuando los archivos de memoria hayan crecido o tengan información redundante o
-  contradictoria. Inspirada en cómo el sueño consolida la memoria humana.
-  Incluye scripts opcionales (should-dream.sh / dream-hook.sh / install.sh) para
-  auto-disparo vía Stop hook cada 24h; ese modo autónomo NO está cableado por
-  defecto y se instala aparte (la skill es on-demand vía /dream).
+  Consolidación de memoria para Claude Code. Escanea transcripciones recientes buscando
+  correcciones, decisiones, preferencias y patrones, y los fusiona en archivos de memoria
+  persistentes (preferences/decisions/corrections/patterns/facts + índice MEMORY.md),
+  deduplicando, reemplazando lo contradicho y normalizando fechas a YYYY-MM-DD. Dispara con
+  "dream", "consolidar memoria", "run dream", o cuando la memoria haya crecido o se contradiga.
 tags: [memory, maintenance, consolidation, autonomous, hook]
 ---
 

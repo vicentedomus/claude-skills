@@ -1,17 +1,11 @@
 ---
 name: tareas-deck
 description: >-
-  Genera la presentación (deck HTML autocontenido + PDF) del estado y los focos de
-  atraso de las TAREAS DE OBRA de un desarrollo de Domus (Adara por defecto) para la
-  junta de seguimiento, leyendo datos en vivo de Supabase. Úsala siempre que el usuario
-  pida la presentación o el deck de tareas/avance de obra para una junta, el reporte de
-  seguimiento de un desarrollo, o actualizar/regenerar esa presentación con datos
-  frescos — aunque no diga "deck" explícitamente. Frases típicas: "arma el deck de
-  tareas de Adara", "presentación de obra para la junta", "cómo vamos con las tareas de
-  Adara", "seguimiento de Adara para la junta de mañana", "el reporte de avance de obra
-  con Jorge e Israel", "focos de atraso de la obra". Pensada para Adara hoy, pero su
-  estructura (datos → agregados → plantilla de deck → verificación → guardado/PDF) es
-  reutilizable para cualquier desarrollo cambiando el proyecto.
+  Deck HTML autocontenido + PDF del estado y los focos de atraso de las TAREAS DE OBRA de un
+  desarrollo de Domus (Adara por defecto) para la junta de seguimiento, desde Supabase. Dispara
+  con "arma el deck de tareas de <desarrollo>", "presentación de obra para la junta", "cómo
+  vamos con las tareas", "seguimiento de <desarrollo> para la junta", "focos de atraso de la
+  obra". NO es garantias-deck ni programa-semanal (calendario por actor).
 ---
 
 # Deck de tareas de obra (junta de seguimiento)
