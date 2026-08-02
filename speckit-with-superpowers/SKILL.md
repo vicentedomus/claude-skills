@@ -1,15 +1,12 @@
 ---
 name: speckit-with-superpowers
 description: >-
-  Runbook para arrancar una implementación con el combo spec-kit + superpowers
-  cableado en el repo. Úsala cuando el usuario diga "combo spec kit + superpowers",
-  "arranquemos/implementemos con spec-kit", o pida una implementación spec-driven
-  (con andamiaje formal de specs). Conduce las fases-compuerta de spec-kit
-  (specify → plan → tasks → implement) con checkpoint por artefacto, injerta el
-  rigor de superpowers (TDD RED-GREEN-REFACTOR, verificación antes de completar,
-  code review por severidad) vía el weave de la constitución, y respeta ponytail
-  (solución mínima) siempre activo. NO es para trabajo suelto sin specs ni para
-  planeación con brainstorming/writing-plans de superpowers a secas.
+  Runbook para arrancar una implementación spec-driven con el combo spec-kit + superpowers
+  cableado en el repo. Dispara con "combo spec kit + superpowers", "arranquemos/implementemos
+  con spec-kit", o al pedir una implementación con andamiaje formal de specs. Conduce las
+  fases-compuerta specify → plan → tasks → implement con checkpoint por artefacto, injerta el
+  rigor de superpowers (TDD, verificación antes de completar, code review) y respeta ponytail.
+  NO es para trabajo suelto sin specs.
 ---
 
 # speckit-with-superpowers

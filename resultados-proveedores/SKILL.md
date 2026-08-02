@@ -1,18 +1,11 @@
 ---
 name: resultados-proveedores
 description: >-
-  Genera el deck "Análisis de Resultados" mensual POR PROVEEDOR de garantías de
-  Domus (postventa) — el que se entrega a cada proveedor en su junta mensual —
-  leyendo datos en vivo de Supabase. Úsala siempre que el usuario pida la
-  presentación/análisis de resultados de un proveedor de garantías (House, Grama,
-  Norkes, MH, Kaiter…), el deck mensual de un proveedor, o regenerar/actualizar
-  esa presentación con datos frescos — aunque no diga "deck". Frases típicas:
-  "arma el análisis de resultados de Grama", "el deck de resultados de House de
-  mayo", "la presentación mensual para el proveedor X", "cómo le fue a Norkes
-  este mes", "genera los resultados de los proveedores del mes pasado". NO es el
-  deck de garantías abiertas para la junta interna (eso es garantias-deck): este
-  es UNO por proveedor, con recibidos/terminados/pendientes y KPIs de ese
-  proveedor.
+  Deck "Análisis de Resultados" mensual POR PROVEEDOR de garantías de Domus (postventa), el que
+  se entrega a cada proveedor en su junta mensual, con recibidos/terminados/pendientes y KPIs de
+  ese proveedor, desde Supabase. Dispara con "análisis de resultados de <proveedor>", "el deck
+  de resultados de House/Grama/Norkes/MH/Kaiter", "cómo le fue a <proveedor> este mes". NO es
+  garantias-deck (junta interna, todas las garantías).
 ---
 
 # Deck "Análisis de Resultados" por proveedor de garantías

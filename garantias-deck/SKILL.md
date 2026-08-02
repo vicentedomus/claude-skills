@@ -1,18 +1,11 @@
 ---
 name: garantias-deck
 description: >-
-  Genera la presentación (deck HTML autocontenido + PDF) del estado de las
-  garantías ABIERTAS de Domus para la junta operativa, leyendo datos en vivo de
-  Supabase. Úsala siempre que el usuario pida la presentación o el deck de
-  garantías para la junta, el reporte de garantías abiertas/pendientes, o
-  actualizar/regenerar la presentación de garantías con datos frescos — aunque no
-  diga "deck" explícitamente. Frases típicas: "arma el deck de garantías",
-  "presentación de garantías para la junta", "cómo vamos con las garantías",
-  "actualiza la presentación de garantías", "el reporte quincenal/mensual de
-  garantías", "necesito las garantías abiertas para la junta del viernes".
-  Está pensada para garantías hoy, pero su estructura (datos → agregados →
-  plantilla de deck → verificación → guardado/PDF) es ampliable a otros temas de
-  junta (ventas, cobranza) más adelante.
+  Deck HTML autocontenido + PDF del estado de las garantías ABIERTAS de Domus para la junta
+  operativa interna, desde Supabase. Dispara con "arma el deck de garantías", "presentación de
+  garantías para la junta", "cómo vamos con las garantías", "el reporte quincenal/mensual de
+  garantías", "las garantías abiertas para la junta". NO es resultados-proveedores (uno por
+  proveedor) ni tareas-deck (obra).
 ---
 
 # Deck de garantías abiertas (para junta operativa)

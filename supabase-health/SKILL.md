@@ -1,16 +1,12 @@
 ---
 name: supabase-health
 description: >-
-  Revisa de forma proactiva la salud del proyecto Supabase de Domus (BD Domus,
-  ifqwrtheakkvgezewxqx) leyendo métricas de infraestructura en vivo (CPU, disk IO
-  + burst balance, espacio, RAM, egress, conexiones) vía Metrics API e
-  introspección de Postgres (pg_stat_statements, advisors, logs), las evalúa
-  contra umbrales y manda un resumen accionable a WhatsApp vía un webhook de n8n.
-  Pensada para correr cada mañana como sesión programada, pero úsala también
-  cuando el usuario pida revisar el estado/salud de la base, diagnosticar picos de
-  CPU/IO/egress, o por qué la página va lenta o se cae. Frases típicas: "revisa la
-  BD", "cómo está Supabase", "estado de la base", "monitoreo matutino", "por qué
-  está lenta la página", "diagnostica el disk IO / egress / CPU".
+  Revisa la salud del proyecto Supabase de Domus (BD ifqwrtheakkvgezewxqx) leyendo métricas de
+  infraestructura en vivo (CPU, disk IO + burst balance, espacio, RAM, egress, conexiones) vía
+  Metrics API e introspección de Postgres (pg_stat_statements, advisors, logs), las evalúa
+  contra umbrales y manda un resumen accionable a WhatsApp vía webhook de n8n. Dispara con
+  "revisa la BD", "cómo está Supabase", "estado de la base", "por qué está lenta la página",
+  "diagnostica el CPU/IO/egress", o como monitoreo matutino programado.
 ---
 
 # Salud de Supabase (monitoreo matutino proactivo)
