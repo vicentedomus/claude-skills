@@ -12,9 +12,10 @@ El `status` global = el **peor** de todos los hallazgos.
 | **Disco `/data`** (datos Postgres) | < 75% | 75–90% | > 90% |
 | Disco `/` (OS+WAL) | informativo | — | — |
 | RAM usada | < 80% | 80–92% | > 92% |
-| Swap en uso | 0 | cualquier uso | crecimiento sostenido |
+| **Swap-out** (tasa, MB/min) | ≈ 0 | > 1 | > 10, o `oom_kill` > 0 |
+| Swap en uso (MB) | informativo | — | — |
 | Conexiones (% de max) | < 70% | 70–85% | > 85% |
-| Egress | sin salto vs día previo | salto notable | cerca de la cuota del plan |
+| **Egress** (tasa, GB/día) | < 1 | 1–3 | > 3, o cerca de la cuota del plan |
 
 > **Disco — cuál mirar.** El status de disco lo define **`/data`** (datos de Postgres).
 > El mount **`/` (OS+WAL)** ronda ~74% por la **imagen base de Supabase**, no por
@@ -22,6 +23,22 @@ El `status` global = el **peor** de todos los hallazgos.
 > **no** debe disparar WARN por sí solo. `/` solo es preocupante si un log dice
 > "disk full / could not extend file" o si **crece sostenidamente** entre días.
 > `fetch_metrics.sh` ya imprime el `% usado` de cada mount etiquetado.
+
+> **Swap y egress — la tasa, nunca el absoluto.** Ambos son **contadores acumulados
+> desde el arranque de la instancia**, así que su valor absoluto crece para siempre y
+> no dice nada de la salud de hoy. `fetch_metrics.sh` toma dos muestras y publica un
+> bloque `# Tasas`: **evalúa el status con ese bloque**. Los MB de swap residentes y
+> los GB de egress acumulados son contexto, no señal.
+>
+> El 2026-08-03 esto disparó un **WARN falso**: 380 MB de swap residual de semanas
+> atrás cruzaron el viejo umbral "cualquier uso", cuando `pswpout` era ~0, `oom_kill`
+> 0, cache hit 100% y load 0.04 — el swap de hecho estaba **drenando** (380 → 336 MB
+> en unas horas). Un `oom_kill > 0` o un swap-out sostenido sí son presión real;
+> la residencia no.
+>
+> Si el bloque de tasas dice **"las dos muestras son idénticas"**, el endpoint no
+> refrescó: repite con `METRICS_INTERVAL=120`. **No** interpretes esa corrida como
+> tasas en cero.
 
 ## Postgres (introspección)
 
