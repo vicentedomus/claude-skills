@@ -34,6 +34,8 @@ evalúa contra umbrales fijos, y manda un resumen a WhatsApp por n8n.
 - `references/thresholds.md` — los umbrales OK / WARN / CRIT (ajustables).
 - `scripts/fetch_metrics.sh` — hace el `curl` al endpoint de métricas con el
   `service_role` key del entorno y extrae las series clave a un resumen compacto.
+  Toma **dos muestras** separadas ~90s (`METRICS_INTERVAL`) para poder publicar
+  **tasas** de swap-out y egress, que es lo que decide el status.
 - `PROMPT.md` — el prompt exacto para la sesión programada de las 8 am.
 
 ## Proceso (sigue estos pasos en orden)
@@ -50,8 +52,12 @@ entorno `SUPABASE_SERVICE_ROLE_KEY`.
   ("⚠️ faltó SUPABASE_SERVICE_ROLE_KEY: sin métricas de infra").
 - Si está: revisa CPU busy %, disk **burst balance** / IOPS, espacio de disco usado
   (**el % de `/data`**; el de `/` (OS+WAL) es informativo, alto por diseño — ver
-  `thresholds.md`), RAM/swap, egress (bytes de red), conexiones. Compáralo con
-  `references/thresholds.md`.
+  `thresholds.md`), RAM, conexiones. Compáralo con `references/thresholds.md`.
+- **Swap y egress se evalúan con el bloque `# Tasas`, no con los absolutos.** El
+  script toma dos muestras (~90s) y calcula swap-out MB/min y egress GB/día; los MB
+  de swap residentes y los GB de egress acumulados son contexto, no señal. Si el
+  bloque dice **"las dos muestras son idénticas"**, el endpoint no refrescó: repite
+  con `METRICS_INTERVAL=120` y **no** reportes esa corrida como tasas en cero.
 - La **primera ejecución**: confirma los nombres reales de las series contra
   `references/metrics.md` y corrígelos si Supabase los cambió.
 
@@ -71,6 +77,17 @@ Lee `references/queries.md` y ejecuta con `execute_sql` (en este orden):
   políticas RLS costosas. Incluye el link de remediación.
 - `get_logs(project_id, service="postgres")` y `service="api"` → errores, OOM,
   "disk full", límite de conexiones, 5xx en las últimas 24h.
+- **Filtra por `error_severity` y reporta TODA línea `ERROR`/`FATAL`/`PANIC`, con su
+  texto literal y su hora.** Los logs de Postgres son ~90% `checkpoint complete` /
+  `logical decoding` rutinarios y un error real se ahoga entre ellos si solo los
+  hojeas. Un `ERROR` es un hallazgo aunque las métricas estén perfectas: el
+  2026-08-03 se pasó por alto un `column "dias_sin_reporte" does not exist` (una
+  query rota de la skill `resumen-ejecutivo`) que llevaba horas fallando.
+- **Si un `service` falla, prueba los otros antes de concluir "endpoint caído".**
+  `postgres`, `api`, `auth`, `storage` y `realtime` son fuentes independientes: que
+  una dé `FetchException` no implica que el logging esté caído. Reporta *cuál*
+  falló y cuáles sí respondieron — el 2026-08-03 se reportó "endpoint caído" cuando
+  solo `api` fallaba (4/4 intentos) y `postgres`/`auth` respondían normal.
 - **Egress** (ver `queries.md` #9): en los api logs busca un mismo endpoint repetido
   muchas veces en segundos (re-fetch en loop), `select=*` sobre vistas grandes, y
   clientes `HeadlessChrome` o WebSockets de Realtime. Es la causa típica de un salto
@@ -126,6 +143,9 @@ curl -sS -X POST https://n8n.vichon8n.tech/webhook/supabase-health \
 Si una métrica no se pudo leer (p. ej. faltó el key), pon `null` y dilo en `summary`.
 `disk_used_pct` = mount **`/data`** (datos Postgres, el accionable); `disk_os_pct` =
 mount **`/`** (OS+WAL, informativo). El `status` de disco se decide con `/data`.
+`egress_note` lleva la **tasa** del bloque `# Tasas` (p. ej. "~0.2 GB/día, sin salto"),
+no el contador acumulado — 61 GB desde el arranque no le dice nada a nadie.
+(ponytail: el payload no cambia de forma; el workflow de n8n que lo renderiza sigue igual.)
 
 > ⚠️ **El `date` define el nombre del archivo del reporte.** El workflow guarda el
 > HTML en Supabase Storage como `salud-<date>.html` (con `x-upsert`, sobreescribe) y

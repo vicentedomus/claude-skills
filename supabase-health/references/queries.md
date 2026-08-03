@@ -28,6 +28,20 @@ set demasiado grande / queries que escanean de más).
 
 ## 2. Top queries por tiempo total (CPU + IO acumulado)
 
+> **Primero, la ventana.** `pg_stat_statements` acumula desde el último reset, que
+> pueden ser **meses**. El ranking de abajo NO es "qué dolió hoy": promedia todo el
+> período, y una query arreglada hace semanas puede seguir encabezándolo con tráfico
+> viejo. **Encabeza siempre la tabla con la ventana** ("acumulado desde YYYY-MM-DD,
+> N días") para que nadie la lea como la foto del día.
+>
+> ```sql
+> select stats_reset, now() - stats_reset as ventana from pg_stat_statements_info;
+> ```
+>
+> No resetees en el chequeo diario: se pierde el histórico y no se gana
+> comparabilidad (el chequeo no guarda baseline en ningún lado). Un reset manual
+> **mensual** es razonable si quieres un ranking por período.
+
 ```sql
 select
   round(total_exec_time::numeric, 0)              as total_ms,
@@ -178,6 +192,13 @@ selects con joins anidados anchos (`tickets`, `polizas`, `visitas`): payload gra
 - `GET /realtime/v1/websocket` (101): Realtime difunde cada cambio a cada cliente
   suscrito; muchas suscripciones = egress sostenido por WebSocket.
 
-**(c) Métrica de red** — `node_network_transmit_bytes_total{device="ens5"}` (contador,
-refresco ~60s → 2 muestras para tasa). El egress facturado del mes se ve en el
-dashboard de Supabase (Reports/Usage), no en este endpoint.
+**(c) Métrica de red** — la da `fetch_metrics.sh` ya calculada: el bloque `# Tasas`
+imprime `egress ... MB/min -> ~N GB/dia`. Evalúa **eso** contra `thresholds.md`; el
+absoluto de `node_network_transmit_bytes_total` es acumulado desde el arranque (p. ej.
+61 GB en 67 días) y no es una señal de salud. El egress **facturado** del mes se ve en
+el dashboard de Supabase (Reports/Usage), no en este endpoint.
+
+> **Ojo con `rows` como proxy de egress** (vías (a) y #4): PostgREST envuelve la
+> respuesta en una agregación JSON, así que `pg_stat_statements.rows` es **1 por
+> llamada** para toda lectura vía API y `rows_per_call` sale 1.0 siempre. Sirve para
+> comparar `calls`, no para estimar el tamaño del payload.
