@@ -39,6 +39,14 @@ de esa carpeta.
   días hábiles en Python (no en SQL) y **arrastra el desarrollo** en cada fila, lo
   que elimina los dos errores clásicos (aritmética de ángulos y confundir el
   desarrollo por el lote).
+- `scripts/build_deck.py` — **emite el deck completo** (11 slides) desde el JSON de
+  la consulta + un JSON de *prosa*. Todo lo mecánico (donas, tablas, KPIs, arrays JS,
+  paginación de pendientes, clases `dense`) sale de los datos con la aritmética de
+  `aggregates.py`; el JSON de prosa solo aporta lo que hay que redactar. Es la ruta
+  recomendada cuando son varios proveedores en un mismo ciclo.
+- `scripts/check_fit.mjs` — verifica en Chromium que **ningún slide, card de zona ni
+  tabla se desborde** de los 1080px. Cázalo antes de exportar el PDF: es lo que
+  detecta las zonas de más (una card que se sale) y las tablas largas.
 - `scripts/build_standalone.py` — empaqueta el deck en UN html autocontenido
   (CSS+JS+logo embebidos) para mandarlo por chat / abrir sin servidor. Sin deps.
 - `scripts/export_pdf.mjs` — exporta a PDF (508×285.75 mm) con Playwright (donde
@@ -69,8 +77,23 @@ los KPIs en días hábiles y su baseline, y los arrays `TICKETS`/`TERMINADOS`, m
 slide de pendientes. **No rehagas esta aritmética a mano.**
 
 ### 4. Construir el deck
-Copia el deck gold (`2026/mayo/house.html`) a `AAAA/<mes>/<proveedor>.html` y pega
-los bloques que dio `aggregates.py`. Por slide:
+
+**Ruta recomendada — `build_deck.py`** (obligatoria si son 3+ proveedores del mismo
+ciclo): escribe un `prosa-<prov>.json` con solo lo redactable y genera el HTML:
+
+```bash
+python3 .../scripts/build_deck.py /tmp/<prov>-<mes>.json --prev /tmp/<prov>-prev.json \
+    --prosa /tmp/prosa-<prov>.json --hoy AAAA-MM-DD \
+    --out juntas/resultados-proveedores/AAAA/<mes>/<prov>.html
+```
+
+El JSON de prosa lleva `proveedor`, `mes`, `anio`, `zonas` (body HTML + `alert` por
+zona; las que falten se autogeneran), `kpis` (`cls`: `up`/`down`/`neutral` + texto del
+delta), `callout`, `footnote_kpi` y `pasos`. Todo lo demás lo calcula el script.
+
+**Ruta manual** (un solo deck, o cambios estructurales): copia el deck gold
+(`2026/mayo/house.html`) a `AAAA/<mes>/<proveedor>.html` y pega los bloques que dio
+`aggregates.py`. Por slide:
 - **Portada / intro / pasos**: proveedor y mes.
 - **Slide 4 (por lote)** y **6 (por zona)**: dona (`conic-gradient`), leyenda y tabla.
 - **Slide 7 (cualitativo)**: redacta las cards por zona **a partir de los recibidos
@@ -103,6 +126,12 @@ los bloques que dio `aggregates.py`. Por slide:
 - **Cada prefijo de lote = el desarrollo real de la BD** (viene en el JSON; nunca lo
   inventes). Revisa que no se haya colado un "Adara 48" que en realidad es "Capri 48".
 - `python3 - <<'PY'` o `node --check` para confirmar que el HTML/JS no truena.
+- **Nada se desborda del slide**: `node .../scripts/check_fit.mjs <deck.html> …`
+  (necesita `@playwright/test`; en Claude Code web, `CHROMIUM_PATH=/opt/pw-browsers/chromium`).
+  El único hallazgo esperado es `slide 1: 1280px` — es la decoración de la portada,
+  que `overflow:hidden` recorta; ya sale así en los decks gold. Cualquier otro
+  (una `zona-card` o una tabla) es real: recorta la prosa de esa card. Con 10-12 zonas
+  el generador ya aplica `.zona-cards-grid.dense` y `.deck-table.dense`.
 
 ### 6. Empaquetar, guardar y ENTREGAR (HTML + PDF)
 
@@ -115,9 +144,11 @@ opcional.
    → mándalo por chat (SendUserFile).
 2. **PDF** (508×285.75 mm, un slide por página):
    `node .claude/skills/resultados-proveedores/scripts/export_pdf.mjs <ruta.html> <misma-ruta>.pdf`
-   En Claude Code web el contenedor **no trae navegador**; instálalo una vez por sesión:
-   `npm install @playwright/test && npx playwright install chromium` (≈30 s). Verifica
-   que el PDF tenga **una página por slide** y MediaBox ~1440×810 pt.
+   En Claude Code web basta `npm install @playwright/test --no-save`: **el Chromium ya
+   está en el contenedor** (`/opt/pw-browsers/chromium`), pero suele ser un build
+   distinto al que espera Playwright, así que hay que apuntarlo con
+   `CHROMIUM_PATH=/opt/pw-browsers/chromium` (NO corras `npx playwright install`).
+   Verifica que el PDF tenga **una página por slide** y MediaBox ~1440×810 pt.
 3. **Commitea SIEMPRE** el `.html` **y el `.pdf`** en la carpeta del mes (regla de oro:
    el contenedor web es efímero; lo no commiteado se pierde — así se perdieron los decks
    del 5-may). Entrega ambos al usuario. Push + PR.

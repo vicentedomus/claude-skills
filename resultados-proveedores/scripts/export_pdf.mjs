@@ -19,7 +19,10 @@ if (!inArg || !outArg) {
 const src = 'file://' + path.resolve(inArg);
 const out = path.resolve(outArg);
 
-const browser = await chromium.launch();
+// Si el Chromium del contenedor no coincide con el build que espera Playwright
+// (típico en Claude Code web), apunta a él con CHROMIUM_PATH=/opt/pw-browsers/chromium.
+const browser = await chromium.launch(
+  process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const page = await browser.newPage();
 const errs = [];
 page.on('pageerror', e => errs.push(e.message));
