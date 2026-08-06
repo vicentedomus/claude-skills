@@ -58,6 +58,38 @@ limit 15;
 Las primeras filas son las que más CPU/IO consumen acumulado. `mean_ms` alto +
 `calls` alto = candidata a optimizar o cachear.
 
+## 2b. Forma de las lecturas vía API: ¿con embed o ya hidratadas?
+
+**Corre esta ANTES de recomendar "hidratar en cliente".** El marcador de un embed
+anidado de PostgREST es `row_to_json` en el texto de la query; si no está, esa
+lectura **ya trae solo FKs escalares** y la hidratación ya se hizo.
+
+```sql
+select
+  case when query ilike '%row_to_json%' then 'EMBED' else 'plana' end as forma,
+  substring(query from 'FROM "public"\."([a-z_]+)"')  as tabla,
+  calls,
+  round(mean_exec_time::numeric, 1)                   as mean_ms,
+  round((100.0 * total_exec_time / sum(total_exec_time) over ())::numeric, 1) as pct
+from pg_stat_statements
+where query ilike '%pgrst_source%'
+order by total_exec_time desc
+limit 15;
+```
+
+Cómo leerla:
+
+- **`plana` cara** (p. ej. `tickets` 241 ms) ⇒ el costo **no** está en el embed.
+  Hidratar no la va a arreglar; mira RLS, índices o el plan. Recomendar hidratación
+  aquí es mandar a hacer trabajo ya hecho — pasó el 2026-08-05.
+- **Una `EMBED` y una `plana` de la MISMA tabla** ⇒ normal después de una migración
+  a hidratación en cliente: la `EMBED` es residuo histórico. Confírmalo comparando
+  `calls` entre dos corridas: si **no se mueve**, es tráfico muerto que solo infla la
+  ventana acumulada y hay que descontarlo del análisis. (`tickets`/`visitas` llevan
+  congeladas en 13,168 y 12,860 llamadas desde el 2026-08-03.)
+- **`EMBED` con `calls` creciendo** ⇒ esa sí es candidata real a hidratar. Ver el
+  patrón en `CLAUDE.md` de domus-hub (`_hydrateTicketRefs`/`_hydratePolizaRefs`).
+
 ## 3. Top queries por bloques leídos de disco (disk IO directo)
 
 ```sql
