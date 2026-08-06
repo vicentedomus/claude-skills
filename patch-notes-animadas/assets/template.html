@@ -1,0 +1,337 @@
+<title>__TITULO__</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   PALETA · sustituir por los tokens REALES del repo (los detecta la fase 3 de
+   la skill leyendo el `:root` del CSS del proyecto). No inventes colores: el
+   objetivo es que el vídeo se vea como el producto, no como "una animación".
+
+   Tipografías: SIEMPRE stacks del sistema. El CSP de los artifacts bloquea
+   Google Fonts y cualquier CDN, así que una @import falla EN SILENCIO y te
+   deja el vídeo con la fuente de reserva sin avisar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:__BG__;               /* fondo. Ni negro puro ni blanco puro: con
+                                temperatura, o el cuadro se siente a máquina */
+  --surface:__SURFACE__;
+  --primary:__PRIMARY__;     /* texto destacado */
+  --accent:__ACCENT__;       /* UN solo acento en todo el vídeo */
+  --ink:__INK__;             /* texto normal */
+  --dim:__DIM__;             /* texto secundario */
+  --line:__LINE__;           /* bordes */
+  --font-display:__FONT_DISPLAY__;
+  --font-serif:__FONT_SERIF__;
+  --font-sans:__FONT_SANS__;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+/* Si el producto es dark-only (o light-only), la página se compromete con ese
+   look en vez de intentar responder al tema del visor. */
+:root,:root[data-theme="light"],:root[data-theme="dark"]{color-scheme:__COLOR_SCHEME__}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans)}
+
+/* ── Lienzo ────────────────────────────────────────────────────────────────
+   Todo se compone en 1920×1080 (o 1080×1920 en vertical) y se escala.
+   NO se centra con grid: un hijo más grande que su contenedor NO queda
+   centrado, se alinea al inicio. Eso es invisible mientras el lienzo mide
+   exactamente lo mismo que el vídeo, y rompe la página en el panel del
+   artifact, donde la escala baja. Con aspect-ratio, anclar en la esquina y
+   escalar por el ancho es exacto y no tiene casos especiales.              */
+#fit{position:relative;width:100%;aspect-ratio:__ASPECT__;background:var(--bg);overflow:hidden}
+#canvas{position:absolute;left:0;top:0;width:__CW__px;height:__CH__px;background:var(--bg);
+  transform-origin:0 0;overflow:hidden}
+
+/* ── Escenario: las capturas de UI REAL, en coordenadas CSS de la app ───── */
+.stagewrap{position:absolute;left:50%;top:50%;width:__SW__px;height:__SH__px;
+  margin:calc(__SH__px / -2) 0 0 calc(__SW__px / -2);will-change:transform}
+.layer{position:absolute;inset:0;width:__SW__px;height:__SH__px}
+.layer img{position:absolute;left:0;top:0;width:__SW__px;height:__SH__px;display:block}
+/* Dos capas de la MISMA imagen: la de abajo desenfocada y apagada, la de
+   arriba recortada a la zona en foco. Bajar sólo la opacidad deja el fondo
+   nítido y no se siente que retroceda. */
+#soft{filter:blur(0px) brightness(1) saturate(1)}
+#sharp{clip-path:inset(0)}
+
+/* ── Cursor: arco + micro-temblor. Una recta se percibe como máquina. ───── */
+#cursor{position:absolute;width:26px;height:26px;margin:-2px 0 0 -2px;opacity:0;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.7));pointer-events:none}
+#clickring{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;
+  border:2px solid var(--accent);opacity:0;pointer-events:none}
+/* Selección dibujada sobre una fila de la captura. Imprescindible cuando el
+   pie anuncia una elección: la captura trae su PROPIO estado resaltado, y sin
+   esto el texto dice una cosa y la imagen enseña otra. */
+#pick{position:absolute;opacity:0;border:2px solid var(--accent);border-radius:7px;
+  box-shadow:0 0 0 4px rgba(255,255,255,.06),0 0 26px rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);pointer-events:none;will-change:transform,opacity}
+
+/* ── Tipografía sobre el lienzo (no escala con la cámara) ───────────────── */
+.txt{position:absolute;opacity:0;will-change:transform,opacity}
+.kicker{font-family:var(--font-mono);font-size:22px;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--dim)}
+.h1{font-family:var(--font-display);font-size:96px;line-height:1.06;color:var(--primary);
+  letter-spacing:-.015em;font-weight:600}
+.h1 em{font-family:var(--font-serif);font-style:italic;color:var(--accent)}
+/* Los pies se leen en un móvil: 38px sobre 1920 es el mínimo cómodo. */
+.cap{font-family:var(--font-serif);font-size:38px;line-height:1.4;color:var(--ink);max-width:1180px}
+.cap b{color:var(--primary);font-weight:600;font-style:normal}
+.cap .g{color:var(--accent)}
+.tag{font-family:var(--font-mono);font-size:19px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--accent)}
+
+#vignette{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 78% at 50% 50%,transparent 42%,rgba(0,0,0,.72) 100%)}
+#veil{position:absolute;inset:0;background:var(--bg);opacity:0;pointer-events:none}
+/* Degradado bajo los pies: aparece y desaparece CON el pie, así que nunca
+   ensucia un plano sin texto. */
+#capscrim{position:absolute;left:0;right:0;bottom:0;height:330px;opacity:0;pointer-events:none;
+  background:linear-gradient(to top,rgba(9,9,9,.96) 0%,rgba(9,9,9,.82) 42%,transparent 100%)}
+#scrim{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(100deg,rgba(10,10,10,.94) 0%,rgba(10,10,10,.88) 34%,transparent 62%)}
+
+/* ── Tarjetas del cierre ───────────────────────────────────────────────── */
+#cards{position:absolute;left:0;right:0;bottom:96px;display:flex;gap:26px;
+  justify-content:center;padding:0 96px}
+.card{flex:1;max-width:520px;background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--accent);border-radius:12px;padding:28px 30px;opacity:0;
+  box-shadow:0 24px 60px rgba(0,0,0,.6);will-change:transform,opacity}
+.card h3{font-family:var(--font-display);font-size:34px;color:var(--primary);
+  font-weight:600;line-height:1.15;margin-bottom:10px}
+.card p{font-family:var(--font-serif);font-size:24px;line-height:1.42;color:var(--ink)}
+
+#endwrap{position:absolute;inset:0;display:grid;place-items:center;opacity:0;pointer-events:none}
+#collapse{position:absolute;width:150px;height:150px;border-radius:20px;background:var(--accent);
+  opacity:0;box-shadow:0 0 90px rgba(255,255,255,.25)}
+#wordmark{text-align:center;opacity:0}
+#wordmark .qk{font-family:var(--font-display);font-size:112px;color:var(--primary);
+  letter-spacing:.02em;font-weight:600}
+#wordmark .sub{font-family:var(--font-mono);font-size:21px;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--dim);margin-top:18px}
+
+/* ── Controles: sólo para mirar en el navegador. Se esconden al grabar. ─── */
+#chrome{position:relative;padding:10px 16px;display:flex;gap:14px;align-items:center;
+  background:rgba(0,0,0,.72);font-family:var(--font-mono);font-size:12px;color:var(--dim)}
+#chrome button{background:var(--surface);border:1px solid var(--line);color:var(--ink);
+  font:inherit;padding:5px 12px;border-radius:6px;cursor:pointer}
+#scrub{flex:1;accent-color:var(--accent)}
+</style>
+
+<div id="fit"><div id="canvas">
+  <div class="stagewrap" id="stage">
+    <!-- Los `src` se asignan en el arranque desde IMG: cada captura se empotra
+         UNA sola vez como data URI. Repetirla aquí duplica megabytes. -->
+    <div class="layer" id="soft"><img id="softImg" alt=""></div>
+    <div class="layer" id="sharp"><img id="sharpImg" alt=""></div>
+    <!-- __CAPAS_EXTRA__ : recortes de paneles que cambian de estado, si los hay -->
+    <div id="pick"></div>
+    <svg id="cursor" viewBox="0 0 24 24"><path d="M5 2l14 11-6.2.7 3.4 6.6-2.7 1.4-3.4-6.6L5 20z"
+      fill="#fff" stroke="#000" stroke-width="1.1" stroke-linejoin="round"/></svg>
+    <div id="clickring"></div>
+  </div>
+
+  <div id="vignette"></div><div id="scrim"></div><div id="veil"></div><div id="capscrim"></div>
+
+  <div class="txt kicker" id="t_kick" style="left:150px;top:352px">__KICKER__</div>
+  <div class="txt h1"     id="t_h1"   style="left:150px;top:404px">__TITULAR__</div>
+  <div class="txt tag"    id="t_tag"  style="left:150px;top:110px"></div>
+  <div class="txt cap"    id="t_cap"  style="left:150px;bottom:104px"></div>
+
+  <div id="cards">__TARJETAS__</div>
+
+  <div id="endwrap">
+    <div id="collapse"></div>
+    <div id="wordmark"><div class="qk">__PRODUCTO__</div><div class="sub">__CIERRE__</div></div>
+  </div>
+</div></div>
+
+<div id="chrome" class="no-record">
+  <button id="btnPlay">⏸</button>
+  <input id="scrub" type="range" min="0" max="__DUR__" step="0.01" value="0">
+  <span id="tc">0.00 / __DUR__</span>
+  <button id="btnReplay">↺</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOTOR — no tocar salvo que sepas qué fallo estás reintroduciendo.
+   Cada pieza del arranque existe por un error concreto documentado en
+   `references/pitfalls.md`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const DURATION = __DUR__;
+const $ = id => document.getElementById(id);
+
+const E = {
+  linear: t => t,
+  // expoOut es el easing POR DEFECTO: arranca rápido y frena con peso. Es la
+  // diferencia entre un elemento que "se para" y uno que "aterriza".
+  expoOut: t => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+  expoIn:  t => (t <= 0 ? 0 : Math.pow(2, 10 * t - 10)),
+  inOut:   t => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2),
+  // overshoot pasa de largo y vuelve. SÓLO para pops (insignias, botones).
+  overshoot: t => { const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+/** Progreso 0..1 dentro de [a,b]. */
+const seg = (t, a, b) => clamp01((t - a) / (b - a));
+/** Interpola v0→v1 mientras t recorre [a,b]. */
+function ip(t, [a, b], [v0, v1], ease = E.expoOut) { return v0 + (v1 - v0) * ease(seg(t, a, b)); }
+/* Ruido determinista: con Math.random, dos renders del mismo t difieren y el
+   vídeo deja de ser reproducible. */
+function noise(x) { const s = Math.sin(x * 12.9898) * 43758.5453; return s - Math.floor(s); }
+
+/* ── Cámara ────────────────────────────────────────────────────────────── */
+const stage = $('stage'), soft = $('soft'), sharp = $('sharp');
+const SW = __SW__, SH = __SH__, CW = __CW__, CH = __CH__;
+/** Escala a la que el escenario entra COMPLETO en el lienzo. */
+const BASE = Math.min(CW / SW, CH / SH);
+/** Lleva el punto (cx,cy) del escenario al centro del cuadro, a escala s×BASE. */
+function cam(cx, cy, s) {
+  stage.style.transform = `scale(${BASE * s}) translate(${SW / 2 - cx}px, ${SH / 2 - cy}px)`;
+}
+/** Foco: recorta la capa nítida y manda la otra al fondo (blur + oscurecer). */
+function focus(rect, k) {
+  if (!rect || k <= 0) {
+    sharp.style.clipPath = 'inset(0)';
+    soft.style.filter = 'blur(0px) brightness(1) saturate(1)';
+    return;
+  }
+  const pad = 10 * (1 - k), { x, y, w, h } = rect;
+  sharp.style.clipPath =
+    `inset(${y - pad}px ${SW - x - w - pad}px ${SH - y - h - pad}px ${x - pad}px round 10px)`;
+  soft.style.filter = `blur(${k * 5}px) brightness(${1 - .52 * k}) saturate(${1 - .35 * k})`;
+}
+const cx = r => r.x + r.w / 2, cy = r => r.y + r.h / 2;
+
+/** Selección sobre una fila de la captura, con overshoot al entrar. */
+function pickRow(rect, k) {
+  const el = $('pick');
+  if (!rect || k <= 0) { el.style.opacity = 0; return; }
+  el.style.left = (rect.x - 3) + 'px'; el.style.top = (rect.y - 3) + 'px';
+  el.style.width = (rect.w + 6) + 'px'; el.style.height = (rect.h + 6) + 'px';
+  el.style.opacity = clamp01(k);
+  el.style.transform = `scale(${.9 + .1 * E.overshoot(clamp01(k))})`;
+}
+
+/** Cursor en arco de bézier + micro-temblor, entre dos puntos del escenario. */
+function cursorArc(t, [a, b], from, ctrl, to) {
+  const u = E.inOut(seg(t, a, b));
+  const bx = (1 - u) ** 2 * from[0] + 2 * (1 - u) * u * ctrl[0] + u * u * to[0];
+  const by = (1 - u) ** 2 * from[1] + 2 * (1 - u) * u * ctrl[1] + u * u * to[1];
+  const c = $('cursor');
+  c.style.left = (bx + (noise(t * 9) - .5) * 4) + 'px';
+  c.style.top  = (by + (noise(t * 9 + 40) - .5) * 4) + 'px';
+  return c;
+}
+
+function set(el, o, tr) { el.style.opacity = o; if (tr != null) el.style.transform = tr; }
+/** Pie + su degradado, SIEMPRE juntos. */
+function setCap(html, o, tr) {
+  const c = $('t_cap');
+  if (html != null) c.innerHTML = html;
+  c.style.opacity = o; if (tr != null) c.style.transform = tr;
+  $('capscrim').style.opacity = clamp01(o);
+}
+/** Entrada escalonada: 30 ms entre elementos, translateY 22→0. */
+function stagger(nodes, t, start, dur, step) {
+  nodes.forEach((el, i) => {
+    const p = clamp01((t - (start + i * step)) / dur);
+    el.style.opacity = E.expoOut(p);
+    el.style.transform = `translateY(${(1 - E.expoOut(p)) * 22}px)`;
+  });
+}
+const CARDS = [...document.querySelectorAll('#cards .card')];
+
+/* ── Mapa de capturas. Una entrada por imagen, UNA sola vez. ────────────── */
+const IMG = __MAPA_IMG__;
+/* ── Rectángulos medidos en la app real (coordenadas CSS del viewport). ─── */
+const R = __MAPA_RECTS__;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ESCENAS — esto SÍ se escribe por proyecto.
+
+   render(t) tiene que ser PURA: el mismo t da siempre el mismo DOM. Por eso
+   empieza reseteando todo. Nada de setTimeout encadenados: rompen el seek y,
+   con él, la grabación.
+
+   Reparto Slow-Fast-Boom-Stop (proporciones, no dogma):
+     S1 disparo   ~15%  lento — deja reconocer la pantalla antes de que pase nada
+     S2 apertura  ~15%  medio — aparece el gesto o el control
+     S3 proceso   ~40%  rápido — el grueso; ENSEÑA EL PROCESO, no el resultado mágico
+     S4 estallido ~20%  la cámara se aleja y caen las conclusiones
+     S5 caída     ~10%  cierre por colapso→expansión y CORTE SECO (nunca fundido)
+
+   Reglas que no se negocian:
+     · medio segundo de pausa ANTES de cada resultado clave
+     · el fotograma 0 es el estado inicial COMPLETO
+     · el último fotograma se sostiene limpio
+   ═══════════════════════════════════════════════════════════════════════════ */
+function render(t) {
+  // Reseteo por frame: es lo que hace que saltar a cualquier t sea correcto.
+  ['t_kick','t_h1','t_tag','t_cap','cursor','clickring','endwrap','collapse',
+   'wordmark','pick','scrim','capscrim','veil','vignette'].forEach(i => $(i).style.opacity = 0);
+  CARDS.forEach(c => { c.style.opacity = 0; });
+  $('sharpImg').src = IMG.__IMG_BASE__; $('softImg').src = IMG.__IMG_BASE__;
+  $('t_cap').innerHTML = ''; $('t_tag').textContent = '';
+  stage.style.filter = 'none'; stage.style.opacity = 1;
+
+  __ESCENAS__
+}
+
+/* ═══════════════════════ tick — plantilla obligatoria ════════════════════ */
+let time = 0, playing = false, lastTick = null;
+
+function tick(now) {
+  if (lastTick === null) {
+    lastTick = now;                 // el sentinel evita que la carga se cuele en el tiempo
+    window.__ready = true;          // pareado con t=0, en el MISMO frame
+    render(time);                   // render(time), no render(0): tras un seek hay que repintar t
+    requestAnimationFrame(tick);
+    return;
+  }
+  const dt = (now - lastTick) / 1000;
+  lastTick = now;
+  if (playing) {
+    let t = time + dt;
+    // Grabando NO se hace bucle, o el vídeo termina volviendo al primer plano.
+    if (t >= DURATION) t = window.__recording ? DURATION - 0.001 : 0;
+    time = t;
+    render(time);
+    $('scrub').value = time;
+    $('tc').textContent = time.toFixed(2) + ' / ' + DURATION.toFixed(2);
+  }
+  requestAnimationFrame(tick);
+}
+
+window.__seek  = t => { time = t; lastTick = null; render(t); };
+window.__pause = () => { playing = false; };
+window.__play  = () => { playing = true; };
+
+/* El chrome se esconde desde AQUÍ al detectar la grabación. Inyectar el CSS
+   desde el grabador llega tarde y la barra sale en los primeros fotogramas. */
+if (window.__recording) $('chrome').style.display = 'none';
+
+function fitCanvas() {
+  const box = $('fit').getBoundingClientRect();
+  if (!box.width) return;                       // sin layout todavía: no fijar escala 0
+  $('canvas').style.transform = `scale(${box.width / CW})`;
+}
+new ResizeObserver(fitCanvas).observe($('fit'));
+
+$('btnPlay').onclick   = () => { playing = !playing; $('btnPlay').textContent = playing ? '⏸' : '▶'; };
+$('btnReplay').onclick = () => { time = 0; render(0); playing = true; $('btnPlay').textContent = '⏸'; };
+$('scrub').oninput     = e => { playing = false; $('btnPlay').textContent = '▶'; window.__seek(+e.target.value); };
+
+/* Arranque sólo con fuentes listas E imágenes decodificadas: así el fotograma 0
+   es el estado inicial completo y no una pantalla a medio pintar. */
+$('sharpImg').src = IMG.__IMG_BASE__; $('softImg').src = IMG.__IMG_BASE__;
+Promise.all([
+  document.fonts ? document.fonts.ready : Promise.resolve(),
+  ...Object.values(IMG).map(src => new Promise(res => {
+    const i = new Image(); i.onload = i.onerror = res; i.src = src;
+  })),
+]).then(() => {
+  fitCanvas();
+  render(0);
+  playing = true;
+  requestAnimationFrame(tick);
+});
+</script>
