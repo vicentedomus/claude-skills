@@ -66,7 +66,11 @@ entorno `SUPABASE_SERVICE_ROLE_KEY`.
 Lee `references/queries.md` y ejecuta con `execute_sql` (en este orden):
 1. **Cache hit ratio** — bajo ⇒ disk IO.
 2. **Top queries** por tiempo total, por bloques leídos (IO) y por filas devueltas
-   (egress) desde `pg_stat_statements`.
+   (egress) desde `pg_stat_statements`. Encabeza la tabla con la **ventana**
+   (`stats_reset`), y **antes de recomendar "hidratar en cliente" corre la #2b**:
+   una query sin `row_to_json` ya está hidratada y su costo está en otro lado
+   (RLS/índices). El 2026-08-05 se recomendó hidratar la query más cara de la BD
+   cuando llevaba semanas hidratada.
 3. **Seq scans** sobre tablas grandes.
 4. **Conexiones**: activas / idle-in-transaction / long-running.
 5. **Tamaños y bloat** de tablas/índices; índices sin uso.

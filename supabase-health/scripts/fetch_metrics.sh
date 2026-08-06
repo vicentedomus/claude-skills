@@ -23,6 +23,10 @@ URL="https://${PROJECT_REF}.supabase.co/customer/v1/privileged/metrics"
 # más corto devuelve DOS VECES LA MISMA MUESTRA y todas las tasas salen 0.00 — un
 # cero falso que se lee como "sin presión". El bloque de tasas lo detecta y avisa.
 INTERVAL="${METRICS_INTERVAL:-90}"
+# Egress incluido del plan, en GB/día. Domus está en **Pro** (250 GB/mes,
+# verificado 2026-08-05 con get_organization) => 250/30 = 8.33. Si el plan cambia,
+# este es el único número que se toca. Free serían 5 GB/mes = 0.17.
+EGRESS_QUOTA_GB_DIA="${EGRESS_QUOTA_GB_DIA:-8.33}"
 RAW_PREV="$(mktemp -t supabase-metrics-prev.XXXXXX)"
 RAW="$(mktemp -t supabase-metrics.XXXXXX)"
 
@@ -104,8 +108,13 @@ awk '
 # Lo ACCIONABLE. Los absolutos de arriba son residuo acumulado desde el arranque.
 echo
 echo "# Tasas — delta en ${INTERVAL}s (esto decide el status, no los absolutos):"
-awk -v secs="$INTERVAL" '
+awk -v secs="$INTERVAL" -v quota="$EGRESS_QUOTA_GB_DIA" '
   /^#/ { next }
+  # La suma de node_cpu_seconds_total de UN cpu sobre todos sus modos ES el uptime
+  # en segundos (cada cpu acumula 1 s por segundo). No hay serie node_boot_time en
+  # este endpoint; esto la sustituye sin pedir nada extra, y con ella el egress se
+  # auto-calibra contra su propio promedio de vida en vez de un número fijo.
+  /^node_cpu_seconds_total\{.*cpu="0"/ { if (FNR != NR) uptime_s += $NF; next }
   {
     if      ($0 ~ /^node_vmstat_pswpin\{/)               k = "pswpin"
     else if ($0 ~ /^node_vmstat_pswpout\{/)              k = "pswpout"
@@ -129,17 +138,54 @@ awk -v secs="$INTERVAL" '
     }
     spo = (b["pswpout"] - a["pswpout"]) * 4096 / MB * per_min
     spi = (b["pswpin"]  - a["pswpin"])  * 4096 / MB * per_min
-    tx  = (b["tx"] - a["tx"]) / MB * per_min
     u1  = (a["swaptotal"] - a["swapfree"]) / MB
     u2  = (b["swaptotal"] - b["swapfree"]) / MB
-    printf "  swap-out     %7.2f MB/min  -> presion de memoria: %s\n", spo, \
-      (spo > 10 ? "CRIT (>10)" : (spo > 1 ? "WARN (>1)" : "NO"))
+
+    # Una tasa de swap-out por si sola es CHURN, no presion: el kernel puede estar
+    # paginando de ida y vuelta sin que falte memoria. Solo hay presion real si
+    # ADEMAS la residencia crece. El 2026-08-05 se mando un WARN por 8.9 MB/min
+    # mientras la residencia venia BAJANDO (379->336->304 MB en dos dias).
+    # ponytail: heuristica de dos senales sobre una ventana; no distingue un
+    # thrashing en equilibrio (residencia tope, swap-in y swap-out altos a la vez).
+    # Para eso estan oom_kill y los major faults, que se imprimen abajo.
+    crece = (u2 > u1)
+    if      (b["oom"] > 0)          sw = "CRIT (oom_kill > 0)"
+    else if (spo > 10 && crece)     sw = "CRIT (>10 MB/min y la residencia crece)"
+    else if (spo >  1 && crece)     sw = "WARN (>1 MB/min y la residencia crece)"
+    else if (spo >  1)              sw = "NO (churn: sale, pero la residencia no crece)"
+    else                            sw = "NO"
+
+    # Egress: el dato de status es el PROMEDIO DE VIDA contra la cuota del plan,
+    # no la muestra de 90s. La muestra es ruidosa (el 2026-08-05 dio 0.5, 1.1 y
+    # 2.3 GB/dia segun el momento) y un umbral absoluto elegido a ojo sobre una
+    # sola muestra dispara WARN todos los dias. El promedio de vida se deriva del
+    # contador acumulado / uptime: cero estado que guardar y estable por
+    # construccion.
+    #
+    # La muestra de 90s se imprime como CONTEXTO y NO dispara status: se midio su
+    # varianza el 2026-08-05 en tres momentos igual de tranquilos y dio 0.52, 1.14
+    # y 11.77 GB/dia (20x de dispersion, hasta 12x el promedio de vida). Cualquier
+    # umbral de "salto" sobre esa ventana es un generador de falsos WARN. Un
+    # re-fetch en loop se detecta donde si se ve —el mismo endpoint repetido en
+    # segundos en los api logs, ver queries.md #9b— no en un delta de 90s.
+    tx_now  = (b["tx"] - a["tx"]) / MB * per_min * 60 * 24 / 1024
+    tx_life = (uptime_s > 0) ? b["tx"] / 1073741824 / (uptime_s / 86400) : 0
+    pct     = (quota > 0 && tx_life > 0) ? 100 * tx_life / quota : 0
+    if      (pct > 70) eg = "CRIT (>70% de la cuota)"
+    else if (pct > 40) eg = "WARN (>40% de la cuota)"
+    else               eg = "ok"
+    salto = (tx_life > 0) ? tx_now / tx_life : 0
+
+    printf "  swap-out     %7.2f MB/min  -> presion de memoria: %s\n", spo, sw
     printf "  swap-in      %7.2f MB/min  (paginas regresando a RAM)\n", spi
     printf "  swap en uso  %7.0f -> %.0f MB  (%s)  [informativo, NO dispara status]\n", \
-      u1, u2, (u2 > u1 ? "creciendo" : "drenando/estable")
+      u1, u2, (crece ? "creciendo" : "drenando/estable")
     printf "  major faults %7.1f /s\n", (b["majfault"] - a["majfault"]) / secs
     printf "  oom_kill     %7d       -> %s\n", b["oom"], (b["oom"] > 0 ? "CRIT" : "ok")
-    printf "  egress       %7.2f MB/min  -> ~%.2f GB/dia\n", tx, tx * 60 * 24 / 1024
+    printf "  egress vida  %7.2f GB/dia  -> %.0f%% de la cuota (%.2f GB/dia): %s   <- STATUS\n", \
+      tx_life, pct, quota, eg
+    printf "  egress ahora %7.2f GB/dia  (%.1fx el promedio) [CONTEXTO: muestra de %ds, varianza ~20x, NO dispara status]\n", \
+      tx_now, salto, secs
   }
 ' "$RAW_PREV" "$RAW"
 
