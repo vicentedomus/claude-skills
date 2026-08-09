@@ -427,7 +427,8 @@ En `### 4a. Commit de NPCs nuevos a la tabla `npcs``, añadir bajo el bloque SQL
 párrafo que ya explica el overlay:
 
 ```markdown
-`tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
+En el bloque SQL de ejemplo, cambia el literal `'tipo_npc (13 canónicas)'` por
+`'tipo_npc (18 canónicas)'`. `tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
 `Neutral`/`Aliado`/`Enemigo`: si la card de origen traía `Antagonista` o `Informante`,
 mapéalo (`Antagonista`→`Enemigo`, `Informante`→`Neutral`) y pon el matiz real en
 `cf_relacion_party`, que es solo-DM. Mismo mapeo que aplica el buscador de NPCs de la app,
@@ -526,6 +527,21 @@ Quitarlo de la lista de campos situacionales y añadir:
 `rol` se queda en 3 (`Neutral`/`Aliado`/`Enemigo`): el eje fino es `cf_relacion_party`, que
 es solo-DM, mientras `rol` es público. Ambos array viven en `app.js` (`FORM_SCHEMAS.npcs`)
 — aplicados por QuestKeep en el PR del buscador de NPCs.
+```
+
+- [ ] **Step 3b: Acotar el alcance — los establecimientos NO se tocan**
+
+`cf_clase_de_gremio` también aparece en tres sitios de **establecimientos**, encontrados por la revisión final del PR de QuestKeep: `dnd-worldbuilder/references/establishment.md:29,31,43`, `specs/001-campos-elementos/data-model.md:94` (perfil de Establecimiento) y `dnd-worldbuilder/evals/evals.json:19`.
+
+**No se tocan.** El argumento de esta enmienda es que la clase es **del gremio, no de la persona** — eso justifica quitar el campo del NPC, y deja abierta (sin decidir) la pregunta de dónde lo guarda el gremio: hoy en su `tipo` entero (`'Gremio de Ladrones'`), o en un `cf_` como diseñó spec 001. Decidirlo expandiría el alcance a establecimientos sin que el DM lo haya revisado.
+
+Añade la nota en `specs/001-campos-elementos/design-npc.md`, junto a la enmienda del Step 2:
+
+```markdown
+> **Alcance de la enmienda:** se retira `cf_clase_de_gremio` **del NPC**. El perfil de
+> **Establecimiento** lo conserva por ahora: dónde guarda un gremio su clase —en su `tipo`
+> entero, como hoy en los datos (`Gremio de Ladrones`), o en un campo aparte— es una decisión
+> propia de esa entidad, y no la resuelve el argumento de esta enmienda. Queda abierta.
 ```
 
 - [ ] **Step 4: Verificar que las tres enmiendas están y son coherentes**
