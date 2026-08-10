@@ -81,6 +81,22 @@ inspiración específica del grafo) · `faccion` · `familia` · `establecimient
 (🎩→) · `quests` · `lugares` · `relacion_party` (tracker Hostil→Desconfía→Neutral→Cordial→Aliado, si
 es recurrente).
 
+> **Enmienda 2026-08-09 (spec 002): `cf_clase_de_gremio` se retira del NPC.** Cruzando
+> `npcs.establecimiento_id → establecimientos` en halo, **16 de los 24** NPCs
+> `tipo_npc=Gremio` ya apuntan a su gremio, y es el **establecimiento** quien lleva la
+> organización — hoy en `cf_organizacion`: *Hermandad de los Sellos* (Evermere) = `Gremio de
+> Aventureros`, *La Sala de los Juramentos* (Rockwood) = `Gremio de Ladrones`, *Mazo y
+> Juramento* (Moria) = `Gremio de Herreros`. La clase es del gremio, no de la persona: el
+> campo duplicaría lo que la relación ya dice. Este spec lo decidió sin cruzar esa relación.
+> El fold `Gremio de Ladrones → Gremio` **se mantiene**.
+
+> **Alcance de la enmienda:** se retira `cf_clase_de_gremio` **del NPC** — la clase es del
+> gremio, no de la persona. Dónde la guarda el gremio ya está decidido: el **establecimiento**
+> lleva **`cf_organizacion`** (label «Organización»), con los 9 valores canónicos de Halo
+> (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`). El nombre cambió porque
+> `clase` describe una categoría y *Cartel de Dobsil* no lo es: el campo dice **a qué
+> organización pertenece la sede**. Ver la Task 6 del plan de spec 002.
+
 ### Fuera (removidos del modelo previo)
 
 `primera_impresion` ❌ · `notas_roleplay` ❌ · `frase` ❌ — su contenido se descompone en los campos
@@ -101,15 +117,26 @@ o solo puebla `custom_data`?)
 
 Barrido de la tabla completa `npcs` (todas las campañas): 11 oficios sólidos + cola corta de basura.
 
-**Options canónicas (13, cerrado 2026-07-10):** `'' · Comerciante · Tabernero · Herrero · Alquimista ·
-Arcanista · Bibliotecario · Cazador · Religioso · Proxeneta · Gremio · Líder político · Otro`.
-- `Místico` → **fold en Arcanista** (misma taxonomía).
-- `Gremio de Ladrones` → **fold en `Gremio` + campo `clase_de_gremio`** (Ladrones · Mercaderes ·
-  Artesanos · Inventores · Arcano · Aventureros…), consistente con Establecimiento. Un NPC
-  `tipo:Gremio` lleva `clase_de_gremio`.
+**Options canónicas (18, ampliado 2026-08-09):** `'' · Comerciante · Tabernero · Herrero ·
+Alquimista · Minero · Granjero · Arcanista · Bibliotecario · Religioso · Guardia · Cazador ·
+Aventurero · Criminal · Proxeneta · Noble · Líder político · Gremio · Otro`.
 
-**Cleanup de datos (decisión del DM: NO reclasificar por ahora):** `BEG` (1) y `Secundario` (1) se
-dejan como están. El único `Místico` (1) → migración perezosa a Arcanista cuando se toque.
+- `Místico` → **fold en Arcanista**.
+- `Gremio de Ladrones` → **fold en `Gremio`**. La **clase** la lleva el establecimiento, hoy en
+  `cf_organizacion` — ver §3.
+
+> **Enmienda 2026-08-09 (spec 002).** Las 13 originales se ampliaron a 18. El barrido de
+> este spec fue sobre la tabla `npcs`, **anterior a las 3585 npc-cards del compendio**; las 6
+> añadidas (`Guardia`, `Criminal`, `Aventurero`, `Noble`, `Minero`, `Granjero`) cubren el 31%
+> de las cards. Con 13, el 62% del catálogo caería en `Otro` y el filtro por oficio del
+> buscador no serviría. Evidencia nueva, no una decisión revertida.
+
+**Cleanup de datos — enmendado 2026-08-09:** `BEG` (1) y `Secundario` (1) **sí se
+reclasifican** (→ `Religioso` y `Otro`). La decisión original de dejarlos se tomó cuando
+esos valores tampoco estaban en `options`, así que era indiferente; al sincronizar
+`options`, dejarlos los mantendría pintados en blanco en el editor. El `Místico` (1) →
+Arcanista deja de ser perezoso y se migra. Lo ejecuta la migración de QuestKeep
+`sql/migraciones/2026-08-09-sync-vocabulario-npcs.sql`.
 
 > El array `options` real vive en `app.js` (`FORM_SCHEMAS.npcs`, frontend de QuestKeep) — fuera del
 > alcance skills+Supabase; se entrega la lista lista para aplicar allá.

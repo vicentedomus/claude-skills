@@ -22,7 +22,10 @@ QuestKeep los renderice. La narrativa/rationale por tipo vive en los `design-*.m
 
 ## NPC (`section='npcs'`)
 
-**baseOverrides:** `tipo_npc` options → las 13 canónicas (ver `design-npc.md`).
+**baseOverrides:** `tipo_npc` options → las **18** canónicas (ver `design-npc.md` §4).
+`rol` se queda en 3 (`Neutral`/`Aliado`/`Enemigo`): el eje fino es `cf_relacion_party`, que
+es solo-DM, mientras `rol` es público. Ambos array viven en `app.js` (`FORM_SCHEMAS.npcs`)
+— aplicados por QuestKeep en el PR del buscador de NPCs.
 
 | cf_ key | label | type | dmOnly | perfil |
 |---|---|---|---|---|
@@ -34,7 +37,6 @@ QuestKeep los renderice. La narrativa/rationale por tipo vive en los `design-*.m
 | `cf_secreto` | Secreto | textarea | ✓ | situacional |
 | `cf_relacion_party` | Relación con el party | select (Hostil→Aliado) | ✓ | situacional |
 | `cf_inspiracion` | Inspiración | text | ✓ | situacional |
-| `cf_clase_de_gremio` | Clase de gremio | select | — | solo `tipo=Gremio` |
 
 **Deprecados (lazy):** `primera_impresion`, `notas_roleplay`, `frase`. **Rels sembradas:** ciudad,
 establecimiento, faccion, familia, items_magicos, quests, lugares (ya en base).
