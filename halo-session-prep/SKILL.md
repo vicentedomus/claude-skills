@@ -212,9 +212,12 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **4 existentes**: selecciona los más relevantes a la quest, ciudad o lugar objetivo de la sesión.
 - **2 nuevos**: genera frescos invocando el flujo de `dnd-worldbuilder` con `references/npc.md`
   (la **ficha rediseñada**: `cf_descripcion_fisica`/`cf_distintivo`/`cf_forma_de_hablar`/`cf_statblock`
-  + situacionales — ya **no** `primera_impresion`/`notas_roleplay`). Ese flujo consulta el **compendio**
-  primero (`genome.md`) — ánclalos a un arquetipo/`theme` del grafo (nombres limados) antes de inventar.
-  El `cf_statblock` sale del ETL por vocación (`catalogos.md`).
+  + situacionales — ya **no** `primera_impresion`/`notas_roleplay`).
+  **Primera opción: una npc-card del compendio** (`npc.md` → «Semilla desde npc-cards»):
+  filtra por `tipo_npc`×`raza`, descompón su prosa en los `cf_*` y **lima el setting**
+  (nombre nuevo; `faccion`/`familia` **nunca** se copian: son de Faerûn). Si la vocación no
+  tiene cobertura —`Proxeneta` no tiene ni una card—, dilo y cae al grafo (`genome.md`) o a
+  los principios. El `cf_statblock` se reverifica contra el ETL (`catalogos.md`).
 - Cada NPC (existente o nuevo) lleva el campo **"Relación con la sesión"**: qué rol narrativo cumple,
   por qué aparece, cómo se cruza con los objetivos. No vale dejarlo vacío.
 - Marca cada NPC con flag `existente` o `nuevo`. Este flag se preserva como snapshot histórico
@@ -351,7 +354,7 @@ Si el DM aprueba:
 -- Ficha rediseñada: los campos narrativos van en custom_data (cf_*), NO en las columnas
 -- primera_impresion/notas_roleplay (deprecadas). Los sensibles se listan en _hidden.
 INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, edad, conocido_jugadores, campaign_slug, custom_data)
-VALUES ('Nombre', 'Raza', 'tipo_npc (13 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
+VALUES ('Nombre', 'Raza', 'tipo_npc (18 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
   '{"cf_descripcion_fisica":"...","cf_distintivo":"...","cf_forma_de_hablar":"...",
     "cf_statblock":{"kind":"official","name":"Noble","source":"XMM"},
     "cf_motivacion":"...","cf_secreto":"...",
@@ -360,6 +363,13 @@ RETURNING id;
 ```
 El overlay `entity_schemas` (section='npcs') debe existir con esos `cf_*` — lo escribe `dnd-worldbuilder`
 tras confirmación (una vez por campaña). El `cf_statblock` se resuelve por vocación contra el ETL.
+
+En el bloque SQL de ejemplo, cambia el literal `'tipo_npc (13 canónicas)'` por
+`'tipo_npc (18 canónicas)'`. `tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
+`Neutral`/`Aliado`/`Enemigo`: si la card de origen traía `Antagonista` o `Informante`,
+mapéalo (`Antagonista`→`Enemigo`, `Informante`→`Neutral`) y pon el matiz real en
+`cf_relacion_party`, que es solo-DM. Mismo mapeo que aplica el buscador de NPCs de la app,
+para que las dos vías no diverjan.
 
 Captura el `id` devuelto por cada INSERT. Usa esos `npc_id` reales en el bloque `bloque_npcs`
 del session_plan.
