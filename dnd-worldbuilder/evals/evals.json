@@ -58,6 +58,19 @@
         {"text": "Reverifica cf_statblock contra questkeep/data/5e/bestiary.json en vez de copiar el de la card a ciegas"},
         {"text": "Si la vocación pedida no tiene cobertura en el catálogo (p. ej. Proxeneta), lo dice y cae al grafo o a los principios narrativos en vez de forzar una card que no encaja"}
       ]
+    },
+    {
+      "id": 9,
+      "prompt": "Genera un NPC nuevo para Moria: un proxeneta que opere cerca del mercado.",
+      "expected_output": "La skill consulta el catálogo de npc-cards, descubre que la vocación Proxeneta no tiene ni una card, LO DICE, y cae al grafo o a los principios narrativos en vez de forzar una card de otra vocación.",
+      "files": [],
+      "assertions": [
+        {"text": "Consulta el catálogo de npc-cards para la vocación pedida ANTES de decidir por dónde tirar"},
+        {"text": "Detecta y DICE explícitamente que Proxeneta no tiene cobertura en el catálogo (0 cards), en vez de callarlo o dejarlo implícito"},
+        {"text": "NO fuerza una card de otra vocación (p. ej. Criminal o Tabernero) haciéndola pasar por la pedida"},
+        {"text": "Cae al grafo o a los principios narrativos y entrega igualmente la ficha completa, sin bloquearse"},
+        {"text": "La ficha resultante usa los campos cf_* de la ficha rediseñada, igual que en la vía card-first"}
+      ]
     }
   ]
 }

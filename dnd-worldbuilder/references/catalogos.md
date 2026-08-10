@@ -27,8 +27,17 @@ Bandit Captain, Cultist, Mage, Archmage, Scout, Knight, Gladiator, Berserker, As
 
 El campo (`cf_statblock`, `cf_item_base`, monstruos de combate) guarda un ref:
 
-- **Oficial:** `{ "kind": "official", "name": "Mage", "source": "XMM" }`
+- **Oficial:** `{ "kind": "compendium", "name": "Mage", "source": "XMM" }`
 - **Homebrew:** `{ "kind": "homebrew", "id": "<uuid de monstruos/items_catalog>" }`
+
+> **`kind` es `compendium`, no `official`** (corregido 2026-08-10). Este archivo decía
+> `"official"` y la app **nunca** ha emitido ese valor: lo escribe como `compendium`
+> (`app.js:4481`), y en la BD hay 17 filas `compendium` + 7 `homebrew` y **0** `official`. La
+> única rama que lee el campo es `ref.kind === 'homebrew'` (`app.js:1369`), así que un
+> `official` no rompe la pantalla — solo mete en los datos del DM un vocabulario que ningún
+> otro escritor usa, y que no volvería a salir por ninguna consulta que filtre por `kind`.
+> Cazado al correr los evals de la vía card-first: la corrida tomó una card que ya traía
+> `compendium` y la **reescribió** a `official` obedeciendo a este documento.
 
 Filtrado del ETL: `cr` (monstruos) y `tipo` (items) son **strings compuestos**
 (`"Weapon (Greatsword), Martial Weapon…"`) → filtrar por substring, no igualdad.
@@ -37,8 +46,8 @@ Filtrado del ETL: `cr` (monstruos) y `tipo` (items) son **strings compuestos**
 
 ## Flujo: match_directo · reskin · alta
 
-1. **match_directo** — hay un oficial del ETL que encaja tal cual → referenciarlo (`kind:official`).
-   Sin escribir nada.
+1. **match_directo** — hay un oficial del ETL que encaja tal cual → referenciarlo
+   (`kind:compendium`). Sin escribir nada.
 2. **reskin** — la mecánica encaja pero el flavor no → **crear fila homebrew** (`es_homebrew=true`,
    `base`=oficial del ETL, **misma mecánica**), flavor nuevo en `nombre`/`descripcion` (item) o en las
    3 capas sensoriales (statblock). Referenciar `kind:homebrew`. **Tras confirmación del DM.**
