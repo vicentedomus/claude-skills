@@ -166,7 +166,14 @@ que ya encontraste. Agrúpalas en un solo mensaje:
 5. ¿Hay revelación o giro importante que quieras que ocurra?
 6. ¿Hay algún NPC nuevo que quieras forzar, o dejamos que la skill proponga los 2 nuevos?
 
-Omite las preguntas cuya respuesta ya esté clara en la BD.
+Omite las preguntas cuya respuesta ya esté clara en la BD. El techo es **6 preguntas** en ese
+mensaje.
+
+**Las alertas de contradicción van aparte y no cuentan para el techo.** Si el contexto que dio el
+DM en el Paso 1a contradice lo que dice Supabase (Paso 1b) — p. ej. el DM dice que el party está
+en un lugar y la bitácora dice que se fueron de ahí hace meses —, señálalo explícitamente en el
+mismo mensaje aunque ya haya 6 preguntas: es información que el DM necesita, no una pregunta que
+espera un turno de respuesta.
 
 ### Paso 3 — Construir la propuesta (co-diseño sección por sección)
 
