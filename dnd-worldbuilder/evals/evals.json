@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "Mejora todos los establecimientos de Rockwood, están muy genéricos.",
-      "expected_output": "Modo batch: lista establecimientos, pregunta si procesar todos o seleccionar, procesa uno por uno. Cada uno anclado a su dueno (NPC), exterior+interior sensoriales, cf_detalle_ancla + cf_gancho_interaccion como campos propios. Perfil según tipo (Gremio unificado usa cf_clase_de_gremio). cf_inventario acorde a la categoria de la ciudad. Coherencia entre establecimientos.",
+      "expected_output": "Modo batch: lista establecimientos, pregunta si procesar todos o seleccionar, procesa uno por uno. Cada uno anclado a su dueno (NPC), exterior+interior sensoriales, cf_detalle_ancla + cf_gancho_interaccion como campos propios. Perfil según tipo (Gremio unificado usa cf_organizacion, con las 9 organizaciones canónicas de halo). cf_inventario acorde a la categoria de la ciudad. Coherencia entre establecimientos.",
       "files": []
     },
     {

@@ -93,7 +93,14 @@ dueno(rel npc), descripcion_exterior→exterior, descripcion_interior→interior
 - **Comercio/Herrería/Objetos mágicos:** `cf_inventario` (rel items) · `cf_especialidad` · `cf_precios`
 - **Librería:** `cf_coleccion` · `cf_pieza_rara`
 - **Templo:** `cf_deidad` (rel) · `cf_servicios` · `cf_clero`
-- **Gremio:** `cf_clase_de_gremio` (select) · `cf_jerarquia` · `cf_fachada_actividad` (dmOnly)
+- **Gremio:** `cf_organizacion` (select, 9 options canónicas de halo) · `cf_jerarquia` · `cf_fachada_actividad` (dmOnly)
+
+> **Enmienda 2026-08-09 (spec 002):** era `cf_clase_de_gremio`. Renombrado a `cf_organizacion`
+> por QuestKeep (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`): `clase` describe
+> una categoría y `Cartel de Dobsil` no es una categoría. El campo dice a qué **organización**
+> pertenece la sede, lo que además prepara el terreno para `npcs.faccion` (hoy al 0% en las 274
+> filas). Las options son las 9 organizaciones reales de los documentos del DM, no una taxonomía
+> inventada.
 
 **Rels:** empleados (inverse npcs), quests. `cf_inventario` respeta el tier de la `categoria` de la
 ciudad (`tiendas.js`).

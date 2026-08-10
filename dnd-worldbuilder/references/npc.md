@@ -39,9 +39,9 @@ rels sembradas: `establecimiento`, `faccion`, `familia`, `items_magicos`, `quest
 
 > **`cf_clase_de_gremio` se retiró** (2026-08-09). La clase es **del gremio**, no de la
 > persona: en halo, **16 de los 24** NPCs `tipo_npc=Gremio` ya apuntan a su gremio por
-> `establecimiento_id`, y el establecimiento **ya lleva la clase en su `tipo`**
-> (*Hermandad de los Sellos* = `Gremio de Aventureros`; *La Sala de los Juramentos* =
-> `Gremio de Ladrones`; *Mazo y Juramento* = el gremio de herreros de Moria). Un campo en
+> `establecimiento_id`, y es el **establecimiento** quien lleva la organización, hoy en
+> **`cf_organizacion`** (*Hermandad de los Sellos* = `Gremio de Aventureros`; *La Sala de los
+> Juramentos* = `Gremio de Ladrones`; *Mazo y Juramento* = `Gremio de Herreros`). Un campo en
 > el NPC duplicaría lo que la relación ya dice. El fold `Gremio de Ladrones → Gremio`
 > **se mantiene**.
 
