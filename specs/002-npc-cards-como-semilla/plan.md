@@ -31,6 +31,11 @@ Este plan se escribió antes de que cerrara el PR de QuestKeep. Un barrido contr
 5. **La verificación de la Task 2 Step 5 pedía «al menos un candidato»** — demasiado laxa para detectar un cambio de nombre de campo. Fijada al número real (21).
 6. **Rutas** — ver la constraint de arriba.
 
+Y dos más, encontrados **durante** la ejecución (uno por el implementador de la Task 2, otro al verificar su commit):
+
+7. **La verificación de la Task 2 Step 4 es autorreferencial**: hace `grep cf_clase_de_gremio` sobre `npc.md` esperando `OK`, pero el Step 2 de la propia task manda insertar una nota de retiro que **contiene ese string**. Sale «TODAVÍA QUEDA» hiciera lo que hiciera el implementador — el mismo patrón que la Task 5 ya evitaba con `grep -v "se retir"`, sin replicar aquí. Corregido abajo.
+8. **La nota de retiro decía dónde está la clase, y ese dónde cambió.** «El establecimiento **ya lleva la clase en su `tipo`**» era cierto cuando se escribió el plan; la migración `2026-08-09-gremios-unificados.sql` la **sacó** del `tipo` (unificándolo a `Gremio` a secas) y la `...-organizacion-establecimientos.sql` la puso en `cf_organizacion`. El **argumento** —la clase es del gremio, no de la persona— sigue intacto; la **ubicación** que citaba, no. Afecta a la nota que escribe la Task 2 y a la enmienda de la Task 5 Step 2. Lo corrige la Task 6 (Steps 0 y 3b).
+
 Verificado además, y **correcto tal como el plan lo decía**: el catálogo existe con las claves `n·r·t·ro·f·a·s·sl`; son 3585 cards en 36 shards; `Proxeneta` tiene 0; el mapeo de `rol` del plan (`Informante`→`Neutral`, `Antagonista`→`Enemigo`) es idéntico al `ROL_AL_GUARDAR` que aplica la app; y todas las anclas de edición existen en los archivos.
 
 ---
@@ -289,12 +294,18 @@ estas 18, los 17 valores distintos del compendio quedan cubiertos al 100%.
 
 ```bash
 cd /workspace/claude-skills
-grep -rn "cf_clase_de_gremio" dnd-worldbuilder/references/npc.md \
+grep -n "cf_clase_de_gremio" dnd-worldbuilder/references/npc.md | grep -v "se retiró" \
   && echo "TODAVÍA QUEDA — revisar" || echo "OK: retirado de npc.md"
 grep -c "canónicas (18)" dnd-worldbuilder/references/npc.md
 ```
 
 Expected: `OK: retirado de npc.md` y `1`.
+
+> **Corregido durante la ejecución.** El grep original no excluía la **nota de retiro** que el
+> propio Step 2 manda insertar —que contiene el string— así que devolvía «TODAVÍA QUEDA» pasara
+> lo que pasara. La Task 5 ya evitaba ese patrón con `grep -v "se retir"`; aquí faltaba. Una
+> verificación que no puede pasar no verifica nada: se lee como un fallo y se aprende a
+> ignorarla.
 
 - [ ] **Step 5: Verificar que el retrieval documentado funciona de verdad**
 
@@ -539,15 +550,21 @@ Arcanista deja de ser perezoso y se migra. Lo ejecuta la migración de QuestKeep
 Quitarlo de la lista de campos situacionales y añadir:
 
 ```markdown
-> **Enmienda 2026-08-09 (spec 002): `cf_clase_de_gremio` se retira.** Cruzando
+> **Enmienda 2026-08-09 (spec 002): `cf_clase_de_gremio` se retira del NPC.** Cruzando
 > `npcs.establecimiento_id → establecimientos` en halo, **16 de los 24** NPCs
-> `tipo_npc=Gremio` ya apuntan a su gremio, y el establecimiento **ya lleva la clase en su
-> `tipo`**: *Hermandad de los Sellos* (Evermere) = `Gremio de Aventureros`, *La Sala de los
-> Juramentos* (Rockwood) = `Gremio de Ladrones`, *Mazo y Juramento* (Moria) = el gremio de
-> herreros. La clase es del gremio, no de la persona: el campo duplicaría lo que la relación
-> ya dice. Este spec lo decidió sin cruzar esa relación. El fold `Gremio de Ladrones →
-> Gremio` **se mantiene**.
+> `tipo_npc=Gremio` ya apuntan a su gremio, y es el **establecimiento** quien lleva la
+> organización — hoy en `cf_organizacion`: *Hermandad de los Sellos* (Evermere) = `Gremio de
+> Aventureros`, *La Sala de los Juramentos* (Rockwood) = `Gremio de Ladrones`, *Mazo y
+> Juramento* (Moria) = `Gremio de Herreros`. La clase es del gremio, no de la persona: el
+> campo duplicaría lo que la relación ya dice. Este spec lo decidió sin cruzar esa relación.
+> El fold `Gremio de Ladrones → Gremio` **se mantiene**.
 ```
+
+> **Ojo con el «dónde».** No escribas que el establecimiento «lleva la clase en su `tipo`»:
+> era cierto al redactar el plan y dejó de serlo. La migración `2026-08-09-gremios-unificados.sql`
+> **sacó** la clase del `tipo` (unificándolo a `Gremio` a secas) y la
+> `2026-08-09-organizacion-establecimientos.sql` la puso en `cf_organizacion`. El argumento no
+> cambia; la ubicación sí.
 
 - [ ] **Step 3: `data-model.md` — tabla NPC**
 
@@ -638,6 +655,22 @@ Añadida en el pre-flight del 2026-08-10. Las Tasks 2 y 5 retiran el campo **del
 **Interfaces:**
 - Consumes: la enmienda de la Task 5 Step 3b, que apunta aquí.
 - Produces: el cero global de `cf_clase_de_gremio` que verifica el Step 4 de esta task.
+
+- [ ] **Step 0: Corregir el «dónde» en la nota de retiro de `npc.md`**
+
+La Task 2 ya insertó en `dnd-worldbuilder/references/npc.md` la nota de retiro de
+`cf_clase_de_gremio`, con el texto del plan — que decía que el establecimiento «**ya lleva la
+clase en su `tipo`**». Eso describe el estado **anterior** a las migraciones: la de gremios
+unificados sacó la clase del `tipo` y la de organización la puso en `cf_organizacion`.
+
+Sustituye en esa nota el fragmento del `tipo` por la ubicación real, dejando intacto el resto
+(el argumento y el fold no cambian):
+
+```markdown
+> `establecimiento_id`, y es el **establecimiento** quien lleva la organización, hoy en
+> **`cf_organizacion`** (*Hermandad de los Sellos* = `Gremio de Aventureros`; *La Sala de los
+> Juramentos* = `Gremio de Ladrones`; *Mazo y Juramento* = `Gremio de Herreros`). Un campo en
+```
 
 - [ ] **Step 1: `establishment.md` — la fila del perfil Gremio**
 
