@@ -89,7 +89,7 @@ verboso. **La skill no queda bloqueada por el trabajo de QuestKeep.**
 Cobertura medida por oficio, para saber cuándo la vía card-first tiene material:
 
 ```
-Otro 1092 · Guardia 354 · Arcanista 339 · Religioso 290 · Criminal 290 · Líder político 224 ·
+Otro 1092 · Guardia 354 · Arcanista 339 · Religioso 290 · Criminal 290 · Líder político 231 ·
 Aventurero 203 · Noble 174 · Comerciante 162 · Tabernero 127 · Minero 66 · Bibliotecario 57 ·
 Herrero 55 · Cazador 45 · Gremio 38 · Granjero 36 · Alquimista 26
 ```
@@ -113,6 +113,26 @@ Cruzando `npcs.establecimiento_id → establecimientos` en halo, esa decisión s
 
 Un campo nuevo duplicaría lo que la relación ya dice. Se retira de `design-npc.md` §3/§4 y de
 `data-model.md`, con la razón anotada. El fold `Gremio de Ladrones → Gremio` **se mantiene**.
+
+> **Actualización 2026-08-10 — dónde vive la clase ya está decidido.** Este diseño dejaba
+> abierta la pregunta «¿dónde la guarda el gremio, en su `tipo` entero o en un campo aparte?».
+> El PR de QuestKeep (#372, Tasks 7-8) la cerró: el establecimiento lleva **`cf_organizacion`**
+> (label «Organización») en el overlay `halo`/`establecimientos`, con **9 valores canónicos**
+> sacados de los documentos de worldbuilding del DM, no de una taxonomía inventada:
+> `Gremio de Aventureros · Gremio de Ladrones · Gremio de Comerciantes · Gremio de Herreros ·
+> Gremio de Inventores · Gremio de Magos · Consejo de Sabios Elfos · Cartel de Dobsil ·
+> Los Hijos de Shar`. Migración: `sql/migraciones/2026-08-09-organizacion-establecimientos.sql`.
+>
+> El nombre cambió porque `clase` describe una categoría y *Cartel de Dobsil* no es una
+> categoría: el campo dice **a qué organización pertenece la sede**. *Mazo y Juramento* es la
+> sede en Moria del Gremio de Herreros.
+>
+> Consecuencia para este spec: `cf_clase_de_gremio` **ya no existe en la app**, ni en el NPC ni
+> en el establecimiento. Los tres sitios del repo de skills que aún lo nombran para
+> establecimientos (`establishment.md`, `data-model.md` §Establecimiento, `evals.json`)
+> describen una clave muerta con valores inventados — se renombran (Task 6 del plan). No es una
+> ampliación de alcance: es que el alcance se resolvió fuera y estos documentos se quedaron
+> atrás.
 
 ### `tipo_npc` pasa de 13 a 18 options
 
@@ -155,7 +175,9 @@ Al partir de una card `Antagonista` o `Informante`, la skill mapea `rol` hacia a
 | `dnd-worldbuilder/SKILL.md` | Paso 0.5: para NPCs, las cards van primero y **no dependen del CLI**; el grafo sigue siendo la vía para temas/arquetipos y para los demás tipos. |
 | `halo-session-prep/SKILL.md` | Regla de «2 nuevos»: apuntar a la vía card-first. |
 | `specs/001-campos-elementos/design-npc.md` | §3/§4: retirar `cf_clase_de_gremio`, 18 options, revertir la nota de `BEG`/`Secundario`. |
-| `specs/001-campos-elementos/data-model.md` | Tabla NPC: quitar `cf_clase_de_gremio`, `baseOverrides` → 18. |
+| `specs/001-campos-elementos/data-model.md` | Tabla NPC: quitar `cf_clase_de_gremio`, `baseOverrides` → 18. Perfil de Establecimiento: `cf_clase_de_gremio` → `cf_organizacion`. |
+| `dnd-worldbuilder/references/establishment.md` | Perfil `Gremio`: `cf_clase_de_gremio` → `cf_organizacion`, con los 9 valores canónicos de Halo en vez de la taxonomía inventada. |
+| `dnd-worldbuilder/evals/evals.json` | La eval de establecimientos (id 2) nombra la clave nueva. |
 | `dnd-worldbuilder/evals/evals.json` | Eval nueva (abajo). |
 | `halo-session-prep/evals/evals.json` | Assertions nuevas (abajo). |
 

@@ -16,7 +16,22 @@
 - **Nunca escribir sin confirmación del DM** (FR-005/FR-013 de spec 001).
 - **La skill no queda bloqueada por QuestKeep:** si `compendium/npc-catalog.json` aún no existe, el fallback es un glob sobre los 36 shards.
 - **Los evals van primero.** Se escriben, se observa que **fallan** contra el estado actual, y se edita el `SKILL.md`/reference hasta que pasan.
-- **Ruta del repo de referencia:** las mediciones y los ejemplos asumen `questkeep/` clonado al lado (donde viven `compendium/` y `data/5e/`).
+- **Ruta del repo de referencia:** el **texto** de las skills documenta `questkeep/` clonado al lado (donde viven `compendium/` y `data/5e/`) — esa es la convención de runtime y no se cambia. Pero en **este** contenedor los dos repos no son hermanos: `claude-skills` está en `/workspace/claude-skills` y `questkeep` en `/home/user/questkeep`. Para correr las verificaciones, exporta `QK=/home/user/questkeep` y sustituye el prefijo. Un `python3` que abre `questkeep/compendium/...` desde `/workspace/claude-skills` da `FileNotFoundError`, y eso **no** significa que el dato falte.
+
+---
+
+## Enmienda de pre-flight (2026-08-10)
+
+Este plan se escribió antes de que cerrara el PR de QuestKeep. Un barrido contra el árbol real, previo a ejecutarlo, encontró seis desajustes. Están corregidos abajo, en su tarea; se listan aquí para que quien ejecute sepa qué cambió y por qué:
+
+1. **`cf_clase_de_gremio` en establecimientos ya no es una pregunta abierta** — es una clave muerta. El Step 3b de la Task 5 decía «queda abierta»; QuestKeep la cerró (`cf_organizacion`, 9 orgs canónicas). Reescrito, y **añadida la Task 6** que hace el renombrado.
+2. **La verificación de la Task 5 Step 4 se contradecía con su propio Step 3b**: pedía cero apariciones de `cf_clase_de_gremio` mientras el 3b mandaba dejar cinco. Acotada a los archivos del NPC; el cero global lo comprueba la Task 6.
+3. **`Líder político` son 231 cards, no 224.** El builder del catálogo normalizó el typo `Lider politico` (7 filas), justo como este spec predijo — así que el número que el propio spec cita se quedó viejo. Corregido en el diseño y en la Task 2.
+4. **El ejemplo de retrieval era inventado**: `npc-cards.LMoP.json` existe (46 cards) pero `kelra-ironweaver` no está en él. Un snippet copiable que lanza `IndexError` es peor que ningún snippet. Sustituido por una card real.
+5. **La verificación de la Task 2 Step 5 pedía «al menos un candidato»** — demasiado laxa para detectar un cambio de nombre de campo. Fijada al número real (21).
+6. **Rutas** — ver la constraint de arriba.
+
+Verificado además, y **correcto tal como el plan lo decía**: el catálogo existe con las claves `n·r·t·ro·f·a·s·sl`; son 3585 cards en 36 shards; `Proxeneta` tiene 0; el mapeo de `rol` del plan (`Informante`→`Neutral`, `Antagonista`→`Enemigo`) es idéntico al `ROL_AL_GUARDAR` que aplica la app; y todas las anclas de edición existen en los archivos.
 
 ---
 
@@ -158,8 +173,8 @@ for x in cat:
 # La card completa (prosa incluida) sale del shard de su aventura
 python3 -c "
 import json
-print([c for c in json.load(open('questkeep/compendium/npc-cards.LMoP.json'))
-       if c['slug'] == 'kelra-ironweaver'][0])
+print([c for c in json.load(open('questkeep/compendium/npc-cards.TFTYP-TFOF.json'))
+       if c['slug'] == 'durgeddin-the-black'][0])
 "
 ```
 
@@ -170,7 +185,7 @@ los 36 `npc-cards.*.json` — más verboso, mismo resultado.
 
 ```
 Otro 1092 · Guardia 354 · Arcanista 339 · Religioso 290 · Criminal 290 ·
-Líder político 224 · Aventurero 203 · Noble 174 · Comerciante 162 · Tabernero 127 ·
+Líder político 231 · Aventurero 203 · Noble 174 · Comerciante 162 · Tabernero 127 ·
 Minero 66 · Bibliotecario 57 · Herrero 55 · Cazador 45 · Gremio 38 · Granjero 36 ·
 Alquimista 26
 ```
@@ -286,10 +301,11 @@ Expected: `OK: retirado de npc.md` y `1`.
 Con `questkeep` clonado al lado, correr el fallback (que no depende del PR de QuestKeep):
 
 ```bash
+QK=/home/user/questkeep   # en este contenedor los repos no son hermanos
 python3 -c "
-import json, glob
+import json, glob, os
 n = 0
-for f in glob.glob('questkeep/compendium/npc-cards.*.json'):
+for f in glob.glob(os.environ['QK'] + '/compendium/npc-cards.*.json'):
     for c in json.load(open(f)):
         if c.get('tipo_npc') == 'Herrero' and c.get('raza') == 'Enano':
             n += 1
@@ -298,8 +314,24 @@ print('candidatos:', n)
 "
 ```
 
-Expected: al menos un candidato listado. **Si devuelve 0, la sección miente** y hay que
-corregir los nombres de campo antes de commitear.
+Expected: **`candidatos: 21`** exactamente (medido 2026-08-10), y `durgeddin-the-black` entre
+ellos. Un número clavado, no un «al menos uno»: si un nombre de campo cambiara, un umbral laxo
+lo dejaría pasar. Si devuelve 0, **la sección miente** — corrige los nombres de campo antes de
+commitear. Si devuelve otro número distinto de 0, el catálogo se movió: verifica el shard y
+actualiza el número aquí y en la tabla de cobertura.
+
+También comprueba que el ejemplo de la sección abre de verdad:
+
+```bash
+python3 -c "
+import json, os
+c = json.load(open(os.environ['QK'] + '/compendium/npc-cards.TFTYP-TFOF.json'))
+print([x['nombre'] for x in c if x['slug'] == 'durgeddin-the-black'][0])
+"
+```
+
+Expected: `Durgeddin the Black`. Un snippet copiable que lanza `IndexError` es peor que ningún
+snippet — el plan original citaba una card inventada.
 
 - [ ] **Step 6: Commit**
 
@@ -529,27 +561,37 @@ es solo-DM, mientras `rol` es público. Ambos array viven en `app.js` (`FORM_SCH
 — aplicados por QuestKeep en el PR del buscador de NPCs.
 ```
 
-- [ ] **Step 3b: Acotar el alcance — los establecimientos NO se tocan**
+- [ ] **Step 3b: Apuntar al destino real del campo (ya NO queda abierto)**
 
-`cf_clase_de_gremio` también aparece en tres sitios de **establecimientos**, encontrados por la revisión final del PR de QuestKeep: `dnd-worldbuilder/references/establishment.md:29,31,43`, `specs/001-campos-elementos/data-model.md:94` (perfil de Establecimiento) y `dnd-worldbuilder/evals/evals.json:19`.
+> **Corregido en pre-flight (2026-08-10).** Este step decía que dónde guarda un gremio su clase
+> «queda abierta». Ya no: QuestKeep lo cerró en el mismo PR (#372, Tasks 7-8) mientras este plan
+> esperaba. El campo vive en el **establecimiento** y se llama **`cf_organizacion`**. Dejar aquí
+> la pregunta abierta haría que este spec —recién enmendado por ser un documento que ya no
+> describe la realidad— cometiera exactamente esa falta.
 
-**No se tocan.** El argumento de esta enmienda es que la clase es **del gremio, no de la persona** — eso justifica quitar el campo del NPC, y deja abierta (sin decidir) la pregunta de dónde lo guarda el gremio: hoy en su `tipo` entero (`'Gremio de Ladrones'`), o en un `cf_` como diseñó spec 001. Decidirlo expandiría el alcance a establecimientos sin que el DM lo haya revisado.
+`cf_clase_de_gremio` aparece además en tres sitios de **establecimientos**:
+`dnd-worldbuilder/references/establishment.md:29,31,43`, `specs/001-campos-elementos/data-model.md:94`
+(perfil de Establecimiento) y `dnd-worldbuilder/evals/evals.json:19`. Los renombra la **Task 6**;
+esta task solo toca el NPC.
 
 Añade la nota en `specs/001-campos-elementos/design-npc.md`, junto a la enmienda del Step 2:
 
 ```markdown
-> **Alcance de la enmienda:** se retira `cf_clase_de_gremio` **del NPC**. El perfil de
-> **Establecimiento** lo conserva por ahora: dónde guarda un gremio su clase —en su `tipo`
-> entero, como hoy en los datos (`Gremio de Ladrones`), o en un campo aparte— es una decisión
-> propia de esa entidad, y no la resuelve el argumento de esta enmienda. Queda abierta.
+> **Alcance de la enmienda:** se retira `cf_clase_de_gremio` **del NPC** — la clase es del
+> gremio, no de la persona. Dónde la guarda el gremio ya está decidido: el **establecimiento**
+> lleva **`cf_organizacion`** (label «Organización»), con los 9 valores canónicos de Halo
+> (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`). El nombre cambió porque
+> `clase` describe una categoría y *Cartel de Dobsil* no lo es: el campo dice **a qué
+> organización pertenece la sede**. Ver la Task 6 del plan de spec 002.
 ```
 
 - [ ] **Step 4: Verificar que las tres enmiendas están y son coherentes**
 
 ```bash
 cd /workspace/claude-skills
-echo "-- cf_clase_de_gremio (debe ser 0 fuera de las notas de enmienda) --"
-grep -rn "cf_clase_de_gremio" specs/001-campos-elementos/ dnd-worldbuilder/ | grep -v "se retir"
+echo "-- cf_clase_de_gremio en los archivos DEL NPC (debe ser 0 fuera de las notas) --"
+grep -rn "cf_clase_de_gremio" specs/001-campos-elementos/design-npc.md \
+  dnd-worldbuilder/references/npc.md | grep -v "se retir"
 echo "-- 13 canónicas residuales (debe ser 0) --"
 grep -rn "13 canónicas\|canónicas (13)" specs/001-campos-elementos/ dnd-worldbuilder/
 echo "-- las 18 aparecen en los tres sitios --"
@@ -557,6 +599,12 @@ grep -lc "18" specs/001-campos-elementos/design-npc.md specs/001-campos-elemento
 ```
 
 Expected: las dos primeras sin resultados; la tercera lista los tres archivos.
+
+> **Ojo con el alcance del grep.** El plan original barría `specs/001-campos-elementos/` y
+> `dnd-worldbuilder/` enteros esperando cero — pero su propio Step 3b mandaba dejar cinco
+> apariciones en pie (las de establecimientos), así que la comprobación fallaba hiciera lo que
+> hiciera el implementador. Aquí va acotada a los dos archivos del NPC; el **cero global** lo
+> comprueba la Task 6, que es quien retira las otras cinco.
 
 - [ ] **Step 5: Commit**
 
@@ -574,6 +622,124 @@ git commit -m "spec(001): tres enmiendas desde el spec 002
    pintados en blanco.
 
 El fold Gremio de Ladrones -> Gremio se mantiene. rol sigue en 3."
+```
+
+---
+
+### Task 6: `cf_clase_de_gremio` → `cf_organizacion` en establecimientos
+
+Añadida en el pre-flight del 2026-08-10. Las Tasks 2 y 5 retiran el campo **del NPC**; quedan tres sitios que lo nombran para **establecimientos**, y ahí no es una pregunta abierta: es una **clave muerta con valores inventados**. QuestKeep (#372, Tasks 7-8) la renombró a `cf_organizacion` y le puso el canon real de Halo. Un `dnd-worldbuilder` que siga escribiendo `cf_clase_de_gremio:Ladrones` produce un campo que la app no pinta y un valor que no existe.
+
+**Files:**
+- Modify: `dnd-worldbuilder/references/establishment.md`
+- Modify: `specs/001-campos-elementos/data-model.md` (perfil de Establecimiento)
+- Modify: `dnd-worldbuilder/evals/evals.json` (eval id 2)
+
+**Interfaces:**
+- Consumes: la enmienda de la Task 5 Step 3b, que apunta aquí.
+- Produces: el cero global de `cf_clase_de_gremio` que verifica el Step 4 de esta task.
+
+- [ ] **Step 1: `establishment.md` — la fila del perfil Gremio**
+
+Reemplazar la fila de la tabla de perfiles:
+
+```markdown
+| **Gremio** | `cf_organizacion` (los 9 del canon de Halo, ver abajo) · jerarquia · fachada_vs_actividad 🎩 |
+```
+
+Y el párrafo que la sigue (`` `Gremio de Ladrones` = `tipo:Gremio` + `cf_clase_de_gremio:Ladrones`… ``) por:
+
+```markdown
+`Gremio de Ladrones` = `tipo:Gremio` + `cf_organizacion:Gremio de Ladrones` (el patrón subtipo
+recursa). **`cf_organizacion` no es una categoría, es la organización con nombre propio a la que
+pertenece la sede**: *Mazo y Juramento* es la sede en Moria del `Gremio de Herreros`. Por eso
+sirve más allá de los gremios — un templo de Shar es sede de `Los Hijos de Shar`.
+
+Los 9 valores canónicos vigentes en halo (2026-08-09):
+
+```
+Gremio de Aventureros · Gremio de Ladrones · Gremio de Comerciantes · Gremio de Herreros ·
+Gremio de Inventores · Gremio de Magos · Consejo de Sabios Elfos · Cartel de Dobsil ·
+Los Hijos de Shar
+```
+
+**La lista canónica no vive aquí.** Vive en el overlay `entity_schemas` de la campaña
+(`campaign_slug='halo'`, `entity='establecimientos'`), que es lo que la app pinta. Esta copia es
+para orientarte sin conexión; **antes de proponer un valor nuevo, lee el `options` real del
+overlay** — si diverge, manda el overlay y esta lista está vieja.
+```
+
+> **Nota para quien ejecute:** el bloque de arriba contiene una valla de código anidada dentro
+> del bloque markdown. Al insertarlo en `establishment.md`, lo que va al archivo es el
+> **contenido**, con su lista de 9 valores dentro de su propia valla — no la valla exterior de
+> este plan.
+
+- [ ] **Step 2: `establishment.md` — el paso 2 de «Cómo se genera»**
+
+```markdown
+2. Elige **`tipo`** → carga su perfil (Gremio pide `cf_organizacion`).
+```
+
+- [ ] **Step 3: `data-model.md` — perfil de Establecimiento**
+
+Reemplazar la línea del perfil Gremio por:
+
+```markdown
+- **Gremio:** `cf_organizacion` (select, 9 options canónicas de halo) · `cf_jerarquia` · `cf_fachada_actividad` (dmOnly)
+```
+
+Y añadir bajo la lista de perfiles:
+
+```markdown
+> **Enmienda 2026-08-09 (spec 002):** era `cf_clase_de_gremio`. Renombrado a `cf_organizacion`
+> por QuestKeep (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`): `clase` describe
+> una categoría y `Cartel de Dobsil` no es una categoría. El campo dice a qué **organización**
+> pertenece la sede, lo que además prepara el terreno para `npcs.faccion` (hoy al 0% en las 274
+> filas). Las options son las 9 organizaciones reales de los documentos del DM, no una taxonomía
+> inventada.
+```
+
+- [ ] **Step 4: `evals.json` — la eval de establecimientos**
+
+En `dnd-worldbuilder/evals/evals.json`, eval **id 2**, cambiar en `expected_output` el texto
+`(Gremio unificado usa cf_clase_de_gremio)` por `(Gremio unificado usa cf_organizacion, con las
+9 organizaciones canónicas de halo)`.
+
+- [ ] **Step 5: Verificar el cero global y que el JSON sigue válido**
+
+```bash
+cd /workspace/claude-skills
+echo "-- cf_clase_de_gremio en TODO el repo, fuera de las notas de enmienda (debe ser 0) --"
+grep -rn "cf_clase_de_gremio" dnd-worldbuilder/ specs/001-campos-elementos/ \
+  | grep -v "se retir\|Renombrado\|era \`cf_clase_de_gremio\`"
+echo "-- cf_organizacion presente en los tres sitios --"
+grep -rlc "cf_organizacion" dnd-worldbuilder/references/establishment.md \
+  specs/001-campos-elementos/data-model.md dnd-worldbuilder/evals/evals.json
+echo "-- JSON válido --"
+python3 -c "import json; json.load(open('dnd-worldbuilder/evals/evals.json')); print('OK')"
+```
+
+Expected: el primer grep sin resultados, el segundo lista los tres archivos, `OK` al final.
+
+> `specs/002-.../design.md` y este `plan.md` **sí** siguen nombrando `cf_clase_de_gremio` — es
+> su tema. Por eso el grep excluye `specs/002-` implícitamente (no está en las rutas barridas).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add dnd-worldbuilder/references/establishment.md \
+  specs/001-campos-elementos/data-model.md dnd-worldbuilder/evals/evals.json
+git commit -m "fix: cf_clase_de_gremio -> cf_organizacion en establecimientos
+
+Las Tasks 2 y 5 retiran el campo del NPC. En establecimientos no era una
+pregunta abierta como decia el plan: QuestKeep ya la cerro (#372) renombrandolo
+a cf_organizacion con las 9 organizaciones reales de halo. Los tres sitios que
+seguian nombrando la clave vieja describian un campo que la app no pinta, con
+una taxonomia inventada (Ladrones/Mercaderes/Artesanos...) que nunca existio en
+los datos.
+
+La lista canonica vive en el overlay entity_schemas, no aqui: se anota la copia
+como orientativa y se manda leer el options real antes de proponer un valor."
 ```
 
 ---
