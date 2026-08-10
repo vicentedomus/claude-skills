@@ -364,8 +364,7 @@ RETURNING id;
 El overlay `entity_schemas` (section='npcs') debe existir con esos `cf_*` — lo escribe `dnd-worldbuilder`
 tras confirmación (una vez por campaña). El `cf_statblock` se resuelve por vocación contra el ETL.
 
-En el bloque SQL de ejemplo, cambia el literal `'tipo_npc (13 canónicas)'` por
-`'tipo_npc (18 canónicas)'`. `tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
+`tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
 `Neutral`/`Aliado`/`Enemigo`: si la card de origen traía `Antagonista` o `Informante`,
 mapéalo (`Antagonista`→`Enemigo`, `Informante`→`Neutral`) y pon el matiz real en
 `cf_relacion_party`, que es solo-DM. Mismo mapeo que aplica el buscador de NPCs de la app,

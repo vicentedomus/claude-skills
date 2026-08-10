@@ -466,12 +466,15 @@ reemplazar el bullet `- **2 nuevos**: …` por:
 
 - [ ] **Step 2: Anotar el mapeo de `rol` en el Paso 4a**
 
-En `### 4a. Commit de NPCs nuevos a la tabla `npcs``, añadir bajo el bloque SQL, junto al
-párrafo que ya explica el overlay:
+En `### 4a. Commit de NPCs nuevos a la tabla `npcs``:
+
+**(a)** dentro del bloque SQL de ejemplo, cambia el literal `'tipo_npc (13 canónicas)'` por
+`'tipo_npc (18 canónicas)'`. **Esto es una instrucción para ti, no texto que se inserte.**
+
+**(b)** añade bajo el bloque SQL, junto al párrafo que ya explica el overlay, **solo** esto:
 
 ```markdown
-En el bloque SQL de ejemplo, cambia el literal `'tipo_npc (13 canónicas)'` por
-`'tipo_npc (18 canónicas)'`. `tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
+`tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
 `Neutral`/`Aliado`/`Enemigo`: si la card de origen traía `Antagonista` o `Informante`,
 mapéalo (`Antagonista`→`Enemigo`, `Informante`→`Neutral`) y pon el matiz real en
 `cf_relacion_party`, que es solo-DM. Mismo mapeo que aplica el buscador de NPCs de la app,
