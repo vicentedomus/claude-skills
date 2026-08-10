@@ -153,10 +153,10 @@ Arcanista deja de ser perezoso y se migra. Lo ejecuta la migración de QuestKeep
 Ireena, Ismark, 2 Vistana bandits + 2 undead — es el store homebrew/curado, análogo a `items`). El
 catálogo 5e real es **`questkeep/data/5e/bestiary.json`** (711 statblocks, fuente XMM 2025), que
 QuestKeep carga como `SRD5E.bestiary`. El campo `statblock` referencia con ref tipado:
-`{kind:'official', name, source}` u `{kind:'homebrew', id}`.
+`{kind:'compendium', name, source}` u `{kind:'homebrew', id}`.
 
 La skill corre server-side con acceso al repo → lee `data/5e/bestiary.json`, elige `name`+`source`
-por `tipo_npc`, y escribe `{kind:'official', name, source}`. Para reskin/custom, **crea homebrew** en
+por `tipo_npc`, y escribe `{kind:'compendium', name, source}`. Para reskin/custom, **crea homebrew** en
 `monstruos` (`base`=oficial del ETL) — **modelo simétrico al de Item** (ver `design-item.md`: tipo
 oficial-ETL vs tipo homebrew vs instancia). La mecánica nunca se inventa; `base` deja el rastro.
 

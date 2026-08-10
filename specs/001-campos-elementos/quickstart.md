@@ -17,7 +17,7 @@ No incluye implementación; solo cómo validar.
    SELECT nombre, tipo_npc, custom_data FROM npcs WHERE campaign_slug='halo' ORDER BY created_at DESC LIMIT 1;
    ```
    **Esperado:** `custom_data` con `cf_descripcion_fisica`, `cf_distintivo`, `cf_forma_de_hablar`,
-   `cf_statblock` (ref `{kind:'official',name,source}` que existe en `bestiary.json`). **0** campos
+   `cf_statblock` (ref `{kind:'compendium',name,source}` que existe en `bestiary.json`). **0** campos
    interactivos guardados como texto plano.
 3. Verificar el overlay: `SELECT * FROM entity_schemas WHERE campaign_slug='halo' AND section='npcs';`
    → contiene las definiciones `cf_*`.

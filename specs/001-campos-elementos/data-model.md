@@ -9,7 +9,7 @@ QuestKeep los renderice. La narrativa/rationale por tipo vive en los `design-*.m
   ocultables por `custom_data._hidden`). Valores en `custom_data` de la fila.
 - **Tipos interactivos** disponibles: `text · textarea · number · select · checkbox · avatar ·
   select-rel · select-rel-multi · select-map · statblock`.
-- **Ref a catálogo** (`statblock` / item_base): `{kind:'official', name, source}` (ETL) o
+- **Ref a catálogo** (`statblock` / item_base): `{kind:'compendium', name, source}` (ETL) o
   `{kind:'homebrew', id}` (Supabase). Nunca inventar mecánica.
 - **subtipo→perfil**: el overlay = superset; la skill puebla solo el perfil del `subtipo` y manda el
   resto a `_hidden`.

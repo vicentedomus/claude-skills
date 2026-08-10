@@ -199,7 +199,7 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
   situacional) se replica luego a lugar/quest/item/ciudad/establecimiento.
 - **FR-014**: La skill DEBE resolver los statblocks contra el **catálogo 5e real**
   (`questkeep/data/5e/bestiary.json`, 711 statblocks) — **no** contra la tabla Supabase `monstruos`
-  (6 filas, store homebrew). Referencia con ref tipado `{kind:'official', name, source}` u
+  (6 filas, store homebrew). Referencia con ref tipado `{kind:'compendium', name, source}` u
   `{kind:'homebrew', id}`. Esto **corrige un bug existente** del flujo de combate de
   `halo-session-prep` (la regla "monstruos solo del catálogo `monstruos`" apunta a una tabla casi
   vacía) y habilita el `statblock` obligatorio por NPC.

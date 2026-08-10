@@ -283,7 +283,7 @@ La skill hermana retorna:
 **Reglas estrictas para monstruos:**
 
 1. **Primero** busca un statblock del **ETL** (`questkeep/data/5e/bestiary.json`, 1169) que encaje. Si
-   encaja, úsalo (`kind:official`). **No** la tabla `monstruos` (~6 filas) — es solo store de homebrew.
+   encaja, úsalo (`kind:compendium`). **No** la tabla `monstruos` (~6 filas) — es solo store de homebrew.
 2. **Solo si nada encaja**, `combate.md` aplica reskin: **fila homebrew** en `monstruos`
    (`es_homebrew`, `base`=oficial del ETL, **nunca el stat block**). Ver `catalogos.md`.
 3. **Nunca inventar** stat blocks.

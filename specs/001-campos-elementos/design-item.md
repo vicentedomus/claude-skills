@@ -47,7 +47,7 @@ Campo custom en `items.custom_data`, ref tipado:
 
 | Caso (`flag`) | `item_base` apunta a | Escritura de la skill |
 |---|---|---|
-| **match_directo** | item oficial del **ETL** `{kind:'official', name, source}` | ninguna (solo referencia) |
+| **match_directo** | item oficial del **ETL** `{kind:'compendium', name, source}` | ninguna (solo referencia) |
 | **reskin** | fila **homebrew** en `items_catalog` `{kind:'homebrew', id}` (`es_homebrew=true`, `base`=oficial ETL) | INSERT del tipo homebrew tras confirmación del DM |
 
 **Regla dura:** la mecánica **nunca se inventa** — el `base` siempre apunta a un oficial real del ETL,
