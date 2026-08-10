@@ -118,6 +118,16 @@ Alquimista 26
 no está cubierta, dilo y cae al grafo o a los principios. **La card es la primera
 opción, no la única.**
 
+**Y dilo en la propuesta, no solo para ti.** Una línea en lo que el DM lee: *«el catálogo no
+tiene ninguna card de esta vocación, así que la semilla salió del grafo»*. Sin eso, el DM no
+distingue un NPC nacido de una persona ya escrita de uno compuesto desde un tema abstracto, y
+la vía **degrada en silencio** — que es peor que no tenerla, porque parece que funcionó. Cuando
+sí hubo card, ese mismo papel lo cumple `cf_inspiracion`.
+
+**No te fíes de la tabla de arriba para decidir: cuéntalo.** Estas cifras son de 2026-08-10 y el
+catálogo se regenera. Filtra el catálogo por la vocación pedida y mira qué sale; si dieras por
+buena la tabla estarías recitando este documento en vez de consultar el dato.
+
 ### De la card al genoma
 
 | Slot | Campo de la ficha | De dónde sale en la card |

@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Mejora al NPC Thrain de Moria, hazlo más interesante y con más profundidad narrativa.",
-      "expected_output": "Ficha rediseñada (no dos blobs de prosa): campos cf_descripcion_fisica + cf_distintivo (público) y cf_forma_de_hablar + cf_motivacion + cf_secreto (DM). cf_statblock resuelto contra el ETL (nunca inventado) con default por vocación. tipo_npc de las 13 options canónicas. Campos sensibles marcados _hidden. ≥1 cross-link sembrado. Semilla del grafo por combinación (genome.md), limando setting. Tabla comparativa original vs propuesta.",
+      "expected_output": "Ficha rediseñada (no dos blobs de prosa): campos cf_descripcion_fisica + cf_distintivo (público) y cf_forma_de_hablar + cf_motivacion + cf_secreto (DM). cf_statblock resuelto contra el ETL (nunca inventado) con default por vocación. tipo_npc de las 18 options canónicas. Campos sensibles marcados _hidden. ≥1 cross-link sembrado. Semilla: primero una npc-card del compendio (npc.md, «Semilla desde npc-cards»); el grafo por combinación (genome.md) si la vocación no tiene cobertura o es villano/arquetipo. Limar setting en ambos casos. Tabla comparativa original vs propuesta.",
       "files": []
     },
     {
@@ -69,7 +69,8 @@
         {"text": "Detecta y DICE explícitamente que Proxeneta no tiene cobertura en el catálogo (0 cards), en vez de callarlo o dejarlo implícito"},
         {"text": "NO fuerza una card de otra vocación (p. ej. Criminal o Tabernero) haciéndola pasar por la pedida"},
         {"text": "Cae al grafo o a los principios narrativos y entrega igualmente la ficha completa, sin bloquearse"},
-        {"text": "La ficha resultante usa los campos cf_* de la ficha rediseñada, igual que en la vía card-first"}
+        {"text": "La ficha resultante usa los campos cf_* de la ficha rediseñada, igual que en la vía card-first"},
+        {"text": "DICE la falta de cobertura en la PROPUESTA que lee el DM, no solo en su razonamiento interno: si solo lo piensa, la vía degrada en silencio"}
       ]
     }
   ]
