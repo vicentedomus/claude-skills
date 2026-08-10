@@ -259,7 +259,7 @@ En la sección `### Situacional (solo cuando aplica)` de `npc.md`, quitar
 
 ```markdown
 > **`cf_clase_de_gremio` se retiró** (2026-08-09). La clase es **del gremio**, no de la
-> persona: en halo, **16 de los 24** NPCs `tipo_npc=Gremio` ya apuntan a su gremio por
+> persona: en halo, **18 de 24** NPCs `tipo_npc=Gremio` ya apuntan a su gremio por
 > `establecimiento_id`, y el establecimiento **ya lleva la clase en su `tipo`**
 > (*Hermandad de los Sellos* = `Gremio de Aventureros`; *La Sala de los Juramentos* =
 > `Gremio de Ladrones`; *Mazo y Juramento* = el gremio de herreros de Moria). Un campo en
@@ -554,7 +554,7 @@ Quitarlo de la lista de campos situacionales y añadir:
 
 ```markdown
 > **Enmienda 2026-08-09 (spec 002): `cf_clase_de_gremio` se retira del NPC.** Cruzando
-> `npcs.establecimiento_id → establecimientos` en halo, **16 de los 24** NPCs
+> `npcs.establecimiento_id → establecimientos` en halo, **18 de 24** NPCs
 > `tipo_npc=Gremio` ya apuntan a su gremio, y es el **establecimiento** quien lleva la
 > organización — hoy en `cf_organizacion`: *Hermandad de los Sellos* (Evermere) = `Gremio de
 > Aventureros`, *La Sala de los Juramentos* (Rockwood) = `Gremio de Ladrones`, *Mazo y

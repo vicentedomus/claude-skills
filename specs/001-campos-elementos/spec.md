@@ -277,9 +277,15 @@ guardarlo queda en la lista de ocultos y que la vista de jugador no lo muestra.
 
 - **FR-012** — piloto NPC, luego los 6 tipos co-diseñados (ver los `design-*.md`).
 - **FR-013** — la skill **sí escribe** overlay `entity_schemas` + homebrew de catálogo tras confirmación.
-- **Gremios** — `Gremio de Ladrones` → `Gremio` + `clase_de_gremio` (en `tipo_npc` **y** Establecimiento).
+- **Gremios** — `Gremio de Ladrones` → `Gremio` (el fold **se mantiene**). ~~`+ clase_de_gremio`
+  en `tipo_npc` **y** Establecimiento~~ → **enmendado 2026-08-09 (spec 002):** el NPC **no** lleva
+  el campo (lo hereda por `establecimiento_id`), y en el Establecimiento se llama
+  **`cf_organizacion`**, con las 9 organizaciones reales de Halo en vez de una taxonomía
+  inventada. Ver `design-npc.md` §3 y `design-establecimiento.md`.
 - **`Místico`** → fold en Arcanista.
-- **Cleanup `tipo_npc`** — `BEG`/`Secundario` se dejan como están (no reclasificar).
+- **Cleanup `tipo_npc`** — ~~`BEG`/`Secundario` se dejan como están (no reclasificar)~~ →
+  **enmendado 2026-08-09 (spec 002): sí se reclasifican** (`BEG`→`Religioso`,
+  `Secundario`→`Otro`). Al sincronizar `options`, dejarlos los mantendría pintados en blanco.
 - **Ciudad `categoria`** — `aldea·pueblo·ciudad·macropolis` (taxonomía del hexplorer/`tiendas.js`;
   determina inventario de tiendas + radio de seguridad).
 - **Quest `recompensa`** — posible item + posible oro, ambos opcionales.

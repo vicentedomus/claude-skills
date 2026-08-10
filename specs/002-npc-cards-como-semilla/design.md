@@ -79,12 +79,14 @@ sesión) y los cross-links sembrados (`ciudad`, `establecimiento`, `quests`).
 ### Retrieval sin CLI
 
 El PR 1 de QuestKeep produce `compendium/npc-catalog.json` — índice plano de las 3585 cards
-(76 KB gz) con `nombre · raza · tipo_npc · rol · faccion · avatar · fuente · slug`. La skill lo
-filtra con una línea de `python3`/`jq` por `tipo_npc` × `raza`, y luego lee la card completa del
-shard `npc-cards.<FUENTE>.json` (mediana 10 KB gz).
+(**478 KB en crudo, 89 KB gz**; medido) con `nombre · raza · tipo_npc · rol · faccion · avatar ·
+fuente · slug`. La skill lo filtra con una línea de `python3`/`jq` por `tipo_npc` × `raza`, y
+luego lee la card completa del shard `npc-cards.<FUENTE>.json` (mediana 10 KB gz).
 
-Sin ese catálogo, el fallback es un glob sobre los 36 shards — funciona igual, solo es más
-verboso. **La skill no queda bloqueada por el trabajo de QuestKeep.**
+Sin ese catálogo, el fallback es un glob sobre los 36 shards — más verboso y **casi** el mismo
+resultado: los shards traen el typo `Lider politico` sin acentos (7 filas) que el builder del
+catálogo normaliza, así que por glob esa vocación da 224 y por catálogo 231. **La skill no queda
+bloqueada por el trabajo de QuestKeep.**
 
 Cobertura medida por oficio, para saber cuándo la vía card-first tiene material:
 
