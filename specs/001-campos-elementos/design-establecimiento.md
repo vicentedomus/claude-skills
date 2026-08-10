@@ -43,11 +43,20 @@ empleados, y ya es su sección en la BD).
 | **Comercio / Herrería / Objetos mágicos** | **inventario** (rel items) · especialidad · rango de precios |
 | **Librería** | temática/colección · pieza rara · quién la frecuenta |
 | **Templo** | `deidad`(rel) · servicios (curación/bendición) · clero |
-| **Gremio** | **`clase_de_gremio`** (Ladrones · Mercaderes · Artesanos · Inventores · Arcano · Aventureros…) · `jerarquia_membresia` · **`fachada_vs_actividad`** 🎩 |
+| **Gremio** | **`cf_organizacion`** (Gremio de Aventureros · Gremio de Ladrones · Gremio de Comerciantes · Gremio de Herreros · Gremio de Inventores · Gremio de Magos · Consejo de Sabios Elfos · Cartel de Dobsil · Los Hijos de Shar) · `jerarquia_membresia` · **`fachada_vs_actividad`** 🎩 |
+
+> **Enmienda 2026-08-09 (spec 002):** era `clase_de_gremio`. Renombrado a `cf_organizacion` por
+> QuestKeep (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`): `clase` describe una
+> categoría y `Cartel de Dobsil` no es una categoría — el campo dice a qué **organización**
+> pertenece la sede (p. ej. *Mazo y Juramento* es la sede en Moria del `Gremio de Herreros`), por
+> eso sirve más allá de los gremios (un templo de Shar es sede de `Los Hijos de Shar`). Las 9
+> options son el canon real de Halo, no la taxonomía inventada de la fila original de esta tabla.
+> La lista vive como copia orientativa: la fuente de verdad es el overlay `entity_schemas`
+> (`campaign_slug='halo'`, `section='establecimientos'`).
 
 **Gremios unificados:** `Gremio de Ladrones` deja de ser un `tipo` propio → es `tipo:Gremio` +
-`clase_de_gremio:Ladrones` + su `fachada_vs_actividad`. Misma ficha, sin multiplicar tipos. El patrón
-subtipo recursa (tipo → perfil Gremio → clase).
+`cf_organizacion:Gremio de Ladrones` + su `fachada_vs_actividad`. Misma ficha, sin multiplicar tipos.
+El patrón subtipo recursa (tipo → perfil Gremio → organización).
 
 ---
 
@@ -61,7 +70,7 @@ subtipo recursa (tipo → perfil Gremio → clase).
 ## 5. Cómo la skill lo genera
 
 1. Ancla al **dueño** (genera/toma primero su ficha de NPC; el local lo refleja).
-2. Elige **tipo** → carga su perfil (Gremio pide además `clase_de_gremio`).
+2. Elige **tipo** → carga su perfil (Gremio pide además `cf_organizacion`).
 3. Flavor del grafo por tipo (comunidad-mercado/gremio para tiendas; deidad para templo) + la cultura
    de la `ciudad`, limando setting.
 4. Sesga exterior→interior con `detalle_ancla` y `gancho_interaccion` como campos propios.
@@ -70,7 +79,10 @@ subtipo recursa (tipo → perfil Gremio → clase).
 
 ## 6. Decisiones abiertas
 
-1. **Consistencia de taxonomía con `tipo_npc`:** hoy NPC tiene `Gremio` **y** `Gremio de Ladrones`
+1. ~~**Consistencia de taxonomía con `tipo_npc`:** hoy NPC tiene `Gremio` **y** `Gremio de Ladrones`
    separados. ¿Colapsar también a `Gremio` + una clase, para que NPC y Establecimiento compartan
-   taxonomía? (Pendiente de confirmación del DM — no aplicado aún.)
+   taxonomía? (Pendiente de confirmación del DM — no aplicado aún.)~~ **Resuelto** — cerrada por
+   `sql/migraciones/2026-08-09-gremios-unificados.sql` (cabecera), que cita este documento y esta
+   pregunta por nombre: NPC ya colapsó a `Gremio` en `2026-08-09-sync-vocabulario-npcs.sql`, y el
+   establecimiento se alineó con `cf_organizacion` (ver enmienda arriba).
 2. Set final de `tipo` de establecimiento (¿falta alguno recurrente en Halo?).

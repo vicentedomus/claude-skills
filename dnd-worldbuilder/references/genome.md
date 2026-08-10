@@ -35,6 +35,7 @@ El grafo da tres granos: **god-nodes** (abstracciones núcleo), **hyperedges** (
 
 | Rol | Capa | Comando |
 |-----|------|---------|
+| **NPC concreto (cualquier vocación con cobertura, salvo villano/antagonista)** | **npc-card** — es una persona entera, no un tema | `npc-catalog.json` filtrado por `tipo_npc`×`raza` (ver `npc.md`, «Semilla desde npc-cards») |
 | Cotidiano (comerciante, tabernero, oficio) | comunidad / god-node de oficio o tema | `graphify explain "<tema>"` o `query "<sustantivo>"` |
 | Sabor de setting (p. ej. gnómico/industrial) | god-node de raza/tema | `explain "Gnomes"`, `explain "Magic as Industry"` |
 | Facción / gremio / líder | comunidad-organización | `explain "<gremio>"` |
@@ -49,6 +50,12 @@ El grafo da tres granos: **god-nodes** (abstracciones núcleo), **hyperedges** (
 3. `path "A" "B"` solo funciona **intra-telaraña** (mismo setting); entre temas distintos → "No path".
 4. **Limar siempre** los nombres propios Y los tags de dominio del átomo (un nodo arrastra
    "Barovia/Shatrekvan/Ravenloft"). El grafo es museo/inspiración; **Supabase es la fuente de verdad**.
+5. **Para NPCs, las cards van primero y no necesitan el CLI.** El grafo es un catálogo de
+   *temas y arquetipos*; las 3585 npc-cards son *personas*. Para un NPC concreto se
+   descompone una card; el grafo se reserva para el tono de facción, el arquetipo de un
+   villano (hyperedge) y los otros 6 tipos de elemento. Las cards son JSON plano: se leen
+   con `python3`/`jq` aunque `graphify` no esté instalado — que es el caso en los
+   contenedores de Claude Code web.
 
 Si no hay grafo disponible, seguir con los principios narrativos (`principles.md`). Lo que se tome del
 grafo es *grounding de sabor*; el tono final lo dan el lore del mundo + los principios.

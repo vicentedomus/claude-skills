@@ -13,7 +13,10 @@
         {"text": "Resuelve tesoros y statblocks contra el ETL (data/5e/items.json y bestiary.json), NO contra las tablas items_catalog/monstruos casi vacías"},
         {"text": "Hace máximo 6 preguntas al DM agrupadas en un solo mensaje (no más)"},
         {"text": "La propuesta contiene ≥6 NPCs, con exactamente 2 marcados 'nuevo' y ≥4 marcados 'existente'"},
-        {"text": "Cada NPC (existente y nuevo) lleva 'Relación con la sesión' no vacía"}
+        {"text": "Cada NPC (existente y nuevo) lleva 'Relación con la sesión' no vacía"},
+        {"text": "Para los 2 NPCs marcados 'nuevo', parte de una npc-card del compendio cuando su tipo_npc tiene cobertura en el catálogo, en vez de inventar desde cero"},
+        {"text": "Cada NPC nuevo lleva 'Relación con la sesión' no vacía — la card no la aporta, la escribe la skill"},
+        {"text": "Si la card traía rol 'Antagonista' o 'Informante', lo mapea a las 3 options de la app (Enemigo / Neutral) y pone el matiz real en cf_relacion_party"}
       ]
     },
     {

@@ -49,7 +49,10 @@ inicio evita que el DM tenga que corregir cosas ya aprendidas.
 ## Paso 0.5 — Verificar graphify (el acceso a la musa)
 
 Antes del co-diseño, confirma que el CLI de graphify y el grafo están disponibles — el compendio
-es la **primera fuente de inspiración** para todo elemento nuevo (NPC, locación, gancho, tono):
+es la **primera fuente de inspiración** para todo elemento nuevo (locación, gancho, tono,
+villano/arquetipo). **Los NPCs concretos quedan fuera de este gate**: van primero por npc-card
+(`dnd-worldbuilder/references/npc.md` → «Semilla desde npc-cards»), JSON plano que no depende de
+que este CLI esté instalado.
 
 ```bash
 graphify --help                                          # ¿responde el CLI?
@@ -59,7 +62,7 @@ cd questkeep/compendium && graphify query "test"         # ¿hay graph.json?
 Si responde, úsalo por la **vía sancionada** (`graphify query "<tema>"`, `graphify explain "<nodo>"`,
 `graphify path "A" "B"`) — ver el principio "Compendio primero (la musa)" en el Paso 3. Si NO
 responde (no instalado / sin `graph.json`), **avísale al DM** y sigue con los principios narrativos
-como fallback.
+como fallback (para elementos que no sean NPC concreto).
 
 ---
 
@@ -127,8 +130,8 @@ WHERE n.ciudad_id = 'uuid_ciudad' AND NOT n.archived AND n.campaign_slug = 'halo
 > (669 filas `DMG'24` huérfanas, magic-only, sin commons) ni `monstruos` (~6 filas). El pool real es el
 > **ETL** que carga QuestKeep, leído directo del clon:
 >
-> - **Tesoros** → `questkeep/data/5e/items.json` (1941, XDMG 2024, con Common/Artifact).
-> - **Statblocks** → `questkeep/data/5e/bestiary.json` (711, XMM 2025; trae Commoner, Guard, Mage,
+> - **Tesoros** → `questkeep/data/5e/items.json` (2062, XDMG 2024, con Common/Artifact).
+> - **Statblocks** → `questkeep/data/5e/bestiary.json` (1169, XMM 2025; trae Commoner, Guard, Mage,
 >   Bandit Captain, Gladiator…).
 >
 > Delegar la resolución a `../dnd-worldbuilder/references/catalogos.md` (match_directo · reskin=homebrew
@@ -192,15 +195,17 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **Escenas posibles**: 3-5 escenas con objetivo + obstáculo cada una
 - **Secrets & Clues**: múltiples caminos a la misma información
 - **Mundo se sigue expandiendo**: 2 NPCs nuevos por sesión, bien integrados
-- **Compendio primero (la musa)**: para cualquier elemento NUEVO (NPC, locación, gancho, tono de
-  escena), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/`) por la
-  **vía sancionada del CLI**: `graphify query "<tema>"`, `graphify explain "<nodo>"`,
+- **Compendio primero (la musa)**: para cualquier elemento NUEVO (locación, gancho, tono de
+  escena, villano/arquetipo), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/`)
+  por la **vía sancionada del CLI**: `graphify query "<tema>"`, `graphify explain "<nodo>"`,
   `graphify path "A" "B"` (o lee `GRAPH_REPORT.md` para hyperedges/arquetipos). Toma un
   arquetipo/`theme`/`motif` como semilla, **limando los nombres propios Y los tags de dominio que no
   encajen**: el grafo es **multi-libro (~3.072 nodos / 377 archivos, NO solo Ravenloft)**, así que
   un nodo puede arrastrar el setting de su libro (p. ej. Batan trae el tag "Dominion of Shatrekvan"
   de Ravenloft, que no pega con goliaths) → quédate con el arquetipo, descarta el setting. Inventar
   desde cero es el último recurso. (El compendio es inspiración; Supabase es la fuente de verdad.)
+  **NPCs concretos no pasan por este CLI**: van por npc-card (ver más abajo, «2 nuevos» y
+  `dnd-worldbuilder/references/npc.md` → «Semilla desde npc-cards»), que no depende de graphify.
 - **Nada inventado**: todo secreto/gancho/pista nace de un hecho en BD o recap, o se marca como propuesta nueva a aprobar. No disfrazar flavor de NPC (p. ej. una línea de `notas_roleplay`) como secreto de trama.
 - **Consistencia causal**: si un NPC posee un objeto o sabe algo, debe haber una razón in-world explícita. Cazar plotholes antes de presentar (¿de dónde sacó X esa prueba/llave/carta?).
 - **Decisión con consecuencias**: cuando ofrezcas una elección importante, telegrafía la ruta alternativa para que los jugadores la vean, dale a cada rama su propio beat/combate, y cierra con una escena de Desenlace que enumere los resultados.
@@ -212,9 +217,12 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **4 existentes**: selecciona los más relevantes a la quest, ciudad o lugar objetivo de la sesión.
 - **2 nuevos**: genera frescos invocando el flujo de `dnd-worldbuilder` con `references/npc.md`
   (la **ficha rediseñada**: `cf_descripcion_fisica`/`cf_distintivo`/`cf_forma_de_hablar`/`cf_statblock`
-  + situacionales — ya **no** `primera_impresion`/`notas_roleplay`). Ese flujo consulta el **compendio**
-  primero (`genome.md`) — ánclalos a un arquetipo/`theme` del grafo (nombres limados) antes de inventar.
-  El `cf_statblock` sale del ETL por vocación (`catalogos.md`).
+  + situacionales — ya **no** `primera_impresion`/`notas_roleplay`).
+  **Primera opción: una npc-card del compendio** (`npc.md` → «Semilla desde npc-cards»):
+  filtra por `tipo_npc`×`raza`, descompón su prosa en los `cf_*` y **lima el setting**
+  (nombre nuevo; `faccion`/`familia` **nunca** se copian: son de Faerûn). Si la vocación no
+  tiene cobertura —`Proxeneta` no tiene ni una card—, dilo y cae al grafo (`genome.md`) o a
+  los principios. El `cf_statblock` se reverifica contra el ETL (`catalogos.md`).
 - Cada NPC (existente o nuevo) lleva el campo **"Relación con la sesión"**: qué rol narrativo cumple,
   por qué aparece, cómo se cruza con los objetivos. No vale dejarlo vacío.
 - Marca cada NPC con flag `existente` o `nuevo`. Este flag se preserva como snapshot histórico
@@ -241,7 +249,7 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 
 #### Tesoros — **del catálogo 5e VIGENTE (el ETL), nunca inventados.** Regla de prioridad estricta:
 
-> **Fuente correcta:** el catálogo vigente es el **ETL** `questkeep/data/5e/items.json` (1941, XDMG
+> **Fuente correcta:** el catálogo vigente es el **ETL** `questkeep/data/5e/items.json` (2062, XDMG
 > 2024, con Common/Artifact) — **no** la tabla `items_catalog` (669 filas `DMG'24` huérfanas, sin
 > commons). La tabla `items` son las **instancias** de campaña; `items_catalog` es el **store de
 > homebrew** (`es_homebrew`, `base`). Delegar a `../dnd-worldbuilder/references/catalogos.md`.
@@ -274,8 +282,8 @@ La skill hermana retorna:
 
 **Reglas estrictas para monstruos:**
 
-1. **Primero** busca un statblock del **ETL** (`questkeep/data/5e/bestiary.json`, 711) que encaje. Si
-   encaja, úsalo (`kind:official`). **No** la tabla `monstruos` (~6 filas) — es solo store de homebrew.
+1. **Primero** busca un statblock del **ETL** (`questkeep/data/5e/bestiary.json`, 1169) que encaje. Si
+   encaja, úsalo (`kind:compendium`). **No** la tabla `monstruos` (~6 filas) — es solo store de homebrew.
 2. **Solo si nada encaja**, `combate.md` aplica reskin: **fila homebrew** en `monstruos`
    (`es_homebrew`, `base`=oficial del ETL, **nunca el stat block**). Ver `catalogos.md`.
 3. **Nunca inventar** stat blocks.
@@ -351,15 +359,21 @@ Si el DM aprueba:
 -- Ficha rediseñada: los campos narrativos van en custom_data (cf_*), NO en las columnas
 -- primera_impresion/notas_roleplay (deprecadas). Los sensibles se listan en _hidden.
 INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, edad, conocido_jugadores, campaign_slug, custom_data)
-VALUES ('Nombre', 'Raza', 'tipo_npc (13 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
+VALUES ('Nombre', 'Raza', 'tipo_npc (18 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
   '{"cf_descripcion_fisica":"...","cf_distintivo":"...","cf_forma_de_hablar":"...",
-    "cf_statblock":{"kind":"official","name":"Noble","source":"XMM"},
+    "cf_statblock":{"kind":"compendium","name":"Noble","source":"XMM"},
     "cf_motivacion":"...","cf_secreto":"...",
     "_hidden":["cf_forma_de_hablar","cf_statblock","cf_motivacion","cf_secreto"]}'::jsonb)
 RETURNING id;
 ```
 El overlay `entity_schemas` (section='npcs') debe existir con esos `cf_*` — lo escribe `dnd-worldbuilder`
 tras confirmación (una vez por campaña). El `cf_statblock` se resuelve por vocación contra el ETL.
+
+`tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
+`Neutral`/`Aliado`/`Enemigo`: si la card de origen traía `Antagonista` o `Informante`,
+mapéalo (`Antagonista`→`Enemigo`, `Informante`→`Neutral`) y pon el matiz real en
+`cf_relacion_party`, que es solo-DM. Mismo mapeo que aplica el buscador de NPCs de la app,
+para que las dos vías no diverjan.
 
 Captura el `id` devuelto por cada INSERT. Usa esos `npc_id` reales en el bloque `bloque_npcs`
 del session_plan.

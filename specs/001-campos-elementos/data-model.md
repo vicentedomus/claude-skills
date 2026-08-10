@@ -9,7 +9,7 @@ QuestKeep los renderice. La narrativa/rationale por tipo vive en los `design-*.m
   ocultables por `custom_data._hidden`). Valores en `custom_data` de la fila.
 - **Tipos interactivos** disponibles: `text · textarea · number · select · checkbox · avatar ·
   select-rel · select-rel-multi · select-map · statblock`.
-- **Ref a catálogo** (`statblock` / item_base): `{kind:'official', name, source}` (ETL) o
+- **Ref a catálogo** (`statblock` / item_base): `{kind:'compendium', name, source}` (ETL) o
   `{kind:'homebrew', id}` (Supabase). Nunca inventar mecánica.
 - **subtipo→perfil**: el overlay = superset; la skill puebla solo el perfil del `subtipo` y manda el
   resto a `_hidden`.
@@ -22,7 +22,10 @@ QuestKeep los renderice. La narrativa/rationale por tipo vive en los `design-*.m
 
 ## NPC (`section='npcs'`)
 
-**baseOverrides:** `tipo_npc` options → las 13 canónicas (ver `design-npc.md`).
+**baseOverrides:** `tipo_npc` options → las **18** canónicas (ver `design-npc.md` §4).
+`rol` se queda en 3 (`Neutral`/`Aliado`/`Enemigo`): el eje fino es `cf_relacion_party`, que
+es solo-DM, mientras `rol` es público. Ambos array viven en `app.js` (`FORM_SCHEMAS.npcs`)
+— aplicados por QuestKeep en el PR del buscador de NPCs.
 
 | cf_ key | label | type | dmOnly | perfil |
 |---|---|---|---|---|
@@ -34,7 +37,6 @@ QuestKeep los renderice. La narrativa/rationale por tipo vive en los `design-*.m
 | `cf_secreto` | Secreto | textarea | ✓ | situacional |
 | `cf_relacion_party` | Relación con el party | select (Hostil→Aliado) | ✓ | situacional |
 | `cf_inspiracion` | Inspiración | text | ✓ | situacional |
-| `cf_clase_de_gremio` | Clase de gremio | select | — | solo `tipo=Gremio` |
 
 **Deprecados (lazy):** `primera_impresion`, `notas_roleplay`, `frase`. **Rels sembradas:** ciudad,
 establecimiento, faccion, familia, items_magicos, quests, lugares (ya en base).
@@ -91,7 +93,14 @@ dueno(rel npc), descripcion_exterior→exterior, descripcion_interior→interior
 - **Comercio/Herrería/Objetos mágicos:** `cf_inventario` (rel items) · `cf_especialidad` · `cf_precios`
 - **Librería:** `cf_coleccion` · `cf_pieza_rara`
 - **Templo:** `cf_deidad` (rel) · `cf_servicios` · `cf_clero`
-- **Gremio:** `cf_clase_de_gremio` (select) · `cf_jerarquia` · `cf_fachada_actividad` (dmOnly)
+- **Gremio:** `cf_organizacion` (select, 9 options canónicas de halo) · `cf_jerarquia` · `cf_fachada_actividad` (dmOnly)
+
+> **Enmienda 2026-08-09 (spec 002):** era `cf_clase_de_gremio`. Renombrado a `cf_organizacion`
+> por QuestKeep (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`): `clase` describe
+> una categoría y `Cartel de Dobsil` no es una categoría. El campo dice a qué **organización**
+> pertenece la sede, lo que además prepara el terreno para `npcs.faccion` (hoy al 0% en las 274
+> filas). Las options son las 9 organizaciones reales de los documentos del DM, no una taxonomía
+> inventada.
 
 **Rels:** empleados (inverse npcs), quests. `cf_inventario` respeta el tier de la `categoria` de la
 ciudad (`tiendas.js`).

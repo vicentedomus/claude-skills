@@ -54,6 +54,11 @@ profesional. Los datos viven en Supabase (PostgreSQL). Todas las consultas usan 
 skill `dnd-compendium` disponible (en este proyecto vive en `questkeep/compendium/graphify-out/`),
 es la **primera fuente de inspiración** — inventar desde cero es el último recurso.
 
+> **Para NPCs, empieza por las npc-cards, no por el grafo.** Son 3585 personas ya escritas
+> con esquema espejo de la tabla `npcs`, en JSON plano: no necesitan `graphify` ni que el
+> grafo esté disponible. Ver `references/npc.md` → «Semilla desde npc-cards». El grafo
+> sigue siendo la vía para temas, arquetipos, facciones y los otros 6 tipos de elemento.
+
 1. Identifica el tema/arquetipo de lo que vas a crear (p. ej. "villano trágico atado a un lugar",
    "facción de intriga", "bosque con algo antiguo y hambriento").
 2. Consúltalo por la **vía sancionada del CLI**: `graphify query "<tema>"`,

@@ -7,7 +7,7 @@ NPC (que ancla a statblock). Ver `catalogos.md` para la resolución ETL/homebrew
 
 | Capa | Qué es | Dónde |
 |------|--------|-------|
-| **TIPO — oficial** | la lista vigente (mecánica) | ETL `questkeep/data/5e/items.json` (1941) |
+| **TIPO — oficial** | la lista vigente (mecánica) | ETL `questkeep/data/5e/items.json` (2062) |
 | **TIPO — homebrew** | tu item customizado, reutilizable | `items_catalog` (`es_homebrew`, `base`) |
 | **INSTANCIA** | lo que un PJ trae en la bolsa | tabla `items` (`personaje_id`/`npc_portador_id`, `custom_data`) |
 

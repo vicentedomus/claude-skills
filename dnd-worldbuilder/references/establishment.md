@@ -26,9 +26,26 @@ continúa la experiencia, un gancho de interacción, un misterio menor.
 | **Comercio/Herrería/Objetos mágicos** | inventario (rel items) · especialidad · precios |
 | **Librería** | coleccion · pieza_rara |
 | **Templo** | deidad (rel) · servicios · clero |
-| **Gremio** | `cf_clase_de_gremio` (Ladrones·Mercaderes·Artesanos·Inventores·Arcano·Aventureros…) · jerarquia · fachada_vs_actividad 🎩 |
+| **Gremio** | `cf_organizacion` (los 9 del canon de Halo, ver abajo) · jerarquia · fachada_vs_actividad 🎩 |
 
-`Gremio de Ladrones` = `tipo:Gremio` + `cf_clase_de_gremio:Ladrones` (el patrón subtipo recursa).
+`Gremio de Ladrones` = `tipo:Gremio` + `cf_organizacion:Gremio de Ladrones` (el patrón subtipo
+recursa). **`cf_organizacion` no es una categoría, es la organización con nombre propio a la que
+pertenece la sede**: *Mazo y Juramento* es la sede en Moria del `Gremio de Herreros`. Por eso
+sirve más allá de los gremios — un templo de Shar es sede de `Los Hijos de Shar`.
+
+Los 9 valores canónicos vigentes en halo (2026-08-09):
+
+```
+Gremio de Aventureros · Gremio de Ladrones · Gremio de Comerciantes · Gremio de Herreros ·
+Gremio de Inventores · Gremio de Magos · Consejo de Sabios Elfos · Cartel de Dobsil ·
+Los Hijos de Shar
+```
+
+**La lista canónica no vive aquí.** Vive en el overlay `entity_schemas` de la campaña
+(`campaign_slug='halo'`, `section='establecimientos'`), que es lo que la app pinta. Esta copia es
+para orientarte sin conexión; **antes de proponer un valor nuevo, lee el `options` real del
+overlay** — si diverge, manda el overlay y esta lista está vieja.
+
 `cf_inventario` respeta el tier de la **`categoria` de la ciudad** (`tiendas.js`: aldea=Common →
 macropolis=Very Rare).
 
@@ -40,7 +57,7 @@ macropolis=Very Rare).
 ## Cómo se genera
 
 1. Ancla al **dueño** (genera/toma primero su ficha de NPC; el local lo refleja).
-2. Elige **`tipo`** → carga su perfil (Gremio pide `cf_clase_de_gremio`).
+2. Elige **`tipo`** → carga su perfil (Gremio pide `cf_organizacion`).
 3. Flavor del grafo por tipo (mercado/gremio para tiendas; deidad para templo) + la cultura de la
    `ciudad`, limando setting.
 4. Sesga exterior→interior con `cf_detalle_ancla` y `cf_gancho_interaccion` como campos propios.
