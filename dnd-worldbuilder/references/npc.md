@@ -135,6 +135,14 @@ opción, no la única.**
 **escena de primer encuentro** y una **frase de apertura**. Solo los rasgos mapean limpio.
 La escena y la frase son material de mesa, no ficha: o se descartan o alimentan la voz.
 
+**`cf_statblock`: la card propone, la vocación corrige.** Arriba (§Núcleo) el default es *por
+vocación* y aquí es *el de la card*: no es contradicción, es un orden. Parte del de la card
+—lo eligió quien escribió a esa persona concreta, y suele ser más fino que el genérico
+(*Kavil* el bibliotecario es `Mage`, no `Commoner`)—, **reverifícalo contra el ETL**, y quédate
+con el default por vocación de `catalogos.md` solo si el reskin cambió lo que el personaje sabe
+hacer. **Di cuál usaste y por qué**: es la línea de la ficha donde el DM detecta que el NPC pega
+más fuerte de lo que su descripción sugiere.
+
 ### Qué se conserva y qué se lima
 
 **Se conserva** (es por lo que la elegiste): `raza`, `tipo_npc`, `rol`, `estado`, y el

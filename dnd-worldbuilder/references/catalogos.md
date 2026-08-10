@@ -10,12 +10,18 @@ stats.
 
 | | Oficial (vigente) | Homebrew (derivado) |
 |---|---|---|
-| **Statblocks** | ETL `questkeep/data/5e/bestiary.json` (**711**, XMM 2025) → `SRD5E.bestiary` | tabla `monstruos` (`es_homebrew`, `base`) |
-| **Items** | ETL `questkeep/data/5e/items.json` (**1941**, XDMG 2024; incl. **Common/Artifact**) → `SRD5E.items` | `items_catalog` (`es_homebrew=true`, `base`) |
+| **Statblocks** | ETL `questkeep/data/5e/bestiary.json` (**1169**, XMM 2025) → `SRD5E.bestiary` | tabla `monstruos` (`es_homebrew`, `base`) |
+| **Items** | ETL `questkeep/data/5e/items.json` (**2062**, XDMG 2024; incl. **Common/Artifact**) → `SRD5E.items` | `items_catalog` (`es_homebrew=true`, `base`) |
 
-> ⚠️ **No usar** la tabla `monstruos` (solo ~6 filas) ni las 669 filas `DMG'24` de `items_catalog`
-> (huérfanas, magic-only, sin commons) como *fuente*: son stores de homebrew/curado, no el catálogo.
-> El pool real es el **ETL**. (Esto corrige los bugs de tesoros/monstruos del prep.)
+> ⚠️ **No usar** la tabla `monstruos` ni las filas `DMG'24` de `items_catalog` (huérfanas,
+> magic-only, sin commons) como *fuente*: son stores de homebrew/curado, no el catálogo. El pool
+> real es el **ETL**. (Esto corrige los bugs de tesoros/monstruos del prep.)
+
+> **Los conteos de arriba caducan; el archivo manda.** Se corrigieron el 2026-08-10 de 711/1941 a
+> **1169/2062**: el ETL se regeneró al añadir cuatro libros (questkeep#308) y estos documentos se
+> quedaron atrás, así que la skill creía tener un pool la mitad de grande. Si necesitas el número
+> exacto, **cuéntalo** (`python3 -c "import json;print(len(json.load(open('questkeep/data/5e/bestiary.json'))))"`)
+> en vez de citar esta tabla. Lo que **no** caduca es el reparto: oficial → ETL, homebrew → tabla.
 
 La skill corre server-side con acceso al clon de questkeep → **lee los JSON del ETL directo** para
 elegir. `bestiary.json` trae los statblocks NPC cotidianos: Commoner, Noble, Guard, Priest, Spy, Bandit,

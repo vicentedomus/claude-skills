@@ -130,8 +130,8 @@ WHERE n.ciudad_id = 'uuid_ciudad' AND NOT n.archived AND n.campaign_slug = 'halo
 > (669 filas `DMG'24` huérfanas, magic-only, sin commons) ni `monstruos` (~6 filas). El pool real es el
 > **ETL** que carga QuestKeep, leído directo del clon:
 >
-> - **Tesoros** → `questkeep/data/5e/items.json` (1941, XDMG 2024, con Common/Artifact).
-> - **Statblocks** → `questkeep/data/5e/bestiary.json` (711, XMM 2025; trae Commoner, Guard, Mage,
+> - **Tesoros** → `questkeep/data/5e/items.json` (2062, XDMG 2024, con Common/Artifact).
+> - **Statblocks** → `questkeep/data/5e/bestiary.json` (1169, XMM 2025; trae Commoner, Guard, Mage,
 >   Bandit Captain, Gladiator…).
 >
 > Delegar la resolución a `../dnd-worldbuilder/references/catalogos.md` (match_directo · reskin=homebrew
@@ -249,7 +249,7 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 
 #### Tesoros — **del catálogo 5e VIGENTE (el ETL), nunca inventados.** Regla de prioridad estricta:
 
-> **Fuente correcta:** el catálogo vigente es el **ETL** `questkeep/data/5e/items.json` (1941, XDMG
+> **Fuente correcta:** el catálogo vigente es el **ETL** `questkeep/data/5e/items.json` (2062, XDMG
 > 2024, con Common/Artifact) — **no** la tabla `items_catalog` (669 filas `DMG'24` huérfanas, sin
 > commons). La tabla `items` son las **instancias** de campaña; `items_catalog` es el **store de
 > homebrew** (`es_homebrew`, `base`). Delegar a `../dnd-worldbuilder/references/catalogos.md`.
@@ -282,7 +282,7 @@ La skill hermana retorna:
 
 **Reglas estrictas para monstruos:**
 
-1. **Primero** busca un statblock del **ETL** (`questkeep/data/5e/bestiary.json`, 711) que encaje. Si
+1. **Primero** busca un statblock del **ETL** (`questkeep/data/5e/bestiary.json`, 1169) que encaje. Si
    encaja, úsalo (`kind:official`). **No** la tabla `monstruos` (~6 filas) — es solo store de homebrew.
 2. **Solo si nada encaja**, `combate.md` aplica reskin: **fila homebrew** en `monstruos`
    (`es_homebrew`, `base`=oficial del ETL, **nunca el stat block**). Ver `catalogos.md`.
