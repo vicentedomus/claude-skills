@@ -52,6 +52,12 @@ viejos los conservan; los nuevos usan los campos estructurados. Migración perez
 
 ## `tipo_npc` — options canónicas (18)
 
+**La lista canónica no vive aquí.** Vive en el overlay `entity_schemas` de la campaña
+(`campaign_slug='halo'`, `section='npcs'` → `baseOverrides`), que es lo que la app pinta. Esta
+copia es orientativa y fecha del 2026-08-09; **antes de proponer un valor nuevo, lee el `options`
+real del overlay** (`catalogos.md` → «Dónde vive el vocabulario de los selects») — si diverge,
+manda el overlay y esta lista está vieja.
+
 `'' · Comerciante · Tabernero · Herrero · Alquimista · Minero · Granjero · Arcanista ·
 Bibliotecario · Religioso · Guardia · Cazador · Aventurero · Criminal · Proxeneta ·
 Noble · Líder político · Gremio · Otro`.
