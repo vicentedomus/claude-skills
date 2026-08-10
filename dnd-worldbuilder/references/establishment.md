@@ -42,7 +42,7 @@ Los Hijos de Shar
 ```
 
 **La lista canónica no vive aquí.** Vive en el overlay `entity_schemas` de la campaña
-(`campaign_slug='halo'`, `entity='establecimientos'`), que es lo que la app pinta. Esta copia es
+(`campaign_slug='halo'`, `section='establecimientos'`), que es lo que la app pinta. Esta copia es
 para orientarte sin conexión; **antes de proponer un valor nuevo, lee el `options` real del
 overlay** — si diverge, manda el overlay y esta lista está vieja.
 

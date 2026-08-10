@@ -1,14 +1,14 @@
 # NPC — Referencia de Entidad
 
-Un NPC se genera con el **genoma de identidad** (`genome.md`): 5 átomos try-and-tested del grafo,
-limados y fusionados con coherencia. La ficha ya **no** son dos blobs de prosa — son campos
+Un NPC se genera con el **genoma de identidad** (`genome.md`): 5 átomos try-and-tested de una
+npc-card o del grafo, limados y fusionados con coherencia. La ficha ya **no** son dos blobs de prosa — son campos
 estructurados y glanceables para que el DM **describa e interprete ágil** en mesa.
 
 ## Genoma → campos
 
 | Slot | Campo |
 |------|-------|
-| 1 · Vocación | `tipo_npc` (routea la extracción del grafo) |
+| 1 · Vocación | `tipo_npc` (routea la extracción: card o grafo) |
 | 2 · Motor | `cf_motivacion` |
 | 3 · Distintivo | `cf_distintivo` |
 | 4 · Twist | `cf_secreto` (magnitud según `rol`) |
@@ -38,7 +38,7 @@ estructurados y glanceables para que el DM **describa e interprete ágil** en me
 rels sembradas: `establecimiento`, `faccion`, `familia`, `items_magicos`, `quests`, `lugares`.
 
 > **`cf_clase_de_gremio` se retiró** (2026-08-09). La clase es **del gremio**, no de la
-> persona: en halo, **16 de los 24** NPCs `tipo_npc=Gremio` ya apuntan a su gremio por
+> persona: en halo, **18 de los 24** NPCs `tipo_npc=Gremio` ya apuntan a su gremio por
 > `establecimiento_id`, y es el **establecimiento** quien lleva la organización, hoy en
 > **`cf_organizacion`** (*Hermandad de los Sellos* = `Gremio de Aventureros`; *La Sala de los
 > Juramentos* = `Gremio de Ladrones`; *Mazo y Juramento* = `Gremio de Herreros`). Un campo en
@@ -56,7 +56,7 @@ viejos los conservan; los nuevos usan los campos estructurados. Migración perez
 Bibliotecario · Religioso · Guardia · Cazador · Aventurero · Criminal · Proxeneta ·
 Noble · Líder político · Gremio · Otro`.
 
-Ampliado de 13 a 18 el 2026-08-09: las 6 nuevas (`Guardia`, `Criminal`, `Aventurero`,
+Ampliado de 12 a 18 el 2026-08-09: las 6 nuevas (`Guardia`, `Criminal`, `Aventurero`,
 `Noble`, `Minero`, `Granjero`) cubren **1123 de las 3585 npc-cards (31%)**. El barrido
 original de spec 001 fue sobre la tabla `npcs`, cuando las cards aún no existían. Con
 estas 18, los 17 valores distintos del compendio quedan cubiertos al 100%.
@@ -80,7 +80,7 @@ cards:  persona entera  → descomponer en 5 slots → limar setting → NPC
 
 ### Retrieval
 
-Índice plano (76 KB): `questkeep/compendium/npc-catalog.json`, con claves cortas
+Índice plano (478 KB en crudo, 89 KB comprimido): `questkeep/compendium/npc-catalog.json`, con claves cortas
 `n·r·t·ro·f·a·s·sl` = nombre, raza, tipo_npc, rol, faccion, avatar_url, fuente, slug.
 
 ```bash
@@ -101,7 +101,9 @@ print([c for c in json.load(open('questkeep/compendium/npc-cards.TFTYP-TFOF.json
 ```
 
 Si `npc-catalog.json` aún no existe (lo genera QuestKeep), el fallback es un glob sobre
-los 36 `npc-cards.*.json` — más verboso, mismo resultado.
+los 36 `npc-cards.*.json` — más verboso, y **no da el mismo resultado**: los shards traen
+variantes sin acentos (p. ej. `Lider politico`, 7 filas) que el catálogo normaliza. Por
+glob, `Líder político` da 224; por catálogo, 231 (la cifra de la tabla de abajo).
 
 **Cobertura por vocación** (para saber cuándo esta vía aplica):
 
@@ -170,8 +172,9 @@ el party cree que es; `cf_relacion_party` = lo que de verdad siente.**
 
 ## Cómo se genera
 
-1. **Semilla** desde el grafo por `tipo_npc × rol` (`genome.md`): cotidiano → comunidad/god-node de
-   oficio; villano → hyperedge. Limar setting.
+1. **Semilla**: primero una npc-card (§«Semilla desde npc-cards»); si la vocación no tiene
+   cobertura, **o es villano/arquetipo**, cae al grafo por `tipo_npc × rol` (`genome.md`):
+   cotidiano → comunidad/god-node de oficio; villano → hyperedge. Limar setting en ambos casos.
 2. **Vocación** fija el `tipo_npc` y el **statblock default** (`catalogos.md`).
 3. **Fusión coherente:** `cf_motivacion` explica la vocación · `cf_distintivo` la expresa ·
    `cf_secreto` tensiona el `rol` · `cf_forma_de_hablar` la tiñe (humor coherente con la cultura).
