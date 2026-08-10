@@ -49,7 +49,10 @@ inicio evita que el DM tenga que corregir cosas ya aprendidas.
 ## Paso 0.5 — Verificar graphify (el acceso a la musa)
 
 Antes del co-diseño, confirma que el CLI de graphify y el grafo están disponibles — el compendio
-es la **primera fuente de inspiración** para todo elemento nuevo (NPC, locación, gancho, tono):
+es la **primera fuente de inspiración** para todo elemento nuevo (locación, gancho, tono,
+villano/arquetipo). **Los NPCs concretos quedan fuera de este gate**: van primero por npc-card
+(`dnd-worldbuilder/references/npc.md` → «Semilla desde npc-cards»), JSON plano que no depende de
+que este CLI esté instalado.
 
 ```bash
 graphify --help                                          # ¿responde el CLI?
@@ -59,7 +62,7 @@ cd questkeep/compendium && graphify query "test"         # ¿hay graph.json?
 Si responde, úsalo por la **vía sancionada** (`graphify query "<tema>"`, `graphify explain "<nodo>"`,
 `graphify path "A" "B"`) — ver el principio "Compendio primero (la musa)" en el Paso 3. Si NO
 responde (no instalado / sin `graph.json`), **avísale al DM** y sigue con los principios narrativos
-como fallback.
+como fallback (para elementos que no sean NPC concreto).
 
 ---
 
@@ -192,15 +195,17 @@ Principios guía (aplican a todas las opciones que ofrezcas):
 - **Escenas posibles**: 3-5 escenas con objetivo + obstáculo cada una
 - **Secrets & Clues**: múltiples caminos a la misma información
 - **Mundo se sigue expandiendo**: 2 NPCs nuevos por sesión, bien integrados
-- **Compendio primero (la musa)**: para cualquier elemento NUEVO (NPC, locación, gancho, tono de
-  escena), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/`) por la
-  **vía sancionada del CLI**: `graphify query "<tema>"`, `graphify explain "<nodo>"`,
+- **Compendio primero (la musa)**: para cualquier elemento NUEVO (locación, gancho, tono de
+  escena, villano/arquetipo), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/`)
+  por la **vía sancionada del CLI**: `graphify query "<tema>"`, `graphify explain "<nodo>"`,
   `graphify path "A" "B"` (o lee `GRAPH_REPORT.md` para hyperedges/arquetipos). Toma un
   arquetipo/`theme`/`motif` como semilla, **limando los nombres propios Y los tags de dominio que no
   encajen**: el grafo es **multi-libro (~3.072 nodos / 377 archivos, NO solo Ravenloft)**, así que
   un nodo puede arrastrar el setting de su libro (p. ej. Batan trae el tag "Dominion of Shatrekvan"
   de Ravenloft, que no pega con goliaths) → quédate con el arquetipo, descarta el setting. Inventar
   desde cero es el último recurso. (El compendio es inspiración; Supabase es la fuente de verdad.)
+  **NPCs concretos no pasan por este CLI**: van por npc-card (ver más abajo, «2 nuevos» y
+  `dnd-worldbuilder/references/npc.md` → «Semilla desde npc-cards»), que no depende de graphify.
 - **Nada inventado**: todo secreto/gancho/pista nace de un hecho en BD o recap, o se marca como propuesta nueva a aprobar. No disfrazar flavor de NPC (p. ej. una línea de `notas_roleplay`) como secreto de trama.
 - **Consistencia causal**: si un NPC posee un objeto o sabe algo, debe haber una razón in-world explícita. Cazar plotholes antes de presentar (¿de dónde sacó X esa prueba/llave/carta?).
 - **Decisión con consecuencias**: cuando ofrezcas una elección importante, telegrafía la ruta alternativa para que los jugadores la vean, dale a cada rama su propio beat/combate, y cierra con una escena de Desenlace que enumere los resultados.

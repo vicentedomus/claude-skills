@@ -105,8 +105,12 @@ aplica y se sigue con el grafo o los principios. **La card es la primera opción
 Cruzando `npcs.establecimiento_id → establecimientos` en halo, esa decisión se tomó sin ver que
 **el dato ya existe**:
 
-- **16 de los 24** NPCs de gremio ya apuntan a su gremio, y el establecimiento **ya lleva la
-  clase en su `tipo`**: *Hermandad de los Sellos* (Evermere) = `Gremio de Aventureros`; *La
+- **18 de 24** NPCs de gremio ya apuntan a su gremio (16/24 al medir esto, antes de que
+  `sql/migraciones/2026-08-09-sync-vocabulario-npcs.sql` asignara `establecimiento_id` a los
+  `Gremio de Ladrones` antes de plegarlos a `Gremio` — más fuerte, no distinto), y el
+  establecimiento ~~**ya lleva la clase en su `tipo`**~~ **lleva la clase en `cf_organizacion`**
+  (ver «Actualización 2026-08-10» abajo — al escribir esto todavía no existía ese campo):
+  *Hermandad de los Sellos* (Evermere) = `Gremio de Aventureros`; *La
   Sala de los Juramentos* (Rockwood) = `Gremio de Ladrones`; *Mazo y Juramento* (Moria) = el
   gremio de herreros de la ciudad; + 13 salas de contrato, una por ciudad.
 - La clase es **del gremio**, no de la persona. El NPC la hereda por la relación.

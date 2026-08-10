@@ -82,8 +82,11 @@ inspiración específica del grafo) · `faccion` · `familia` · `establecimient
 es recurrente).
 
 > **Enmienda 2026-08-09 (spec 002): `cf_clase_de_gremio` se retira del NPC.** Cruzando
-> `npcs.establecimiento_id → establecimientos` en halo, **16 de los 24** NPCs
-> `tipo_npc=Gremio` ya apuntan a su gremio, y es el **establecimiento** quien lleva la
+> `npcs.establecimiento_id → establecimientos` en halo, **18 de 24** NPCs
+> `tipo_npc=Gremio` ya apuntan a su gremio (16/24 al momento de esta enmienda, antes de que
+> `sql/migraciones/2026-08-09-sync-vocabulario-npcs.sql` asignara `establecimiento_id` a los
+> `Gremio de Ladrones` antes de plegarlos a `Gremio` — el argumento no cambia, es más fuerte), y
+> es el **establecimiento** quien lleva la
 > organización — hoy en `cf_organizacion`: *Hermandad de los Sellos* (Evermere) = `Gremio de
 > Aventureros`, *La Sala de los Juramentos* (Rockwood) = `Gremio de Ladrones`, *Mazo y
 > Juramento* (Moria) = `Gremio de Herreros`. La clase es del gremio, no de la persona: el
@@ -95,7 +98,8 @@ es recurrente).
 > lleva **`cf_organizacion`** (label «Organización»), con los 9 valores canónicos de Halo
 > (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`). El nombre cambió porque
 > `clase` describe una categoría y *Cartel de Dobsil* no lo es: el campo dice **a qué
-> organización pertenece la sede**. Ver la Task 6 del plan de spec 002.
+> organización pertenece la sede**. Ver `specs/002-npc-cards-como-semilla/design.md`
+> (§«Enmiendas a spec 001»), donde vive el argumento completo.
 
 ### Fuera (removidos del modelo previo)
 
