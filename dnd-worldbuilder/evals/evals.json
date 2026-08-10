@@ -42,6 +42,22 @@
       "prompt": "Diseña un combate para el party en las bodegas del canal bajo.",
       "expected_output": "Encounter Axis (1 Protein + ≥2 ejes). Monstruos resueltos contra el ETL (data/5e/bestiary.json), no la tabla monstruos de 6 filas — flag match_directo|reskin. Dificultad calibrada con la tabla XP XDMG 2024 contra el party real. Reskin como homebrew (base) si aplica, con las 3 capas sensoriales.",
       "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "Genera un NPC nuevo para Moria: un herrero enano que trabaje en el gremio de la ciudad.",
+      "expected_output": "La skill consulta primero las npc-cards del compendio filtrando por tipo_npc/raza, elige una como semilla, la descompone en los campos cf_* de la ficha y lima el setting de origen (nombre, facción, topónimos) antes de proponerla al DM.",
+      "files": [],
+      "assertions": [
+        {"text": "Consulta las npc-cards (compendium/npc-catalog.json o los npc-cards.*.json) filtrando por tipo_npc y raza ANTES de invocar graphify o de inventar desde cero"},
+        {"text": "No ejecuta `graphify` como primer paso para un NPC concreto, y no se bloquea si el CLI no está instalado"},
+        {"text": "Descompone la prosa de la card en los campos estructurados cf_descripcion_fisica / cf_distintivo / cf_forma_de_hablar / cf_motivacion / cf_secreto, en vez de copiar los blobs a primera_impresion / notas_roleplay"},
+        {"text": "NO copia `faccion` ni `familia` de la card: son de otro mundo (Faerûn/Barovia). Las remapea a una facción real de Halo o las deja vacías"},
+        {"text": "El nombre propuesto no es el de la card salvo que el DM lo pida: se propone uno coherente con la cultura del lugar de Halo"},
+        {"text": "Anota la procedencia en cf_inspiracion con el nombre de la card y su fuente"},
+        {"text": "Reverifica cf_statblock contra questkeep/data/5e/bestiary.json en vez de copiar el de la card a ciegas"},
+        {"text": "Si la vocación pedida no tiene cobertura en el catálogo (p. ej. Proxeneta), lo dice y cae al grafo o a los principios narrativos en vez de forzar una card que no encaja"}
+      ]
     }
   ]
 }
