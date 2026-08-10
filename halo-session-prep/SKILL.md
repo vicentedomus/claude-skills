@@ -361,7 +361,7 @@ Si el DM aprueba:
 INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, edad, conocido_jugadores, campaign_slug, custom_data)
 VALUES ('Nombre', 'Raza', 'tipo_npc (18 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
   '{"cf_descripcion_fisica":"...","cf_distintivo":"...","cf_forma_de_hablar":"...",
-    "cf_statblock":{"kind":"official","name":"Noble","source":"XMM"},
+    "cf_statblock":{"kind":"compendium","name":"Noble","source":"XMM"},
     "cf_motivacion":"...","cf_secreto":"...",
     "_hidden":["cf_forma_de_hablar","cf_statblock","cf_motivacion","cf_secreto"]}'::jsonb)
 RETURNING id;
