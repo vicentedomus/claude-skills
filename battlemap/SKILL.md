@@ -249,6 +249,19 @@ solo-imagen, sin brief. No es un error y no hace falta avisar — pasa a menudo.
 Si el texto de Supabase y el brief estructural se contradicen, manda Supabase: la semilla
 aporta planta, no historia.
 
+### 6. Límites conocidos (medidos el 2026-08-11, aceptados por el DM)
+
+- **Planta simple = más parecido al original.** Con una semilla de ~70 salas el modelo
+  recompone de verdad; con una de ~13 la traza casi tal cual. El arte siempre sale propio,
+  pero el plano de una semilla sencilla es reconocible. Si el mapa importa que no lo sea,
+  prefiere una semilla con muchas salas.
+- **Las semillas de varias plantas se leen como una sola.** Los mapas oficiales dibujan los
+  pisos lado a lado y el modelo los fusiona en un edificio contiguo. Si la miniatura enseña
+  dos o más bloques separados, avísalo al DM: el resultado tendrá todas las salas al mismo
+  nivel.
+- **La rejilla 27×15 no siempre aparece**, aunque el prompt la pida. Si el mapa es para la TV
+  con miniaturas, compruébala antes de darlo por bueno y, si falta, pídela en una edición.
+
 ---
 
 ## Paso 2 — Optimización del prompt
