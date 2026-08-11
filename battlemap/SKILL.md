@@ -160,18 +160,20 @@ node compendium/query-map-index.mjs --tipo=taberna,casa --ambiente=urbano \
 
 - `--salas` descarta los mapas que no declaran salas: sin salas no hay planta que copiar.
 - `--cuadros=40x25` es el **techo de cordura**, y no es 27×15 a propósito. La planta se
-  reencaja en la pantalla (ver Paso 2), así que filtrar a los que ya caben descartaría el
-  75% del catálogo. El techo solo deja fuera los pósters de aventura entera, que no se
-  pueden reencajar sin inventar otro mapa.
+  reencaja en la pantalla (ver Paso 2), así que filtrar a los que ya caben en 27×15
+  descartaría el 75% de los mapas que declaran grid (702 de 936). El techo de 40×25 solo
+  deja fuera los pósters de aventura entera, que no se pueden reencajar sin inventar otro
+  mapa.
 
 Mirar las miniaturas de los candidatos y **presentar los 3 mejores** al DM (el `--top=5`
-da margen para descartar los que no encajen con la escena):
+da margen para descartar los que no encajen con la escena). Salida real de ese comando
+(recortada a 3 — el script imprime también las URLs de imagen y miniatura de cada uno):
 
 ```
 Semillas candidatas:
-1. [CoS] Death House · 28 salas · 23×23 cuadros
-2. [BGDIA] Idyllglen · 12 salas · 24×16 cuadros
-3. [WDH] The Yawning Portal · 6 salas · 17×9 cuadros
+1. [WDH] Cassalanter Villa · 38 salas · 15x18 cuadros
+2. [WDH] Gralhund Villa · 22 salas · 13x18 cuadros
+3. [TOA] Map 1.2: Merchant Prince's Villa · 19 salas · 36x25 cuadros
 ```
 
 El DM elige un número, pide otros candidatos, o dice «sin semilla».
@@ -182,7 +184,7 @@ Nunca insistir con otras facetas más de una vez.
 ### 3. Bajar la semilla
 
 ```bash
-curl -sS -o /tmp/seed.webp \
+curl -fsS -o /tmp/seed.webp \
   "https://raw.githubusercontent.com/5etools-mirror-3/5etools-img/main/<path>"
 ```
 
@@ -193,8 +195,15 @@ sin semilla.
 ### 4. Extraer el brief estructural (filtro de lore)
 
 El mapa elegido suele traer texto en `compendium/map-descriptions.json` (campo `.d`, 656
-de 1028 lo tienen). De ese texto se conserva **solo lo estructural** y se descarta lo
-narrativo, para que el lore de Reinos Olvidados no se cuele en un mapa de Halo.
+de 1028 lo tienen). Es un objeto keyed por `path` (~580 KB), así que se extrae la entrada
+suelta en vez de leer el archivo entero:
+
+```bash
+node -e "console.log(require('./compendium/map-descriptions.json')['<path>']?.d || '(sin descripción)')"
+```
+
+De ese texto se conserva **solo lo estructural** y se descarta lo narrativo, para que el
+lore de Reinos Olvidados no se cuele en un mapa de Halo.
 
 238 mapas tienen además una **lista de salas** — pero solo en `place-index.json`, que pesa
 2.5 MB, así que se extrae la entrada suelta en vez de leer el archivo entero:
@@ -319,7 +328,7 @@ Prompt optimizado:
 → Piso de madera desgastada, muros de piedra con marco de madera
 → Luz de velas y chimenea, sombras suaves
 → Props: mesas volcadas, sillas rotas, charcos de cerveza, espejo roto, barriles
-→ Semilla: planta de [BGDIA] Idyllglen (12 salas), reencajada a 27×15
+→ Semilla: planta de [WDH] Cassalanter Villa (38 salas), reencajada a 27×15
 → Grid 27×15, sin tokens
 ```
 
@@ -396,6 +405,12 @@ pasa sin convertir):
 scripts/gen-image.sh --prompt-file prompt.txt --out battlemaps/battlemap-X.png \
   --aspect 16:9 --ref /tmp/seed.webp
 ```
+
+**Límite del fallback: una sola imagen adjunta.** `--edit` y `--ref` escriben la misma
+variable en el script, así que si hay sketch (Paso 1b) **y** semilla (Paso 1c) a la vez,
+gana el que se pase último en la línea de comandos — el otro se ignora en silencio. El MCP
+(`images[]`, Paso 3) sí admite las dos. Si ambas existen y hay que usar el fallback, **manda
+la semilla** (`--ref`): aporta planta real, el sketch es solo un boceto de layout.
 
 El script construye el body con `jq` (escapado seguro), respeta el CA bundle del proxy si existe,
 decodifica el PNG de `inlineData`, y reporta errores de la API (HTTP, safety, cuota). El resto del
