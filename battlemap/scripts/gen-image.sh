@@ -55,10 +55,13 @@ TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 # Body JSON (jq escapa el prompt). Con --edit, adjunta la imagen base inline.
 if [ -n "$EDIT" ]; then
   [ -f "$EDIT" ] || { echo "ERROR: la imagen adjunta no existe: $EDIT" >&2; exit 1; }
-  B64="$(base64 -w0 "$EDIT" 2>/dev/null || base64 "$EDIT" | tr -d '\n')"
+  # El base64 va por ARCHIVO, no por --arg: en Linux un solo argumento no puede pasar de
+  # ~128 KB (MAX_ARG_STRLEN), y una imagen real da megabytes — con --arg, jq muere con
+  # "Argument list too long". Un .webp de semilla de 772 KB son 1.03 MB en base64.
+  base64 -w0 "$EDIT" > "$TMP/b64.txt" 2>/dev/null || base64 "$EDIT" | tr -d '\n' > "$TMP/b64.txt"
   MIME="$(file -b --mime-type "$EDIT" 2>/dev/null || echo image/png)"
-  jq -n --arg p "$PROMPT" --arg d "$B64" --arg m "$MIME" --arg a "$ASPECT" \
-    '{contents:[{parts:[{text:$p},{inlineData:{mimeType:$m,data:$d}}]}],generationConfig:{responseModalities:["IMAGE"],imageConfig:{aspectRatio:$a}}}' \
+  jq -n --arg p "$PROMPT" --rawfile d "$TMP/b64.txt" --arg m "$MIME" --arg a "$ASPECT" \
+    '{contents:[{parts:[{text:$p},{inlineData:{mimeType:$m,data:($d|rtrimstr("\n"))}}]}],generationConfig:{responseModalities:["IMAGE"],imageConfig:{aspectRatio:$a}}}' \
     > "$TMP/body.json"
 else
   jq -n --arg p "$PROMPT" --arg a "$ASPECT" \
