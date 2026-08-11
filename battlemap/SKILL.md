@@ -168,9 +168,9 @@ da margen para descartar los que no encajen con la escena):
 
 ```
 Semillas candidatas:
-1. [BGDIA] Idyllglen · 12 salas · 24×16 cuadros
-2. [WDH] The Yawning Portal · 6 salas · 17×9 cuadros
-3. [CoS] Death House · 28 salas · 23×23 cuadros
+1. [CoS] Death House · 28 salas · 23×23 cuadros
+2. [BGDIA] Idyllglen · 12 salas · 24×16 cuadros
+3. [WDH] The Yawning Portal · 6 salas · 17×9 cuadros
 ```
 
 El DM elige un número, pide otros candidatos, o dice «sin semilla».
@@ -191,7 +191,7 @@ sin semilla.
 
 ### 4. Extraer el brief estructural (filtro de lore)
 
-El mapa elegido suele traer texto en `compendium/map-descriptions.json` (campo `.d`, 755
+El mapa elegido suele traer texto en `compendium/map-descriptions.json` (campo `.d`, 656
 de 1028 lo tienen). De ese texto se conserva **solo lo estructural** y se descarta lo
 narrativo, para que el lore de Reinos Olvidados no se cuele en un mapa de Halo.
 
@@ -229,8 +229,8 @@ Ejemplo del filtro:
 
 El brief se escribe **en inglés**, porque va directo al prompt.
 
-**Si el mapa no tiene descripción** (49 casos del catálogo): semilla solo-imagen, sin
-brief. No es un error, no hace falta avisar.
+**Si el mapa no tiene descripción** (372 del catálogo, más de un tercio): semilla
+solo-imagen, sin brief. No es un error y no hace falta avisar — pasa a menudo.
 
 ### 5. Regla de precedencia
 
