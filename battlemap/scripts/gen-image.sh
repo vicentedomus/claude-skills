@@ -12,7 +12,8 @@
 # Opciones:
 #   --aspect   16:9 (default) | 1:1 | 9:16 | 3:2 | 4:3 | 3:4
 #   --model    gemini-2.5-flash-image (default) | gemini-3-pro-image-preview | gemini-3.1-flash-image-preview
-#   --edit     IMG.png   imagen base para edición iterativa (Paso 4); se pasa al modelo
+#   --edit     IMG.png   imagen adjunta que se pasa al modelo (edición iterativa, Paso 4)
+#   --ref      IMG.webp  sinónimo de --edit; úsalo cuando la imagen es semilla estructural
 #   --api-key  KEY       (default: $GEMINI_API_KEY)
 #
 # Requiere: bash, curl, jq, base64, file.
@@ -33,9 +34,9 @@ while [ $# -gt 0 ]; do
     --out)         OUT="$2"; shift 2;;
     --aspect)      ASPECT="$2"; shift 2;;
     --model)       MODEL="$2"; shift 2;;
-    --edit)        EDIT="$2"; shift 2;;
+    --edit|--ref)  EDIT="$2"; shift 2;;
     --api-key)     API_KEY="$2"; shift 2;;
-    -h|--help)     sed -n '2,20p' "$0"; exit 0;;
+    -h|--help)     sed -n '2,19p' "$0"; exit 0;;
     *) echo "Opción desconocida: $1" >&2; exit 2;;
   esac
 done
@@ -53,7 +54,7 @@ TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
 # Body JSON (jq escapa el prompt). Con --edit, adjunta la imagen base inline.
 if [ -n "$EDIT" ]; then
-  [ -f "$EDIT" ] || { echo "ERROR: --edit no existe: $EDIT" >&2; exit 1; }
+  [ -f "$EDIT" ] || { echo "ERROR: la imagen adjunta no existe: $EDIT" >&2; exit 1; }
   B64="$(base64 -w0 "$EDIT" 2>/dev/null || base64 "$EDIT" | tr -d '\n')"
   MIME="$(file -b --mime-type "$EDIT" 2>/dev/null || echo image/png)"
   jq -n --arg p "$PROMPT" --arg d "$B64" --arg m "$MIME" --arg a "$ASPECT" \
