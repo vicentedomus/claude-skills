@@ -354,11 +354,6 @@ Después de generar:
 3. Informar el costo real (viene en la respuesta del MCP)
 4. Ofrecer opciones:
 
-**Si Gemini rechaza la generación por safety con la semilla adjunta:** reportarlo y
-reintentar **sin semilla**, con el mismo prompt menos el bloque `[SEMILLA]`. La semilla es
-un plus, nunca un requisito: ningún fallo de búsqueda, descarga o safety puede dejar al DM
-sin mapa.
-
 ```
 Mapa generado: [ruta]
 Costo: $[costo]
@@ -369,6 +364,11 @@ Costo: $[costo]
 • Procesar — crop, resize, o cambiar formato
 • Listo — guardar y terminar
 ```
+
+**Si Gemini rechaza la generación por safety con la semilla adjunta:** reportarlo y
+reintentar **sin semilla**, con el mismo prompt menos el bloque `[SEMILLA]`. La semilla es
+un plus, nunca un requisito: ningún fallo de búsqueda, descarga o safety puede dejar al DM
+sin mapa.
 
 ---
 
