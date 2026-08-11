@@ -67,10 +67,11 @@ Presentar siempre antes de generar:
 ```
 📍 Escena: [descripción corta]
 🎨 Estilo: [estilo] | [ambientación] | [hora]
+🗺️ Semilla: [FUENTE] título · N salas · CxF cuadros   ← omitir la línea si no hay
 📐 Grid: 27×15 (TV 32") | [aspecto] | [resolución]
 ✏️ Sketch: [sí/no]
 💰 Costo: ~$0.04
-¿Generar? (o ajusta lo que quieras)
+¿Generar? (o «sin semilla», o ajusta lo que quieras)
 ```
 
 Si el usuario no ha mencionado sketch, agregar al final:
@@ -273,11 +274,33 @@ Agregar SIEMPRE estos elementos al prompt:
 - `"The map should contain a visible grid of exactly 27 columns by 15 rows of equal squares"` (solo si aspecto 16:9 para TV)
 - Paleta de colores según hora del día (ver `references/prompt-engineering.md`)
 
+**Si hay semilla (Paso 1c)**, agregar además este bloque, justo antes de `[RESTRICCIONES]`:
+
+```
+The attached image is a STRUCTURAL FLOOR-PLAN REFERENCE ONLY. Follow its room count,
+adjacency, corridor topology and overall footprint. Do NOT reproduce its art style,
+palette, textures, linework, labels, numbers or any text. Recompose the plan onto a
+16:9 canvas of exactly 27 by 15 squares: compact wings, merge corridors, drop
+peripheral rooms as needed. Do not stretch or letterbox.
+```
+
+Este bloque hace dos trabajos a la vez y **no se recorta**:
+
+1. **Fuerza la reinterpretación.** La semilla es arte © WotC; el output tiene que ser
+   propio. Si un mapa generado se parece al original, este bloque no está apretando
+   bastante y hay que endurecerlo.
+2. **Resuelve el choque de escala.** La planta oficial mediana son 23×23 cuadros y la TV
+   son 27×15: la mayoría de las semillas cubren más terreno que una pantalla. Manda la TV,
+   y la planta se compacta.
+
+El brief estructural del Paso 1c entra en los slots normales (`[ESCENA + DIMENSIONES]`,
+`[PISO]`, `[PAREDES/LÍMITES]`), no aquí.
+
 ### Etapa 4: Ensamblar con template
 
 Fórmula de slots:
 ```
-[PERSPECTIVA] [FORMATO] [ESTILO]. [ESCENA + DIMENSIONES]. [PISO]. [PAREDES/LÍMITES]. [ILUMINACIÓN]. [PROPS]. [ATMÓSFERA]. [RESTRICCIONES]. [CALIDAD].
+[PERSPECTIVA] [FORMATO] [ESTILO]. [ESCENA + DIMENSIONES]. [PISO]. [PAREDES/LÍMITES]. [ILUMINACIÓN]. [PROPS]. [ATMÓSFERA]. [SEMILLA]. [RESTRICCIONES]. [CALIDAD].
 ```
 
 **Ejemplo ensamblado:**
@@ -296,6 +319,7 @@ Prompt optimizado:
 → Piso de madera desgastada, muros de piedra con marco de madera
 → Luz de velas y chimenea, sombras suaves
 → Props: mesas volcadas, sillas rotas, charcos de cerveza, espejo roto, barriles
+→ Semilla: planta de [BGDIA] Idyllglen (12 salas), reencajada a 27×15
 → Grid 27×15, sin tokens
 ```
 
@@ -317,7 +341,7 @@ mcp__gemini-image__generate_image:
   aspectRatio: [según parámetros, default "16:9"]
   resolution: [según parámetros, default "1K"]
   model: [según parámetros, default "gemini-2.5-flash-image"]
-  images: [ruta del sketch si existe]
+  images: [ruta del sketch y/o de la semilla del Paso 1c, si existen]
 ```
 
 **Notas:**
@@ -329,6 +353,11 @@ Después de generar:
 2. **Guardar el `sessionId`** de la respuesta — se necesita para ediciones
 3. Informar el costo real (viene en la respuesta del MCP)
 4. Ofrecer opciones:
+
+**Si Gemini rechaza la generación por safety con la semilla adjunta:** reportarlo y
+reintentar **sin semilla**, con el mismo prompt menos el bloque `[SEMILLA]`. La semilla es
+un plus, nunca un requisito: ningún fallo de búsqueda, descarga o safety puede dejar al DM
+sin mapa.
 
 ```
 Mapa generado: [ruta]
@@ -357,6 +386,15 @@ scripts/gen-image.sh --prompt-file prompt.txt --out battlemaps/battlemap-X.png -
 # Edición iterativa (Paso 4) — pasa la imagen base con --edit
 scripts/gen-image.sh --prompt "Edit this battle map: <cambio>. Keep everything else the same." \
   --edit battlemaps/battlemap-X.png --out battlemaps/battlemap-X-v2.png --aspect 16:9
+```
+
+Con semilla del Paso 1c, se adjunta con `--ref` (sinónimo de `--edit`, mismo camino de
+código — la imagen viaja en `inlineData` con su mimeType detectado, así que un `.webp`
+pasa sin convertir):
+
+```bash
+scripts/gen-image.sh --prompt-file prompt.txt --out battlemaps/battlemap-X.png \
+  --aspect 16:9 --ref /tmp/seed.webp
 ```
 
 El script construye el body con `jq` (escapado seguro), respeta el CA bundle del proxy si existe,
