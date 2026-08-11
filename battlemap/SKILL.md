@@ -125,6 +125,122 @@ Use this color-coded sketch as structural layout guide. [color] areas = [feature
 
 ---
 
+## Paso 1c — Semilla oficial (referencia estructural)
+
+Generar desde cero produce mapas plausibles pero sin planta: el modelo inventa cuántas
+salas hay y cómo conectan. Este paso le da una **planta real** de un mapa oficial del
+compendio como referencia.
+
+**Cuándo entra sola:** cuando la escena es **arquitectónica** — el `tipo` inferido es
+`mazmorra`, `templo`, `guarida`, `fortaleza`, `asentamiento`, `taberna`, `tienda`, `casa`,
+`cueva`, `ruinas`, `campamento` o `barco`. Se **salta** en paisajes y exteriores abiertos
+(`tipo: region`), donde una planta oficial no aporta nada. El DM puede forzarla («con
+semilla oficial», «busca una planta real») o saltarla («sin semilla») siempre.
+
+### 1. Mapear la escena a las facetas
+
+Traducir la escena a las claves cerradas de `compendium/map-taxonomy.json` —
+13 `tipo` × 10 `ambiente`. No inventar claves: el buscador rechaza las que no existen.
+
+| Eje | Claves válidas |
+|---|---|
+| `tipo` | templo, mazmorra, guarida, fortaleza, asentamiento, taberna, tienda, casa, cueva, ruinas, campamento, barco, region |
+| `ambiente` | bosque, nieve, desierto, pantano, montana, costa, subterraneo, urbano, infernal, acuatico |
+
+Se pueden pasar varias por eje (OR dentro del eje, AND entre ejes). «Almacén portuario de
+un canal» → `--tipo=tienda,casa --ambiente=urbano,costa`.
+
+### 2. Buscar candidatos
+
+```bash
+node compendium/query-map-index.mjs --tipo=taberna,casa --ambiente=urbano \
+  --salas --cuadros=40x25 --top=5
+```
+
+- `--salas` descarta los mapas que no declaran salas: sin salas no hay planta que copiar.
+- `--cuadros=40x25` es el **techo de cordura**, y no es 27×15 a propósito. La planta se
+  reencaja en la pantalla (ver Paso 2), así que filtrar a los que ya caben descartaría el
+  75% del catálogo. El techo solo deja fuera los pósters de aventura entera, que no se
+  pueden reencajar sin inventar otro mapa.
+
+Mirar las miniaturas de los candidatos y **presentar los 3 mejores** al DM (el `--top=5`
+da margen para descartar los que no encajen con la escena):
+
+```
+Semillas candidatas:
+1. [BGDIA] Idyllglen · 12 salas · 24×16 cuadros
+2. [WDH] The Yawning Portal · 6 salas · 17×9 cuadros
+3. [CoS] Death House · 28 salas · 23×23 cuadros
+```
+
+El DM elige un número, pide otros candidatos, o dice «sin semilla».
+
+**Si la búsqueda no devuelve candidatos:** avisar en una línea y seguir sin semilla.
+Nunca insistir con otras facetas más de una vez.
+
+### 3. Bajar la semilla
+
+```bash
+curl -sS -o /tmp/seed.webp \
+  "https://raw.githubusercontent.com/5etools-mirror-3/5etools-img/main/<path>"
+```
+
+**A un temporal, nunca al repo.** Modo referencia: QuestKeep no hospeda binarios © WotC.
+Si la descarga falla (404, red, proxy), avisar y ofrecer el siguiente candidato o seguir
+sin semilla.
+
+### 4. Extraer el brief estructural (filtro de lore)
+
+El mapa elegido suele traer texto en `compendium/map-descriptions.json` (campo `.d`, 755
+de 1028 lo tienen). De ese texto se conserva **solo lo estructural** y se descarta lo
+narrativo, para que el lore de Reinos Olvidados no se cuele en un mapa de Halo.
+
+238 mapas tienen además una **lista de salas** — pero solo en `place-index.json`, que pesa
+2.5 MB, así que se extrae la entrada suelta en vez de leer el archivo entero:
+
+```bash
+node -e "const p=require('./compendium/place-index.json').find(x=>x.path==='<path>');
+console.log((p?.salas||[]).map(s=>s.nombre).join(' | ')||'(sin salas)')"
+```
+
+De esa lista sobrevive **de qué tipo son** las salas (cocina, cripta, patio, establo), que
+es lo que le dice al modelo qué poner dentro de cada una.
+
+**Se conserva:** arquitectura, materiales, número de niveles, disposición, fuentes de luz,
+estado de conservación.
+
+**Se descarta siempre:**
+
+- Topónimos (Secomber, Waterdeep, el Delimbiyr…)
+- Nombres propios de personas, familias y facciones
+- Deidades y referencias religiosas concretas
+- Etiquetas de sala completas (`I1. Idyll Road`): sobrevive **cuántas salas hay y de qué
+  tipo son** (cocina, cripta, patio), no cómo se llaman ni su código. `I3. Temple of
+  Lathander` → «a shrine», no «Lathander»
+- Ganchos de trama y read-aloud: son narrativos, no estructurales
+
+Ejemplo del filtro:
+
+> **Original:** «mausoleo de las familias de Secomber, encajado en un acantilado al sur
+> del río, tres cámaras y una escalera descendente; los Everlake dejaron de visitarlo»
+>
+> **Brief:** «stone mausoleum set into a cliff face, three chambers, descending stairway,
+> severe disrepair»
+
+El brief se escribe **en inglés**, porque va directo al prompt.
+
+**Si el mapa no tiene descripción** (49 casos del catálogo): semilla solo-imagen, sin
+brief. No es un error, no hace falta avisar.
+
+### 5. Regla de precedencia
+
+**La ficción es de Halo. La arquitectura, de la semilla. El formato, de la TV.**
+
+Si el texto de Supabase y el brief estructural se contradicen, manda Supabase: la semilla
+aporta planta, no historia.
+
+---
+
 ## Paso 2 — Optimización del prompt
 
 **Este es el core de la skill.** Pipeline de 4 etapas:
