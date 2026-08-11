@@ -29,6 +29,29 @@ Bandit Captain, Cultist, Mage, Archmage, Scout, Knight, Gladiator, Berserker, As
 
 ---
 
+## Dónde vive el vocabulario de los selects (`options`)
+
+Los `options` de un select (`tipo_npc`, `cf_organizacion`, y cualquier otro campo `select` de
+cualquier `section`) **no viven en las skills ni en sus specs** — viven en el overlay
+`entity_schemas` de la campaña (`customFields`/`baseOverrides`, según sea el campo). Antes de
+proponer un valor nuevo para un select, léelo de ahí. Una sola query saca de una vez todos los
+vocabularios de una entidad (custom + base):
+
+```sql
+select f->>'key' as campo, f->'options' as options
+from entity_schemas,
+     jsonb_array_elements(coalesce(overlay->'customFields','[]'::jsonb)
+                       || coalesce(overlay->'baseOverrides','[]'::jsonb)) f
+where campaign_slug = :slug and section = :section and f ? 'options';
+```
+
+**Si la lista de un documento (`npc.md`, `establishment.md`, `data-model.md`…) y el overlay
+divergen, manda el overlay.** Las copias de esas listas en estos documentos son orientativas y
+fechadas, no la fuente de verdad — y esto aplica a *cualquier* select, no solo a
+`tipo_npc`/`cf_organizacion` de hoy.
+
+---
+
 ## Cómo referenciar (ref tipado)
 
 El campo (`cf_statblock`, `cf_item_base`, monstruos de combate) guarda un ref:

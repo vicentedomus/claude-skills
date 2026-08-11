@@ -22,7 +22,10 @@ QuestKeep los renderice. La narrativa/rationale por tipo vive en los `design-*.m
 
 ## NPC (`section='npcs'`)
 
-**baseOverrides:** `tipo_npc` options → las **18** canónicas (ver `design-npc.md` §4).
+**baseOverrides:** `tipo_npc` options → las **18** canónicas (ver `design-npc.md` §4). Copia
+orientativa fechada — la lista real vive en el overlay `entity_schemas`
+(`dnd-worldbuilder/references/catalogos.md` → «Dónde vive el vocabulario de los selects»); si
+diverge, manda el overlay.
 `rol` se queda en 3 (`Neutral`/`Aliado`/`Enemigo`): el eje fino es `cf_relacion_party`, que
 es solo-DM, mientras `rol` es público. Ambos array viven en `app.js` (`FORM_SCHEMAS.npcs`)
 — aplicados por QuestKeep en el PR del buscador de NPCs.
@@ -93,7 +96,9 @@ dueno(rel npc), descripcion_exterior→exterior, descripcion_interior→interior
 - **Comercio/Herrería/Objetos mágicos:** `cf_inventario` (rel items) · `cf_especialidad` · `cf_precios`
 - **Librería:** `cf_coleccion` · `cf_pieza_rara`
 - **Templo:** `cf_deidad` (rel) · `cf_servicios` · `cf_clero`
-- **Gremio:** `cf_organizacion` (select, 9 options canónicas de halo) · `cf_jerarquia` · `cf_fachada_actividad` (dmOnly)
+- **Gremio:** `cf_organizacion` (select, 9 options canónicas de halo — copia orientativa fechada,
+  overlay real en `entity_schemas`; ver `dnd-worldbuilder/references/catalogos.md` → «Dónde vive
+  el vocabulario de los selects») · `cf_jerarquia` · `cf_fachada_actividad` (dmOnly)
 
 > **Enmienda 2026-08-09 (spec 002):** era `cf_clase_de_gremio`. Renombrado a `cf_organizacion`
 > por QuestKeep (`sql/migraciones/2026-08-09-organizacion-establecimientos.sql`): `clase` describe

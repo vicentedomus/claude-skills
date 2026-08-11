@@ -41,10 +41,10 @@ Gremio de Inventores · Gremio de Magos · Consejo de Sabios Elfos · Cartel de 
 Los Hijos de Shar
 ```
 
-**La lista canónica no vive aquí.** Vive en el overlay `entity_schemas` de la campaña
-(`campaign_slug='halo'`, `section='establecimientos'`), que es lo que la app pinta. Esta copia es
-para orientarte sin conexión; **antes de proponer un valor nuevo, lee el `options` real del
-overlay** — si diverge, manda el overlay y esta lista está vieja.
+**La lista canónica no vive aquí** — es una copia orientativa fechada (2026-08-09). Vive en el
+overlay `entity_schemas` de la campaña (`campaign_slug='halo'`, `section='establecimientos'`);
+ver `catalogos.md` → «Dónde vive el vocabulario de los selects» para cómo consultarlo. Si diverge
+de la lista de arriba, manda el overlay.
 
 `cf_inventario` respeta el tier de la **`categoria` de la ciudad** (`tiendas.js`: aldea=Common →
 macropolis=Very Rare).

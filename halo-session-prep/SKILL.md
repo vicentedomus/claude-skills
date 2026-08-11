@@ -166,7 +166,35 @@ que ya encontraste. Agrúpalas en un solo mensaje:
 5. ¿Hay revelación o giro importante que quieras que ocurra?
 6. ¿Hay algún NPC nuevo que quieras forzar, o dejamos que la skill proponga los 2 nuevos?
 
-Omite las preguntas cuya respuesta ya esté clara en la BD.
+El techo es **6 preguntas** en ese mensaje, y **no se inventan preguntas fuera de esas seis**: si
+vas a preguntar algo que tú mismo vas a deducir treinta líneas más abajo, no lo preguntes.
+
+**Cada una de las seis se resuelve de una de dos formas, nunca en silencio:**
+
+- **(a) Se omite**, porque el Paso 1b ya la contestó. Al omitirla, **nombra el dato y de dónde
+  salió**: *«No te pregunto las horas — las dos últimas sesiones fueron de 3h
+  (`session_plans.input_data.duracion_horas`); asumo 3h salvo que digas otra cosa.»* Una frase
+  paraguas del tipo «el resto ya lo saqué de Supabase» **no vale**: no es verificable y suele
+  tapar que no se miró.
+- **(b) Se pregunta, con el default ya derivado** de la BD o de `learnings.md`, para que el DM
+  confirme en vez de redactar: *«¿combate en tier High contra la guardia del gremio, como las dos
+  últimas?»*
+
+**Las que la BD no puede contestar se preguntan igual.** La fecha de la próxima sesión, el giro
+que quieres que ocurra y el NPC que quieras forzar **no están en ninguna tabla**: omitirlas en
+silencio es peor que preguntarlas. Ojo con inferir el día de la semana — los `session_plans` de
+halo son **miércoles**, y el único sábado es un one-shot de otro grupo; una inferencia de calendario
+mal hecha te mete una fecha equivocada en el nombre de la nota.
+
+**Las alertas de contradicción van aparte y no cuentan para el techo.** Si el contexto que dio el
+DM en el Paso 1a contradice lo que dice Supabase (Paso 1b) — p. ej. el DM dice que el party está
+en un lugar y la bitácora dice que se fueron de ahí hace meses —, señálalo aunque ya haya 6
+preguntas: es información que el DM necesita.
+
+> **Pero una «alerta» que le pide al DM que elija es una pregunta, y cuenta.** El carve-out
+> cubre lo informativo («ojo: esto no cuadra»), no lo que espera un turno de respuesta («¿cuál de
+> estos dos puentes narrativos prefieres?»). Si necesitas que decida, es la séptima pregunta y
+> tienes que sacrificar otra.
 
 ### Paso 3 — Construir la propuesta (co-diseño sección por sección)
 
