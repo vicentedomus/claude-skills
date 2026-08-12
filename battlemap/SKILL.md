@@ -196,7 +196,11 @@ sin semilla.
 
 El mapa elegido suele traer texto en `compendium/map-descriptions.json` (campo `.d`, 656
 de 1028 lo tienen). Es un objeto keyed por `path` (~580 KB), así que se extrae la entrada
-suelta en vez de leer el archivo entero:
+suelta en vez de leer el archivo entero.
+
+> **Los dos comandos de abajo usan rutas relativas: córrelos desde la raíz del repo
+> questkeep**, igual que `query-map-index.mjs`. Desde otro directorio fallan con
+> `Cannot find module`.
 
 ```bash
 node -e "console.log(require('./compendium/map-descriptions.json')['<path>']?.d || '(sin descripción)')"
