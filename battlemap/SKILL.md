@@ -67,10 +67,11 @@ Presentar siempre antes de generar:
 ```
 📍 Escena: [descripción corta]
 🎨 Estilo: [estilo] | [ambientación] | [hora]
+🗺️ Semilla: [FUENTE] título · N salas · CxF cuadros   ← omitir la línea si no hay
 📐 Grid: 27×15 (TV 32") | [aspecto] | [resolución]
 ✏️ Sketch: [sí/no]
 💰 Costo: ~$0.04
-¿Generar? (o ajusta lo que quieras)
+¿Generar? (o «sin semilla», o ajusta lo que quieras)
 ```
 
 Si el usuario no ha mencionado sketch, agregar al final:
@@ -125,6 +126,148 @@ Use this color-coded sketch as structural layout guide. [color] areas = [feature
 
 ---
 
+## Paso 1c — Semilla oficial (referencia estructural)
+
+Generar desde cero produce mapas plausibles pero sin planta: el modelo inventa cuántas
+salas hay y cómo conectan. Este paso le da una **planta real** de un mapa oficial del
+compendio como referencia.
+
+**Cuándo entra sola:** cuando la escena es **arquitectónica** — el `tipo` inferido es
+`mazmorra`, `templo`, `guarida`, `fortaleza`, `asentamiento`, `taberna`, `tienda`, `casa`,
+`cueva`, `ruinas`, `campamento` o `barco`. Se **salta** en paisajes y exteriores abiertos
+(`tipo: region`), donde una planta oficial no aporta nada. El DM puede forzarla («con
+semilla oficial», «busca una planta real») o saltarla («sin semilla») siempre.
+
+### 1. Mapear la escena a las facetas
+
+Traducir la escena a las claves cerradas de `compendium/map-taxonomy.json` —
+13 `tipo` × 10 `ambiente`. No inventar claves: el buscador rechaza las que no existen.
+
+| Eje | Claves válidas |
+|---|---|
+| `tipo` | templo, mazmorra, guarida, fortaleza, asentamiento, taberna, tienda, casa, cueva, ruinas, campamento, barco, region |
+| `ambiente` | bosque, nieve, desierto, pantano, montana, costa, subterraneo, urbano, infernal, acuatico |
+
+Se pueden pasar varias por eje (OR dentro del eje, AND entre ejes). «Almacén portuario de
+un canal» → `--tipo=tienda,casa --ambiente=urbano,costa`.
+
+### 2. Buscar candidatos
+
+```bash
+node compendium/query-map-index.mjs --tipo=taberna,casa --ambiente=urbano \
+  --salas --cuadros=40x25 --top=5
+```
+
+- `--salas` descarta los mapas que no declaran salas: sin salas no hay planta que copiar.
+- `--cuadros=40x25` es el **techo de cordura**, y no es 27×15 a propósito. La planta se
+  reencaja en la pantalla (ver Paso 2), así que filtrar a los que ya caben en 27×15
+  descartaría el 75% de los mapas que declaran grid (702 de 936). El techo de 40×25 solo
+  deja fuera los pósters de aventura entera, que no se pueden reencajar sin inventar otro
+  mapa.
+
+Mirar las miniaturas de los candidatos y **presentar los 3 mejores** al DM (el `--top=5`
+da margen para descartar los que no encajen con la escena). Salida real de ese comando
+(recortada a 3 — el script imprime también las URLs de imagen y miniatura de cada uno):
+
+```
+Semillas candidatas:
+1. [WDH] Cassalanter Villa · 38 salas · 15x18 cuadros
+2. [WDH] Gralhund Villa · 22 salas · 13x18 cuadros
+3. [TOA] Map 1.2: Merchant Prince's Villa · 19 salas · 36x25 cuadros
+```
+
+El DM elige un número, pide otros candidatos, o dice «sin semilla».
+
+**Si la búsqueda no devuelve candidatos:** avisar en una línea y seguir sin semilla.
+Nunca insistir con otras facetas más de una vez.
+
+### 3. Bajar la semilla
+
+```bash
+curl -fsS -o /tmp/seed.webp \
+  "https://raw.githubusercontent.com/5etools-mirror-3/5etools-img/main/<path>"
+```
+
+**A un temporal, nunca al repo.** Modo referencia: QuestKeep no hospeda binarios © WotC.
+Si la descarga falla (404, red, proxy), avisar y ofrecer el siguiente candidato o seguir
+sin semilla.
+
+### 4. Extraer el brief estructural (filtro de lore)
+
+El mapa elegido suele traer texto en `compendium/map-descriptions.json` (campo `.d`, 656
+de 1028 lo tienen). Es un objeto keyed por `path` (~580 KB), así que se extrae la entrada
+suelta en vez de leer el archivo entero.
+
+> **Los dos comandos de abajo usan rutas relativas: córrelos desde la raíz del repo
+> questkeep**, igual que `query-map-index.mjs`. Desde otro directorio fallan con
+> `Cannot find module`.
+
+```bash
+node -e "console.log(require('./compendium/map-descriptions.json')['<path>']?.d || '(sin descripción)')"
+```
+
+De ese texto se conserva **solo lo estructural** y se descarta lo narrativo, para que el
+lore de Reinos Olvidados no se cuele en un mapa de Halo.
+
+238 mapas tienen además una **lista de salas** — pero solo en `place-index.json`, que pesa
+2.5 MB, así que se extrae la entrada suelta en vez de leer el archivo entero:
+
+```bash
+node -e "const p=require('./compendium/place-index.json').find(x=>x.path==='<path>');
+console.log((p?.salas||[]).map(s=>s.nombre).join(' | ')||'(sin salas)')"
+```
+
+De esa lista sobrevive **de qué tipo son** las salas (cocina, cripta, patio, establo), que
+es lo que le dice al modelo qué poner dentro de cada una.
+
+**Se conserva:** arquitectura, materiales, número de niveles, disposición, fuentes de luz,
+estado de conservación.
+
+**Se descarta siempre:**
+
+- Topónimos (Secomber, Waterdeep, el Delimbiyr…)
+- Nombres propios de personas, familias y facciones
+- Deidades y referencias religiosas concretas
+- Etiquetas de sala completas (`I1. Idyll Road`): sobrevive **cuántas salas hay y de qué
+  tipo son** (cocina, cripta, patio), no cómo se llaman ni su código. `I3. Temple of
+  Lathander` → «a shrine», no «Lathander»
+- Ganchos de trama y read-aloud: son narrativos, no estructurales
+
+Ejemplo del filtro:
+
+> **Original:** «mausoleo de las familias de Secomber, encajado en un acantilado al sur
+> del río, tres cámaras y una escalera descendente; los Everlake dejaron de visitarlo»
+>
+> **Brief:** «stone mausoleum set into a cliff face, three chambers, descending stairway,
+> severe disrepair»
+
+El brief se escribe **en inglés**, porque va directo al prompt.
+
+**Si el mapa no tiene descripción** (372 del catálogo, más de un tercio): semilla
+solo-imagen, sin brief. No es un error y no hace falta avisar — pasa a menudo.
+
+### 5. Regla de precedencia
+
+**La ficción es de Halo. La arquitectura, de la semilla. El formato, de la TV.**
+
+Si el texto de Supabase y el brief estructural se contradicen, manda Supabase: la semilla
+aporta planta, no historia.
+
+### 6. Límites conocidos (medidos el 2026-08-11, aceptados por el DM)
+
+- **Planta simple = más parecido al original.** Con una semilla de ~70 salas el modelo
+  recompone de verdad; con una de ~13 la traza casi tal cual. El arte siempre sale propio,
+  pero el plano de una semilla sencilla es reconocible. Si el mapa importa que no lo sea,
+  prefiere una semilla con muchas salas.
+- **Las semillas de varias plantas se leen como una sola.** Los mapas oficiales dibujan los
+  pisos lado a lado y el modelo los fusiona en un edificio contiguo. Si la miniatura enseña
+  dos o más bloques separados, avísalo al DM: el resultado tendrá todas las salas al mismo
+  nivel.
+- **La rejilla 27×15 no siempre aparece**, aunque el prompt la pida. Si el mapa es para la TV
+  con miniaturas, compruébala antes de darlo por bueno y, si falta, pídela en una edición.
+
+---
+
 ## Paso 2 — Optimización del prompt
 
 **Este es el core de la skill.** Pipeline de 4 etapas:
@@ -157,11 +300,33 @@ Agregar SIEMPRE estos elementos al prompt:
 - `"The map should contain a visible grid of exactly 27 columns by 15 rows of equal squares"` (solo si aspecto 16:9 para TV)
 - Paleta de colores según hora del día (ver `references/prompt-engineering.md`)
 
+**Si hay semilla (Paso 1c)**, agregar además este bloque, justo antes de `[RESTRICCIONES]`:
+
+```
+The attached image is a STRUCTURAL FLOOR-PLAN REFERENCE ONLY. Follow its room count,
+adjacency, corridor topology and overall footprint. Do NOT reproduce its art style,
+palette, textures, linework, labels, numbers or any text. Recompose the plan onto a
+16:9 canvas of exactly 27 by 15 squares: compact wings, merge corridors, drop
+peripheral rooms as needed. Do not stretch or letterbox.
+```
+
+Este bloque hace dos trabajos a la vez y **no se recorta**:
+
+1. **Fuerza la reinterpretación.** La semilla es arte © WotC; el output tiene que ser
+   propio. Si un mapa generado se parece al original, este bloque no está apretando
+   bastante y hay que endurecerlo.
+2. **Resuelve el choque de escala.** La planta oficial mediana son 23×23 cuadros y la TV
+   son 27×15: la mayoría de las semillas cubren más terreno que una pantalla. Manda la TV,
+   y la planta se compacta.
+
+El brief estructural del Paso 1c entra en los slots normales (`[ESCENA + DIMENSIONES]`,
+`[PISO]`, `[PAREDES/LÍMITES]`), no aquí.
+
 ### Etapa 4: Ensamblar con template
 
 Fórmula de slots:
 ```
-[PERSPECTIVA] [FORMATO] [ESTILO]. [ESCENA + DIMENSIONES]. [PISO]. [PAREDES/LÍMITES]. [ILUMINACIÓN]. [PROPS]. [ATMÓSFERA]. [RESTRICCIONES]. [CALIDAD].
+[PERSPECTIVA] [FORMATO] [ESTILO]. [ESCENA + DIMENSIONES]. [PISO]. [PAREDES/LÍMITES]. [ILUMINACIÓN]. [PROPS]. [ATMÓSFERA]. [SEMILLA]. [RESTRICCIONES]. [CALIDAD].
 ```
 
 **Ejemplo ensamblado:**
@@ -180,6 +345,7 @@ Prompt optimizado:
 → Piso de madera desgastada, muros de piedra con marco de madera
 → Luz de velas y chimenea, sombras suaves
 → Props: mesas volcadas, sillas rotas, charcos de cerveza, espejo roto, barriles
+→ Semilla: planta de [WDH] Cassalanter Villa (38 salas), reencajada a 27×15
 → Grid 27×15, sin tokens
 ```
 
@@ -201,7 +367,7 @@ mcp__gemini-image__generate_image:
   aspectRatio: [según parámetros, default "16:9"]
   resolution: [según parámetros, default "1K"]
   model: [según parámetros, default "gemini-2.5-flash-image"]
-  images: [ruta del sketch si existe]
+  images: [ruta del sketch y/o de la semilla del Paso 1c, si existen]
 ```
 
 **Notas:**
@@ -225,6 +391,11 @@ Costo: $[costo]
 • Listo — guardar y terminar
 ```
 
+**Si Gemini rechaza la generación por safety con la semilla adjunta:** reportarlo y
+reintentar **sin semilla**, con el mismo prompt menos el bloque `[SEMILLA]`. La semilla es
+un plus, nunca un requisito: ningún fallo de búsqueda, descarga o safety puede dejar al DM
+sin mapa.
+
 ---
 
 ## Paso 3b — Fallback sin MCP (API directo de Gemini)
@@ -242,6 +413,21 @@ scripts/gen-image.sh --prompt-file prompt.txt --out battlemaps/battlemap-X.png -
 scripts/gen-image.sh --prompt "Edit this battle map: <cambio>. Keep everything else the same." \
   --edit battlemaps/battlemap-X.png --out battlemaps/battlemap-X-v2.png --aspect 16:9
 ```
+
+Con semilla del Paso 1c, se adjunta con `--ref` (sinónimo de `--edit`, mismo camino de
+código — la imagen viaja en `inlineData` con su mimeType detectado, así que un `.webp`
+pasa sin convertir):
+
+```bash
+scripts/gen-image.sh --prompt-file prompt.txt --out battlemaps/battlemap-X.png \
+  --aspect 16:9 --ref /tmp/seed.webp
+```
+
+**Límite del fallback: una sola imagen adjunta.** `--edit` y `--ref` escriben la misma
+variable en el script, así que si hay sketch (Paso 1b) **y** semilla (Paso 1c) a la vez,
+gana el que se pase último en la línea de comandos — el otro se ignora en silencio. El MCP
+(`images[]`, Paso 3) sí admite las dos. Si ambas existen y hay que usar el fallback, **manda
+la semilla** (`--ref`): aporta planta real, el sketch es solo un boceto de layout.
 
 El script construye el body con `jq` (escapado seguro), respeta el CA bundle del proxy si existe,
 decodifica el PNG de `inlineData`, y reporta errores de la API (HTTP, safety, cuota). El resto del
