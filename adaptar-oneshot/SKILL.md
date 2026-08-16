@@ -58,8 +58,17 @@ ser un índice navegable, no una secuencia».
 
 ## Paso 1 · Presupuesto de encuentros — el PRIMER chequeo, no el último
 
-Antes de enamorarte de una aventura, mide si le cabe a la party. Presupuesto 2024, **por
-personaje**: Bajo 75 · Medio 150 · Alto 400. Multiplica por el número de PJs.
+Antes de enamorarte de una aventura, mide si le cabe a la party. **No cites el presupuesto de
+memoria: léelo del repo**, que es lo que la app va a pintar.
+
+```bash
+grep -n "XP_BUDGET" -A6 react/encuentros/data.ts   # tabla 'XP Budget per Character' (XDMG)
+```
+
+Es **por personaje**; multiplícalo por el número de PJs. Nivel 3: Bajo 150 · Medio 225 · **Alto
+400** → una party de 2 tiene **300 / 450 / 800**. La etiqueta la calcula
+`react/encuentros/logic.ts` (`xpBudget`, `difficulty`), y por encima de Alto pinta **«Sobre
+High»**.
 
 **Lee el nivel declarado en el TEXTO de la locación, no del rango del libro.** *Axeholm* está en
 un libro de nivel 1-6 y su primera línea dice *«balanced for characters of 5th level»*.
