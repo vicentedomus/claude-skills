@@ -338,7 +338,7 @@ def main():
   <!-- SLIDE 7 — Análisis cualitativo por zona -->
   <section class="slide dark">
     <div class="chart-title">Análisis de Tickets por Zona</div>
-    <div class="zona-cards-grid{" dense" if filas_grid >= 3 else ""}" style="grid-template-columns: repeat({cols}, 1fr); grid-template-rows: repeat({filas_grid}, minmax(0, 1fr));">
+    <div class="zona-cards-grid{" dense" if filas_grid >= 3 else ""}" style="grid-template-columns: repeat({cols}, 1fr); grid-auto-rows: min-content; align-content: start;">
 {chr(10).join(cards)}
     </div>
     <img class="logo br" src="../../assets/logo.png" alt="Domus">
