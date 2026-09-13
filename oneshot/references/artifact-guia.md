@@ -1,7 +1,16 @@
 # La guía interactiva — contrato y caso resuelto
 
-El artifact es **el entregable**, no un extra bonito. El DM lo abre del celular en la mesa y de ahí
-dirige. Si tiene que ir a la app o al libro a media escena, la guía falló.
+> ⚠️ **El artifact YA NO es el entregable** (decisión del DM, 2026-09-13). El entregable es el
+> **plan modular** en la app: el árbol está vivo —el encuentro recalcula la dificultad y se lanza,
+> el mapa se abre, las fichas se editan— y una página no. Ver `plantilla-arbol.md`.
+>
+> **Este contrato solo aplica si el DM pide una página**, normalmente para leer fuera de la compu o
+> para compartirla. No la ofrezcas por default: mantener las dos es mantener dos fuentes de verdad,
+> y la segunda se desincroniza sola. Si publicas una y luego cambia, **republica con el MISMO
+> `file_path`** para conservar la URL (CLAUDE.md §Entrega de specs y planes).
+
+Cuando sí se hace, el artifact tiene que ser autosuficiente: el DM lo abre del celular en la mesa y
+de ahí dirige. Si tiene que ir a la app o al libro a media escena, la guía falló.
 
 Carga **`huashu-design`** y **`artifact-design`** antes de escribir el HTML.
 
