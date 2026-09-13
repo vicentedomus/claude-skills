@@ -54,15 +54,39 @@ propósito: se pintan resaltados pero no abren ficha. Reportarlos como rotos es 
 
 ## 3 · ¿Resuelven los ids que vas a escribir en `encuentros`?
 
-El constructor busca **solo** en `bestiary.json` y toma la **primera coincidencia por nombre**,
-sin fuente (`srd-adapters.js`). Ese orden depende de `readdirSync` y **no es determinista entre
-máquinas**, así que compruébalo:
+**Los ids del constructor llevan fuente desde el PR #482:** `srd:<FUENTE>:<Nombre>`. Antes eran
+`srd:<Nombre>` a secas, y con los seis libros del brew dentro **36 nombres chocan con XMM**: 57 de
+las 2.143 filas compartían identidad y `find` devolvía la que `readdirSync` hubiera puesto primero.
+El daño no era cosmético — el Kraken de FM es CR 26 y el de XMM 23, o sea que el generador reserva
+un número y el semáforo cobra otro.
+
+Así que **lo que escribas nuevo va cualificado**. `findMonstruo` sigue aceptando el formato viejo
+(degrada a búsqueda por nombre) para no romper los encuentros ya guardados, pero no te apoyes en
+eso.
+
+```bash
+# El pool del constructor. Enseña TODOS los homónimos: elige por fuente, no por orden.
+node -e "
+const b = require('./data/5e/bestiary.json');
+for (const nom of ['Scarecrow','Ankheg','Kraken']) {
+  const hits = b.filter(m => m.name === nom);
+  console.log(nom, '->', hits.map(m => 'srd:'+m.source+':'+m.name+' (CR '+m.cr+')').join(' | ') || 'NO EXISTE');
+}
+"
+```
+
+Para Flee, Mortals! el filtro es `m.source === 'FleeMortals'`, siempre.
+
+### El camino vanilla sigue en el formato viejo
+
+`bestiarioRowById` (`srd-adapters.js`) resuelve `srd:<Nombre>` **sin** fuente. Lo consumen los
+pines y las fichas vanilla, no el constructor de encuentros — así que ahí sí manda el orden de
+carga. Si una locación lleva pin a un monstruo con homónimos, compruébalo y **dilo**:
 
 ```bash
 node -e "
 global.window = global;
-global.SRD5E = { bestiary: require('fs').readFileSync('data/5e/bestiary.json','utf8'), items: [] };
-global.SRD5E.bestiary = JSON.parse(global.SRD5E.bestiary);
+global.SRD5E = { bestiary: JSON.parse(require('fs').readFileSync('data/5e/bestiary.json','utf8')), items: [] };
 global.ccSourceEnabled = () => true;
 const A = require('./srd-adapters.js');
 for (const id of ['srd:Scarecrow','srd:Specter']) {
@@ -72,8 +96,14 @@ for (const id of ['srd:Scarecrow','srd:Specter']) {
 "
 ```
 
-Si un nombre tiene homónimos en varias fuentes, **dilo en la ficha del encuentro**: cuál esperabas
-y cuál dio.
+**El catálogo se mueve, así que córrelo — no lo cites.** La versión anterior de esta guía decía que
+`srd:Scarecrow` resolvía a `WttHC`. Medido el 2026-09-13, `Scarecrow` ya solo está en `XMM` (y en
+`MM` dentro de `bestiary-aventuras.json`): la fuente de aquella nota desapareció del pool y la nota
+se quedó. Cualquier fuente concreta escrita aquí caduca igual.
+
+**Y `cf_statblock` no es un id**: es `{"kind":"compendium","name":"Wereraven","source":"RHW"}`. Ya
+lleva la fuente dentro, así que no tiene el problema — pero escribirlo como string tampoco falla:
+se guarda y la ficha sale vacía.
 
 ## 4 · ¿Difieren las dos ediciones?
 
