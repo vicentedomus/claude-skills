@@ -101,7 +101,12 @@ Y antes de prometer nada, comprueba que la app puede servir el libro:
 
 ---
 
-## P2 · El reloj ANTES que el contenido
+## P2 · El esqueleto ANTES que el contenido: el reloj y la cadena
+
+Dos cosas, y las dos se escriben **vacías** antes de una sola línea de prosa. El reloj dice
+**cuándo** pasa cada escena; la cadena dice **por qué**.
+
+### 2a · El reloj
 
 Con las horas de P0 la aritmética es fija. **No es criterio, es división.**
 
@@ -130,6 +135,51 @@ siempre el final.
 Dos notas de mesa del mismo §2.9: si no hay personajes previos, pide que los construyan **alrededor
 del tema** de la aventura o ten pregenerados; y confirma al empezar que todos se pueden quedar las
 horas que dura.
+
+### 2b · La cadena — qué hace que pase la escena siguiente
+
+**Este es el paso que no existía, y su ausencia produjo seis roturas en la primera one-shot que
+armó esta skill.** El reloj ordena las escenas por minuto; nada las ordenaba por **causa**. El
+resultado fueron cuatro escenas perfectas y sueltas: la mesa llegaba a la escena 3 cargando una
+losa que nadie le había dicho para qué servía.
+
+**Cada escena, antes de tener contenido, declara tres líneas:**
+
+```
+QUÉ QUIEREN     — lo que la mesa persigue mientras está aquí. No «qué hay»: qué buscan.
+QUÉ SE LLEVAN   — lo que sale de esta escena y la siguiente NECESITA.
+QUÉ LA DISPARA  — qué de la escena anterior los puso aquí.
+```
+
+Y encima de las tres, la **costura de corte** de P2a, si la escena es intermedia.
+
+**La prueba, y se hace en seco:** lee la cadena **sin el contenido**, solo las tres líneas de cada
+escena en orden. El «qué se llevan» de una tiene que encajar con el «qué la dispara» de la
+siguiente. Donde no encajen, hay una rotura — y se ve en diez segundos, mucho antes de escribir
+prosa que luego hay que tirar.
+
+Ejemplo de la cadena que sí funcionó, después de arreglarla:
+
+| Escena | Qué quieren | Qué se llevan |
+|---|---|---|
+| Apertura | entender qué pasa y decidir si entran | el gancho común |
+| A | ver el objetivo con sus ojos | **el problema planteado** |
+| B | una forma de resolverlo que no sea suicidarse | **el plan + las dos piezas** |
+| Clímax | ejecutarlo | — |
+
+Ver el problema → encontrar la solución → ejecutarla. **Si tu cadena no tiene esa forma (o la de
+un misterio, o la de una fuga), probablemente no tienes una cadena: tienes escenas.**
+
+Tres roturas típicas, todas cometidas en la primera corrida:
+
+- **El plan llega por telepatía.** La sesión entera cuelga de una idea (*quemar la puerta con una
+  losa a la espalda*) y ningún NPC, pista ni escena se la dice a los jugadores. La tenías tú en la
+  cabeza. **Pregúntate siempre: ¿quién les dice esto, y en qué minuto?**
+- **El orden contradice la causa.** Necesitan la herramienta antes del asalto, pero la escena de
+  conseguirla va después. Se ve al leer la cadena en seco; no se ve leyendo el reloj.
+- **El villano aparece en el minuto 95.** Si el clímax es contra alguien, ese alguien tiene que
+  haber sido **nombrado, oído o visto** antes. Es el *Slow Burn* de Flee, Mortals! §8, comprimido:
+  en un one-shot bastan tres frases de aliados distintos durante una pelea previa.
 
 ---
 
@@ -207,6 +257,32 @@ mitad de las salas— el secreto **no existe**. Abstraerlo es separar las dos co
 Ahora, cuando ignoren C7, **tachas la semilla y el hecho sigue en pie**, listo para colgarse de lo
 que sí estén tocando.
 
+### La tercera línea, que es la que justifica el secreto
+
+**Un secreto sin «qué cambia» es trivia.** El formato del manual —hecho + semillas— dice qué es
+verdad y cómo se descubre, pero **no dice para qué le sirve saberlo a la mesa**. Sin esa línea se
+escriben hechos verdaderos e inertes, que es exactamente lo que pasó en la primera corrida: *«el
+grano alcanza para dos años»* es un dato, no una palanca.
+
+```
+· El grano de adentro alcanza para dos años.
+    semillas: los costales se ven por la tronera · un miliciano lo suelta al rendirse
+    qué cambia: deja de ser un asalto y pasa a ser un asedio con reloj. Si NO entran hoy,
+                el intendente aguanta los tres días que espera. Convierte «¿por qué la
+                prisa?» en «no hay mañana».
+```
+
+**La prueba:** un secreto vale si al descubrirlo cambia **una de tres cosas** —
+
+1. **Una decisión** de la mesa (*mata la opción de sitiar; hay que entrar hoy*).
+2. **Una opción táctica** que antes no veían (*los de leva no quieren estar ahí: se pueden ir en
+   vez de morir; son 10 de los enemigos del clímax*).
+3. **Cómo tratan a alguien** (*el segundo al mando tiene a su hijo adentro: por ahí se negocia*).
+
+Si no cambia ninguna, **no es secreto, es relleno** — bórralo y escribe otro. Los de reserva
+también llevan su «qué cambia» listo, porque son las cartas que sueltas cuando la mesa se atora:
+*«el pretil tiene un tramo caído»* vale justo porque **les quita la cobertura a los fusileros**.
+
 **Diez hechos; semillas solo en los 3-5 que salen esta sesión.** Un hecho cuesta un renglón, un
 hecho con caminos cuesta tres. Se llega a diez porque **los buenos son los últimos dos o tres** —
 los primeros siete son obvios. Los que quedan sin semillas están en reserva y no cuestan nada.
@@ -214,7 +290,8 @@ los primeros siete son obvios. Los que quedan sin semillas están en reserva y n
 El paréntesis final no es decoración: dice que **las semillas son ejemplos, no la lista**.
 
 > Manda esto sobre `session-structure.md` de `halo-session-prep`, que sigue pidiendo 3-5 secretos
-> con los caminos pre-escritos. Decisión del DM, 2026-09-12. Ver `docs/lazy-dm-manual.md` §2.4.
+> con los caminos pre-escritos. Decisión del DM, 2026-09-12. Ver `docs/lazy-dm-manual.md` §2.4,
+> que ya lleva la tercera línea.
 
 ---
 
@@ -307,11 +384,19 @@ Dos cosas que **no** hay que construir, porque ya existen:
 Aplica `verification-before-completion`: **evidencia antes de afirmar**, y también cuando el
 veredicto sea «no hace falta».
 
+- [ ] **La cadena cierra.** Lee las tres líneas de cada escena en seco, sin el contenido: el «qué se
+      llevan» de cada una encaja con el «qué la dispara» de la siguiente. Es el chequeo más barato
+      de los ocho y el que caza las roturas gordas.
+- [ ] **Cada secreto tiene su «qué cambia»**, y cambia de verdad una decisión, una opción táctica o
+      el trato con alguien. El que no, se borra.
 - [ ] Cada `refId` / `encuentroId` / `mapaId` del árbol resuelve a una fila viva. **No son claves
       foráneas** — viven dentro de un jsonb y la base no los valida; si la entidad se borra el
       bloque queda huérfano y solo lo dice la UI.
 - [ ] Los ids de `encuentros.monsters` resuelven, y con la fuente correcta.
 - [ ] Los `cf_*` escritos están en el overlay de `one-shots`.
+- [ ] **Los valores de los nueve campos `select` están dentro de su enum.** La base no los valida y
+      el formulario los pinta en blanco. Comando y tabla en `references/alta-en-la-app.md`
+      §Los selects rígidos.
 - [ ] El plan es modular: `jsonb_typeof(bloques) = 'array'`. Un objeto lo manda al render legacy.
 - [ ] Los `id` de bloque son únicos dentro del plan, y `hijos` es un array en todos.
 - [ ] Auditoría de peninsularismos (`references/espanol-mexicano.md`).
@@ -380,13 +465,19 @@ Las tres dieron falsos negativos en una verificación real:
 ## Señales de que la vas a regar
 
 - Empezaste a escribir contenido sin saber cuántas horas dura la sesión
+- **Escribiste prosa antes de que la cadena cerrara en seco**
+- **No sabes decir quién le dice el plan a los jugadores, ni en qué minuto**
+- **El villano del clímax no ha sido nombrado, oído ni visto antes del minuto 90**
 - Escribiste el árbol antes de clasificar la fuente (carril A)
 - Planeaste cinco escenas para tres horas
 - Ninguna escena intermedia tiene costura de corte
-- Escribiste `cf_*` sin haber leído el overlay de esa campaña
-- Elegiste `fm` y no copiaste los rasgos de entorno a un bloque
+- **Un secreto no sabe decir qué cambia si la mesa lo descubre**
 - Los secretos dicen «si hablan con X» en vez del hecho
+- Escribiste `cf_*` sin haber leído el overlay de esa campaña
+- **Inventaste un valor para un campo `select` porque el enum no tenía el tuyo**
+- Elegiste `fm` y no copiaste los rasgos de entorno a un bloque
 - Diste por buena una fila porque el `INSERT` no dio error
+- **Buscaste un mapa de exteriores en un catálogo de interiores, dos veces**
 - Te sonó natural escribir «coger», «vosotros» o «desván»
 - Estás inventando un NPC que el módulo ya trae (carril A)
 - Estás copiando un nombre oficial sin reskinear (carril B)

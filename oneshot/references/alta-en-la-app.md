@@ -62,6 +62,52 @@ relación muda.
   "x": 0.476, "y": 0.332 }
 ```
 
+### Los selects rígidos: la base acepta lo que la UI no pinta
+
+**Hay nueve campos con lista cerrada de opciones, y la base no los valida.** Escribes un valor
+fuera del enum, el `INSERT` pasa sin una queja, y **el formulario de edición pinta ese campo en
+blanco**. Es el mismo modo de fallo que el `cf_*` no declarado: se guarda y no se ve.
+
+Se cometió seis veces en una sola corrida — `rol: 'Antagonista'` (el enum solo tiene
+`Neutral/Aliado/Enemigo`), `tipo_npc: 'Intendente'/'Clérigo'/'Minera'/'Oficial'`, y en `items` un
+`tipo`/`rareza` escritos **en español** cuando el enum está en inglés. Las cuatro fichas de NPC se
+veían perfectas en la vista de detalle; el error solo aparece al abrir el formulario.
+
+**Listas las opciones vigentes antes de escribir, no de memoria:**
+
+```bash
+node -e "
+const s = require('fs').readFileSync('app.js','utf8');
+const m = s.match(/const FORM_SCHEMAS\s*=\s*\{[\s\S]*?\n\};/)[0];
+const re = /key:'([^']+)'[^}]*?type:'(select|combo-creatable)'[^}]*?options:\[([^\]]*)\]/g;
+let x; while ((x = re.exec(m))) console.log(x[2].padEnd(16), x[1].padEnd(22), x[3].replace(/'/g,''));
+"
+```
+
+Medido el 2026-09-14:
+
+| Sección · campo | Tipo | Opciones |
+|---|---|---|
+| `npcs.rol` | `select` | Neutral · Aliado · Enemigo |
+| `npcs.estado` | `select` | Vivo · Muerto |
+| `npcs.tipo_npc` | `select` | Comerciante · Tabernero · Herrero · Alquimista · Minero · Granjero · Arcanista · Bibliotecario · Religioso · Guardia · Cazador · Aventurero · Criminal · Proxeneta · Noble · Líder político · Gremio · Otro |
+| `items.tipo` | `select` | **en inglés**: Armor · Potion · Ring · Rod · Scroll · Staff · Wand · Weapon · Wondrous Item |
+| `items.rareza` | `select` | **en inglés**: Common · Uncommon · Rare · Very Rare · Legendary · Artifact |
+| `quests.estado` | `select` | Activa · Completada · Fallida · En Pausa |
+| `lugares.estado_exploracion` | `select` | Sin explorar · Parcialmente explorado · Explorado |
+| `lugares.tipo` · `establecimientos.tipo` | **`combo-creatable`** | sugerencias, **no** lista cerrada: aquí sí puedes inventar |
+
+**Dos reglas que salen de ahí:**
+
+- **`select` es cerrado, `combo-creatable` es abierto.** Sólo esa palabra en el schema decide si tu
+  valor sobrevive. Si el campo es `select` y tu concepto no está en la lista, **elige el más
+  cercano del enum y mete el matiz en la prosa** — no fuerces un valor nuevo.
+- **`items.tipo` y `items.rareza` van en inglés**, como todo contenido de reglas (CLAUDE.md). Es el
+  único par de enums que no está en español, y por eso es el que más se escapa.
+
+Y un campo vacío también es una opción legítima: *La Losa* va con `tipo = ''` porque no es mágica y
+ninguna de las diez categorías le queda. Eso es una decisión, y se dice (§Reglas duras 3).
+
 ## Los ids de monstruo: hay DOS convenciones vivas
 
 No es una inconsistencia que puedas ignorar — cada camino de la app lee el suyo.
@@ -152,3 +198,39 @@ paráfrasis.
 
 > El compendio **nunca** escribe a Supabase por su cuenta: se consulta. Lo que cruza la frontera lo
 > escribes tú, con el DM enterado.
+
+### El corpus de mapas es de INTERIORES, y eso limita qué se puede buscar
+
+**Antes de gastar turnos buscando: el catálogo son plantas cenitales de espacios cerrados.** Los
+1.047 mapas vienen de aventuras publicadas, y en una aventura publicada los combates pasan *dentro*
+de los cuartos. Hay mazmorras, torres, tabernas, criptas, fortalezas por dentro y pueblos vistos
+desde arriba.
+
+**Lo que casi no existe: «una plaza abierta mirando la fachada de un edificio».** Se buscó por
+faceta (`--tipo=fortaleza --ambiente=urbano`), por palabra (`courtyard`, `granary`, `warehouse`,
+`garrison`, `plaza`, `gate`, `siege`) y por forma, y no salió — **no por buscar mal, sino porque
+ese tipo de mapa apenas se publica.** Lo mejor que dio fue `Legion Garrison` (GGR): *«el acceso se
+limita a dos pasarelas elevadas protegidas por arqueros tras troneras»*, que es la situación
+correcta con la piel equivocada.
+
+Lo mismo vale para: un asalto a una muralla desde fuera, una emboscada en campo abierto, una
+persecución por tejados, una batalla naval entre dos cubiertas. **Si tu clímax pasa afuera mirando
+hacia algo, el catálogo probablemente no lo tiene.**
+
+**Dos gotchas al usar lo que sí hay:**
+
+- **`map-catalog.json` solo trae la variante DM** (`build-map-catalog.mjs` excluye la de jugador a
+  propósito). Las imágenes llevan etiquetas y números encima, así que para repartir a la mesa hay
+  que taparlos o generar la versión de jugadores aparte.
+- **1.047 ≠ 1.942.** `map-index.json` tiene 1.942 **fichas** porque un mismo plano aparece dos
+  veces si trae variante DM y de jugadores. Mapas distintos son 1.047.
+
+**Y antes de pedir un mapa, pregúntate si el combate lo necesita.** El Lazy DM §6.2 dice que el
+modelo vigente son **zonas**, no cuadrícula. Si tu clímax está escrito en tramos, bandas o «arriba
+/ abajo» —y los buenos suelen estarlo— **un mapa con rejilla te obliga a traducirlo a casillas y a
+discutir movimiento**, que es justo la fricción que se come los minutos que blindaste para el
+final. Ofrece las tres opciones y deja que el DM elija:
+
+1. **Sin mapa**, corriendo por zonas. Un trazo en papel basta.
+2. **Generarlo** con la skill `battlemap`, que sale con la forma exacta que pediste.
+3. **Un mapa del catálogo** para lo que sí es interior — el después del asalto, no el asalto.
