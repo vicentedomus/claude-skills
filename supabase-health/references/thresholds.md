@@ -80,6 +80,8 @@ El `status` global = el **peor** de todos los hallazgos.
 | Log OOM / "out of memory" | CRIT |
 | Log "too many connections" / límite alcanzado | CRIT |
 | 5xx repetidos en api logs | WARN→CRIT según volumen |
+| `ERROR` de app (`application_name` = `postgrest`/`authenticator`) | WARN |
+| `ERROR` de SQL ad-hoc por MCP (`application_name` = `mgmt-api`) | informativo: nota aparte, NO sube el semáforo |
 | Advisor performance severidad alta (índice faltante en tabla caliente) | WARN |
 
 ## Política de notificación (WhatsApp)
