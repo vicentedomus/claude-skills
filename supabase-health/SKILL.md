@@ -87,6 +87,22 @@ Lee `references/queries.md` y ejecuta con `execute_sql` (en este orden):
   hojeas. Un `ERROR` es un hallazgo aunque las métricas estén perfectas: el
   2026-08-03 se pasó por alto un `column "dias_sin_reporte" does not exist` (una
   query rota de la skill `resumen-ejecutivo`) que llevaba horas fallando.
+- **Clasifica cada `ERROR` por su origen ANTES de contarlo.** El log trae
+  `application_name` y `user_name`, y no todo `ERROR` es de la app:
+  - `postgrest` / `authenticator` → **error de aplicación**: lo sufrió un usuario
+    real en la web app. Es lo único que sube el semáforo a WARN.
+  - `mgmt-api` / `postgres` → SQL **ad-hoc por MCP** (la consola, una skill, o una
+    sesión de Claude). El texto de la query lo confirma: lleva pegado
+    `-- source: POST /mcp` y `-- user: oauth:…`.
+
+  **No los escondas — sepáralos.** Una query rota de una skill cae justo en este
+  cubo (2026-08-03, el `dias_sin_reporte` de arriba) y sí hay que arreglarla. Lo que
+  distingue una cosa de la otra es la **repetición**: una skill rota falla cada vez
+  que corre y su SQL se parece al de la skill; un typo de sesión exploratoria aparece
+  una vez y nunca más. Van como nota aparte, fuera del conteo de errores de app: el
+  2026-09-15 el WARN lo dispararon 3 × `42703` (`v.fecha_limite_prorroga`,
+  `ev.fecha_entrega_real`, `t.fecha_inicio_programada`) que eran typos del MCP de la
+  propia sesión de monitoreo — cero errores reales de la app esa ventana.
 - **Si un `service` falla, prueba los otros antes de concluir "endpoint caído".**
   `postgres`, `api`, `auth`, `storage` y `realtime` son fuentes independientes: que
   una dé `FetchException` no implica que el logging esté caído. Reporta *cuál*
