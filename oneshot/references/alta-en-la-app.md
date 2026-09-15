@@ -150,7 +150,11 @@ estrategia · archived · user_id`
   (`estrategiaDe`).
 - **`party`** — array de uuids de `personajes`. Es lo que hace que la dificultad se recalcule
   sola; un encuentro sin party no tiene semáforo.
-- **`hazards`**, **`companions`** — arrays; vacíos si no aplican.
+- **`hazards`** — array de `{id, name, type, round}`, con `type ∈ 'always' | 'start' | 'mid' |
+  'end'`. Se guardan con el encuentro y salen en el panel PELIGROS del tracker. **No cuestan CR**:
+  es la única forma de apretar un clímax que ya está en el filo del presupuesto. `name` es una
+  línea corta y accionable, con el número de ronda delante si es programado.
+- **`companions`** — array; vacío si no aplica.
 - **`descripcion`** — aquí va lo operativo: **si es evitable, qué la dispara, y el presupuesto
   contra el de la party**. Y si las dos ediciones del monstruo difieren, dilo: el DM va a leer el
   read-aloud de una y tirar los dados de la otra.
@@ -234,3 +238,89 @@ final. Ofrece las tres opciones y deja que el DM elija:
 1. **Sin mapa**, corriendo por zonas. Un trazo en papel basta.
 2. **Generarlo** con la skill `battlemap`, que sale con la forma exacta que pediste.
 3. **Un mapa del catálogo** para lo que sí es interior — el después del asalto, no el asalto.
+
+## Menciones: `@[Nombre](seccion:uuid)`
+
+El único resaltado que la app entiende dentro de un bloque de texto, y además enlaza: el chip abre
+la ficha al hacer clic y da preview al pasar por encima. **El planeador no renderiza markdown**
+(`textToContentEditable` solo escapa HTML, sustituye menciones y convierte `\n` en `<br>`), así que
+`**negritas**` sale con los asteriscos puestos y la mención es lo que ocupa su lugar.
+
+Las siete secciones válidas salen de `MENTION_SOURCES` en `app.js` — córrelo, no lo cites:
+
+```bash
+node -e "
+const s = require('fs').readFileSync('app.js','utf8');
+const m = s.match(/const MENTION_SOURCES\s*=\s*\[[\s\S]*?\n\];/)[0];
+for (const x of m.matchAll(/key:\s*'([^']+)'[^}]*?label:\s*'([^']+)'(?:[^}]*?tab:\s*'([^']+)')?/g))
+  console.log((x[3] || x[1]).padEnd(20), '← tabla', x[1], '·', x[2]);
+"
+```
+
+Hoy: `npcs · ciudades · establecimientos · lugares · items · quests · personajes`. Ojo con la
+última: la **sección** que va en la mención es `personajes`, pero la clave de datos es `players`.
+
+### Dónde se pinta el chip y dónde sale en crudo
+
+| campo | ¿chip? | componente |
+|---|---|---|
+| `texto` de un bloque `texto` / `nota` | **sí** | `CuerpoTexto` — monta el motor de menciones |
+| `items[].t` de un `checklist` | **no** | `CampoEditable` (`textContent` pelado) |
+| `titulo` de cualquier bloque | **no** | `CampoEditable` |
+| `texto` de una `rama` / `ruta` | **no** | `CampoEditable` |
+
+Una mención fuera de la primera fila se ve literalmente como `@[Chana Tepetl](npcs:9717…)` en
+mitad del plan. Ahí va el nombre a secas.
+
+### Resolver los uuid de una sola consulta, antes de escribir
+
+Un uuid inventado **no falla**: se guarda igual y produce un chip que no abre nada.
+
+```sql
+select 'npcs' t, id::text, nombre from npcs where campaign_slug = 'one-shots'
+union all select 'lugares',  id::text, nombre from lugares  where campaign_slug = 'one-shots'
+union all select 'items',    id::text, nombre from items    where campaign_slug = 'one-shots'
+union all select 'quests',   id::text, nombre from quests   where campaign_slug = 'one-shots'
+union all select 'ciudades', id::text, nombre from ciudades where campaign_slug = 'one-shots'
+order by 1, 3;
+```
+
+### Barrido después de escribir
+
+Que todas resuelven, y que ninguna quedó en un campo que no las pinta:
+
+```sql
+with t as (select bloques::text b from session_plans where id = '<PLAN>'),
+m as (select distinct (regexp_matches(b, '@\[[^\]]+\]\((\w+):([0-9a-f-]{36})\)', 'g'))[1] sec,
+                      (regexp_matches(b, '@\[[^\]]+\]\((\w+):([0-9a-f-]{36})\)', 'g'))[2] eid from t)
+select m.sec, m.eid, coalesce(
+  (select nombre from npcs     where id = m.eid::uuid),
+  (select nombre from lugares  where id = m.eid::uuid),
+  (select nombre from items    where id = m.eid::uuid),
+  (select nombre from quests   where id = m.eid::uuid),
+  (select nombre from ciudades where id = m.eid::uuid), '‼ NO RESUELVE') resuelve
+from m order by 1, 3;
+```
+
+```sql
+-- menciones en crudo (checklist, títulos) + markdown que no se renderiza
+with recursive w(b) as (
+  select b from session_plans p, jsonb_array_elements(p.bloques) b where p.id = '<PLAN>'
+  union all select h from w, jsonb_array_elements(coalesce(w.b->'hijos','[]'::jsonb)) h)
+select
+ (select count(*) from w, jsonb_array_elements(coalesce(w.b->'items','[]'::jsonb)) i
+   where i->>'t' like '%@[%')                            as items_en_crudo,
+ (select count(*) from w where b->>'titulo' like '%@[%') as titulos_en_crudo,
+ (select count(*) from w where b->>'texto'  like '%**%') as markdown_suelto;
+```
+
+Los tres tienen que dar **0**.
+
+### El artículo duplicado
+
+`el @[El campanario de Belén](…)` se lee «el El campanario». Si el nombre de la entidad ya trae
+artículo, la mención va sin él delante:
+
+```bash
+grep -Eic '(el|la|los|las|del|al) @\[(El|La|Los|Las) ' plan.json   # tiene que dar 0
+```

@@ -8,38 +8,45 @@ listo para pegar y cómo se escribe sin romper nada.
 Un one-shot de 4 h. Ajusta el número de escenas con la tabla de P2; lo demás no cambia.
 
 ```
-☑ 0 · Mesa                                      [checklist]
-    · Líneas y velos preguntados
-    · Todos se pueden quedar las <N> h
-    · Party confirmado: <nombres>
+☑ SEGUIMIENTO — lo que ya pasó en mesa          [checklist]  badge «EN MESA», verde
+    · un punto por BEAT de la sesión, en orden — no tareas de preparación
+    · «Recibieron el encargo» · «Tienen la Losa» · «Tramo 2 cruzado» · «La puerta cayó»
+    · los estados con alternativa, escritos: «Berrío: muerto / preso / huido»
 
 ▸ 1 · APERTURA — 20 min                         [texto]   badge «0:00»
-    └ read-aloud literal + qué está pasando ahora mismo
+    └ dónde estamos · read-aloud literal · gancho común · EL ENCARGO
+      (lo de preparación —horas, party, pendientes— va en tres líneas aquí arriba)
 
-▸ 2 · Los 10 secretos                           [texto]   badge «DM», badgeColor rojo
-    └ Semillas de esta sesión                   [checklist]  las 3-5 que salen hoy
-
-▸ 3 · Escena A — 45 min · ✂ costura             [texto]   badge «0:20»
+▸ 2 · Escena A — 45 min · ✂ costura             [texto]   badge «0:20»
     ├ <Lugar>                                   [lugar]      refId → lugares
     ├ <Plano>                                   [mapa]       mapaId → mapa_nodos
     └ <Encuentro de camino>                     [encuentro]  encuentroId → encuentros
 
-▸ 4 · ¿Cómo llegan al final?                    [rama]
-    ├ Ruta 1 · <…>                  ★ probable  [ruta]
-    └ Ruta 2 · <…>                              [ruta]
+▸ 3 · Escena B — 45 min · ✂ costura             [texto]   badge «1:50»
+    ├ ¿De dónde sale <la pieza>?                [rama]
+    │   ├ Ruta 1 · <…>              ★ probable  [ruta]
+    │   └ Ruta 2 · <…>                          [ruta]
+    └ <La pieza>                                [tesoro]     refId → items
 
-▸ 5 · Escena B — 45 min · ✂ costura             [texto]   badge «1:50»
-
-▸ 6 · CLÍMAX — 60 min · NO SE CORTA             [texto]   badge «2:50», badgeColor rojo
+▸ 4 · CLÍMAX — 60 min · NO SE CORTA             [texto]   badge «2:50», badgeColor rojo
     ├ <Villano>                                 [npc]        refId → npcs
     ├ <Encuentro final>                         [encuentro]  estrategia `fm`
     │   ├ Villain actions 1 / 2 / 3             [texto]
     │   └ Entorno: <los 1-2 rasgos, copiados>   [texto]   ← el selector NO los guarda
     └ <Plano del clímax>                        [mapa]
 
-▸ 7 · Cierre y recompensa                       [texto]   badge «3:50»
-    └ <Tesoro>                                  [tesoro]     refId → items
+▸ 5 · CIERRE — 15 min                           [texto]   badge «3:50»
+    └ <Quest>                                   [quest]      refId → quests
+
+▸ 6 · LOS DIEZ SECRETOS — referencia            [texto]   badge «DM · referencia», gris
+    └ Cuáles salieron                           [checklist]  10 casillas, una por secreto
 ```
+
+**El orden importa y cambió.** Los secretos iban arriba y nadie los leía en mesa: el bloque de los
+diez es un ALMACÉN y va al final, mientras cada escena lleva al pie su propia sección
+`SECRETOS QUE PUEDEN SALIR AQUÍ` con la semilla concreta. Y el checklist de arriba dejó de ser
+«qué tengo que preparar» —eso se hace una vez, antes de empezar— para ser **el tracker de lo que la
+mesa ya hizo**, que es lo que el DM mira cada veinte minutos.
 
 ### Por qué así
 
@@ -53,6 +60,9 @@ Un one-shot de 4 h. Ajusta el número de escenas con la tabla de P2; lo demás n
 - **No hay tipo `secreto`.** Se retiraron los géneros narrativos a propósito (FR-012b): gancho,
   escena, secreto, pista y pivote eran cinco etiquetas para prosa con título. Los diez hechos son
   un `texto`; las semillas de hoy, un `checklist` hijo para ir marcando las que ya salieron.
+- **El planeador NO renderiza markdown.** `**negritas**` sale con los asteriscos puestos. El único
+  resaltado que la app entiende es la mención `@[Nombre](seccion:uuid)`, y solo en `texto`/`nota`
+  —ni en `checklist`, ni en `titulo`, ni en `rama`/`ruta`—. Ver `alta-en-la-app.md` §Menciones.
 - **`rama` para gazetteer también.** En una aventura de salas, la `rama` no es «qué ruta toman»
   sino «por dónde entran»; las salas cuelgan como `lugar` de la escena que las contiene.
 
@@ -73,37 +83,47 @@ Los campos por tipo, verbatim del `data-model.md`. `hijos` **siempre** presente,
 Comunes a todos: `id` (UUID único en el plan), `tipo`, `titulo`, `hijos`, y los opcionales
 `colapsado`, `badge`, `badgeColor`.
 
+Ojo con el `texto`: **es texto plano.** Sin markdown (`**` sale literal) y con `\n` de verdad;
+el único marcado que se pinta es la mención `@[Nombre](seccion:uuid)`.
+
 ```jsonc
 [
-  { "id": "…", "tipo": "checklist", "titulo": "0 · Mesa", "hijos": [],
+  { "id": "…", "tipo": "checklist", "titulo": "SEGUIMIENTO — lo que ya pasó en mesa",
+    "badge": "EN MESA", "badgeColor": "var(--green)", "hijos": [],
     "items": [
-      { "t": "Líneas y velos preguntados", "ok": false },
-      { "t": "Todos se pueden quedar las 4 h", "ok": false }
+      { "t": "Recibieron el encargo · cada quien contó cómo llegó", "ok": false },
+      { "t": "Tienen la pieza", "ok": false },
+      { "t": "El villano: muerto / preso / huido", "ok": false }
     ] },
 
   { "id": "…", "tipo": "texto", "titulo": "1 · APERTURA — 20 min",
     "badge": "0:00", "hijos": [],
-    "texto": "**Lee en voz alta:** …" },
+    "texto": "LEE EN VOZ ALTA:\n\n…\n\nEL ENCARGO — esto es lo que arranca la sesión.\n\n@[NPC](npcs:<uuid>) les pide …" },
 
-  { "id": "…", "tipo": "texto", "titulo": "2 · Los 10 secretos",
-    "badge": "DM", "badgeColor": "var(--red)", "colapsado": true, "hijos": [
-      { "id": "…", "tipo": "checklist", "titulo": "Semillas de esta sesión", "hijos": [],
-        "items": [{ "t": "…", "ok": false }] }
-    ],
-    "texto": "· El alcalde le debe dinero al gremio.\n    semillas: …" },
-
-  { "id": "…", "tipo": "texto", "titulo": "3 · Escena A — 45 min · ✂ costura",
+  { "id": "…", "tipo": "texto", "titulo": "2 · Escena A — 45 min · ✂ costura",
     "badge": "0:20", "hijos": [
       { "id": "…", "tipo": "lugar",     "titulo": "…", "refId": "<uuid de lugares>", "hijos": [] },
       { "id": "…", "tipo": "mapa",      "titulo": "…", "mapaId": "<uuid de mapa_nodos>", "hijos": [] },
       { "id": "…", "tipo": "encuentro", "titulo": "…", "encuentroId": "<uuid>", "hijos": [] }
-    ], "texto": "**Si vas tarde:** … ← la costura" },
+    ],
+    "texto": "QUÉ LA DISPARA: …\nQUÉ QUIEREN: …\nQUÉ SE LLEVAN: …\n\nSI VAS TARDE: … ← la costura\n\nSECRETOS QUE PUEDEN SALIR AQUÍ\n· 3 · … → semilla concreta de esta escena" },
 
-  { "id": "…", "tipo": "rama", "titulo": "4 · ¿Cómo llegan al final?",
-    "texto": "UN solo camino al clímax.", "hijos": [
-      { "id": "…", "tipo": "ruta", "titulo": "Ruta 1 · …", "probable": true, "texto": "", "hijos": [] },
-      { "id": "…", "tipo": "ruta", "titulo": "Ruta 2 · …", "texto": "", "hijos": [] }
-    ] }
+  { "id": "…", "tipo": "texto", "titulo": "3 · Escena B — 45 min · ✂ costura",
+    "badge": "1:50", "hijos": [
+      { "id": "…", "tipo": "rama", "titulo": "¿De dónde sale la pieza?",
+        "texto": "UNA sola. No las dos.", "hijos": [
+          { "id": "…", "tipo": "ruta", "titulo": "Ruta 1 · …", "probable": true, "texto": "COSTO: …\nGANA: …", "hijos": [] },
+          { "id": "…", "tipo": "ruta", "titulo": "Ruta 2 · …", "texto": "COSTO: …\nGANA: …", "hijos": [] }
+        ] },
+      { "id": "…", "tipo": "tesoro", "titulo": "…", "refId": "<uuid de items>", "hijos": [] }
+    ], "texto": "…" },
+
+  { "id": "…", "tipo": "texto", "titulo": "6 · LOS DIEZ SECRETOS — referencia",
+    "badge": "DM · referencia", "badgeColor": "var(--outline)", "colapsado": true, "hijos": [
+      { "id": "…", "tipo": "checklist", "titulo": "Cuáles salieron", "hijos": [],
+        "items": [{ "t": "1 · …", "ok": false }] }
+    ],
+    "texto": "1 · El alcalde le debe dinero al gremio.\n    DÓNDE: Escena A …\n    QUÉ CAMBIA: …" }
 ]
 ```
 
