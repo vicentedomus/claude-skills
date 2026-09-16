@@ -180,6 +180,20 @@ Tres roturas típicas, todas cometidas en la primera corrida:
 - **El villano aparece en el minuto 95.** Si el clímax es contra alguien, ese alguien tiene que
   haber sido **nombrado, oído o visto** antes. Es el *Slow Burn* de Flee, Mortals! §8, comprimido:
   en un one-shot bastan tres frases de aliados distintos durante una pelea previa.
+- **La escena arranca porque los jugadores «tienen curiosidad».** «QUÉ LA DISPARA: quieren ver qué
+  pasa» no es un disparador, es una esperanza. Un disparador es **alguien pidiendo algo concreto**,
+  con una consecuencia si no lo hacen: *«suban y bájenme a decir si esa puerta se puede abrir hoy;
+  si no se puede, paro la campana y todos nos vamos a morir de hambre con mucho orden»*. Eso
+  además le da a la mesa un criterio para saber cuándo terminó la escena.
+- **Un aliado habla en una escena a la que nunca llegó.** «En medio de la pelea, el cura les suelta
+  que…» — ¿de dónde salió el cura? Los aliados que reparten información **entran al grupo en la
+  apertura, con una razón para ir**, y hablan en los huecos (el camino, el respiro después del
+  combate), no entre turnos de iniciativa. Si un NPC solo existe para decir una frase, dila tú por
+  boca de otro que sí esté.
+- **El plan pide un objeto y nadie sabe dónde está.** «Consiguen una losa y brea» no es una escena:
+  es una elipsis. Cada pieza que la mesa necesita lleva escrito **quién sabe dónde está y por
+  qué lo sabe** —la cantera la conoce la cantera; la brea, el que trae las antorchas—. Y si la
+  pieza no es el reto de la sesión, **no le pongas prueba: dásela.**
 
 ---
 
@@ -293,6 +307,37 @@ El paréntesis final no es decoración: dice que **las semillas son ejemplos, no
 > con los caminos pre-escritos. Decisión del DM, 2026-09-12. Ver `docs/lazy-dm-manual.md` §2.4,
 > que ya lleva la tercera línea.
 
+### Dónde vive cada secreto: repartidos, no apilados
+
+Escribirlos bien no basta: **una lista de diez al principio del plan no se lee en mesa.** El DM
+está dirigiendo la escena A y los secretos están cuatro pantallas arriba, así que no salen. Eso
+fue justo lo que pasó en la primera corrida — diez secretos impecables y ninguno colgado de nada.
+
+La forma correcta son **dos sitios a la vez**:
+
+1. **En cada escena, al final del bloque:** una sección corta
+   `SECRETOS QUE PUEDEN SALIR AQUÍ`, con el número, una línea de qué es y **la semilla concreta
+   de esta escena**. Nada más — el «qué cambia» no se repite.
+2. **Al FINAL del plan, un bloque `texto` de referencia** con los diez completos (hecho +
+   semillas + qué cambia + `DÓNDE`), y un `checklist` hijo de diez casillas para tachar los que
+   salieron.
+
+```
+▸ 2 · ESCENA A            …texto de la escena…
+                          SECRETOS QUE PUEDEN SALIR AQUÍ
+                          · 3 · La leva no quiere estar ahí → disparan alto a propósito
+                          · 6 · Hay otro camino → Chana lo suelta si PREGUNTAN
+▸ 6 · LOS DIEZ SECRETOS   [texto]  badge «DM · referencia»   ← el almacén, al final
+    └ Cuáles salieron     [checklist]  10 casillas
+```
+
+Un secreto puede aparecer en **dos** escenas con semillas distintas: eso es una virtud, no una
+duplicación. Lo que no puede es aparecer en **ninguna** — si no supiste decir en qué bloque cae,
+la que falla es la semilla, no el sitio.
+
+**Y el «DÓNDE» se escribe en la ficha del secreto**, no solo en la escena: es lo que te deja
+mover el secreto cuando la mesa se salta esa escena entera.
+
 ---
 
 ## P5 · El clímax
@@ -319,6 +364,75 @@ Es lo único que la gente se lleva. Si el reglamento del clímax es **`fm`**, el
 
 **Filtrar por `source === 'FleeMortals'` no es opcional:** 36 nombres chocan con XMM y **no son la
 misma criatura** — el Kraken de FM es CR 26 y el de XMM, 23.
+
+### El clímax no puede ser la primera pelea con un jefe encima
+
+La regla de los «tres statblocks desconocidos» empuja a reciclar, y reciclando se llega sola a la
+trampa: el combate 1 son Soldiers + Artillery + minions, y el clímax son **los mismos** más el
+villano. En la hoja se ve distinto —sube el CR— y **en la mesa es la misma pelea otra vez**.
+
+**Compara el histograma de ROLES, no el CR.** Si los dos encuentros comparten más de la mitad de
+sus roles, todavía no tienes dos combates.
+
+| | Escena A | Clímax |
+|---|---|---|
+| ❌ mal | 3 Soldier · 2 Artillery · 10 Minion | 1 Leader · 3 Artillery · **2 Soldier** · 10 Minion |
+| ✅ bien | 3 Soldier · 2 Artillery · 10 Minion | 1 Leader · **5 Artillery** · **1 Brute** · 10 Minion |
+
+Lo que cambió en el ✅ no es el número: es que **desaparecieron los Soldiers**. La escena A era una
+pared de cuerpos en un pasillo —se avanza matando—; el clímax es campo abierto bajo fuego con un
+solo enemigo en el suelo, y ése no viene a hacer daño sino a **agarrar y tirar** al que lleva el
+objetivo. Mismo CR, misma mesa, otra pelea.
+
+Tres preguntas que separan dos combates de verdad:
+
+1. **¿De dónde viene el daño?** Del cuerpo a cuerpo ↔ de arriba, a distancia.
+2. **¿Qué resuelve el combate?** Matar a todos ↔ un reloj que no depende de matar.
+3. **¿Dónde está el enemigo?** En tu cara ↔ donde no lo alcanzas sin pagar algo.
+
+Si las tres respuestas se repiten, cambia la plantilla de roles antes de tocar el presupuesto.
+
+### El cierre necesita una decisión, no un epílogo
+
+Ganar no es un final. Un cierre de «cayó la puerta, ¿qué hace tu personaje?» le pide a la mesa que
+genere sola la emoción que el plan no le dio. **Lo que cierra una one-shot es un precio**, y el
+sitio barato de ponerlo es en la propia victoria: lo que usaron para ganar es lo que rompe algo
+que querían.
+
+El molde, y cabe en quince minutos:
+
+1. **La victoria, leída en voz alta, con el daño dentro.** El fuego que abrió la puerta está
+   comiéndose el grano que venían a salvar.
+2. **Tres cosas, dos manos.** Nómbralas tú —no preguntes «¿qué hacen?»— y dales UNA ronda: el
+   grano, las familias, el villano que se escapa. **Dos.** Treinta segundos para discutirlo.
+3. **El villano no pide clemencia.** Que termine su frase. Si tenía un argumento, éste es el
+   momento en que resulta que tenía razón en algo.
+4. **Un epílogo por lo que soltaron**, una frase cada uno, escritos de antemano. Que se note que
+   lo que eligieron cambió la ciudad.
+5. **Y ENTONCES** la vuelta de preguntas por jugador. Al final, no en lugar de.
+
+Si el punto 2 no existe, el cierre es una ceremonia. Y si las tres cosas no son cosas que la mesa
+**ya sabía que le importaban** —porque un secreto se las puso delante en la escena B—, es una
+sorpresa barata en vez de una decisión.
+
+### Los peligros son presupuesto gratis
+
+`encuentros.hazards` es un array de `{id, name, type, round}` con `type ∈ always | start | mid |
+end`, y se **persiste con el encuentro**: se escribe al armarlo y aparece en el tracker de combate,
+en el panel PELIGROS. No cuesta CR, así que es la palanca para apretar un clímax que ya está en el
+filo del presupuesto sin meter otro cuerpo en la iniciativa.
+
+Cómo se escriben:
+
+- **`always`** — las dos o tres reglas que gobiernan el espacio y que el DM olvida en la ronda 3:
+  quién tiene cobertura, qué le cuesta al que lleva el objetivo. Son recordatorios, no daño.
+- **Uno por ronda, y que escale**: entra alguien en R2, el terreno cambia en R3, arde en R4, se
+  acaba en R5. Un `hazard` por ronda le da al clímax una forma que se oye.
+- **Al menos uno a favor de la mesa.** El humo del aceite que ellos mismos provocaron les da media
+  cobertura. Si los cinco peligros son castigo, es una lista de multas.
+- **Nombre corto y accionable**, con el número: `«R2 · Aceite hirviendo: 10 pies frente a la
+  puerta, 2d6 al entrar o terminar ahí»`. El campo es una línea que se lee de un vistazo, no un
+  párrafo.
 
 Si el reglamento es `dnd2024`, el clímax se arma igual pero sin roles ni villain actions; la
 ficción la gobierna el Encounter Axis de `dnd-worldbuilder`.
@@ -355,19 +469,25 @@ El plan modular, que **es** el entregable. Plantilla completa, JSON listo y el `
 La forma, a grandes rasgos:
 
 ```
-☑ 0 · Mesa                          [checklist]  líneas y velos · horas · party
-▸ 1 · APERTURA                      [texto]      badge «0:00 · 20 min»
-▸ 2 · Los 10 secretos               [texto]      badge «DM» · rojo
-    └ Semillas de hoy               [checklist]
-▸ 3 · Escena A                      [texto]      badge «0:20 · 45 min · ✂»
+☑ SEGUIMIENTO                       [checklist]  badge «EN MESA» · el TRACKER de la sesión
+▸ 1 · APERTURA                      [texto]      badge «0:00 · 20 min»  · …y EL ENCARGO
+▸ 2 · Escena A                      [texto]      badge «0:20 · 45 min · ✂»
     ├ <Lugar> [lugar] · <Plano> [mapa] · <Encuentro> [encuentro]
-▸ 4 · ¿Cómo llegan al final?        [rama]       └ Ruta 1 ★probable · Ruta 2
-▸ 5 · Escena B                      [texto]      badge «1:50 · 45 min · ✂»
-▸ 6 · CLÍMAX                        [texto]      badge «2:50 · 60 min · NO SE CORTA» · rojo
+▸ 3 · Escena B                      [texto]      badge «1:50 · 45 min · ✂»
+    ├ ¿De dónde sale <la pieza>?    [rama]       └ Ruta 1 ★probable · Ruta 2
+    └ <La pieza> [tesoro]
+▸ 4 · CLÍMAX                        [texto]      badge «2:50 · 60 min · NO SE CORTA» · rojo
     ├ <Villano> [npc] · <Encuentro final> [encuentro]
     │   └ Villain actions · Entorno  [texto]     ← porque el selector no los guarda
-▸ 7 · Cierre                        [texto]      └ <Tesoro> [tesoro]
+▸ 5 · CIERRE                        [texto]      └ <Quest> [quest]
+▸ 6 · LOS DIEZ SECRETOS             [texto]      badge «DM · referencia» — el almacén, AL FINAL
+    └ Cuáles salieron               [checklist]  10 casillas
 ```
+
+**El checklist de arriba es un tracker, no una lista de tareas.** Lo de preparar —horas, party,
+pendientes— se hace una vez y cabe en tres líneas al principio de la apertura. Lo que el DM mira
+cada veinte minutos es **qué ya pasó**: un punto por beat, en orden, con los estados alternativos
+escritos (*«el villano: muerto / preso / huido»*).
 
 Dos cosas que **no** hay que construir, porque ya existen:
 
@@ -376,6 +496,62 @@ Dos cosas que **no** hay que construir, porque ya existen:
 - **No hay tipo `secreto`, y es a propósito** (spec 007, FR-012b: gancho/escena/secreto/pista eran
   cinco etiquetas para la misma cosa —prosa con título—). Los diez hechos son un `texto` con un
   `checklist` hijo.
+
+### El planeador NO renderiza markdown
+
+Medido en `react/prep/cuerpos/texto.tsx`: el cuerpo de un bloque `texto` monta el motor vanilla
+`textToContentEditable`, que hace **tres cosas y ninguna más** — escapa HTML, convierte
+`@[Nombre](seccion:uuid)` en un chip, y `\n` en `<br>`. **`**negritas**` sale con los asteriscos
+puestos**, y un plan lleno de `**` es un plan que el DM lee con basura encima.
+
+Escribe en texto plano, con la tipografía que sí sobrevive:
+
+```
+MAYÚSCULAS para las etiquetas de sección      QUÉ QUIEREN:  ·  LEE EN VOZ ALTA:
+·  para viñetas                               · Nah-Ual — Fog Cloud sobre el patio
+────────────────────────────────  para separar bloques de la misma tarjeta
+«comillas angulares» para lo que se lee en voz alta
+sangría de 4 espacios para la segunda línea de una viñeta
+```
+
+### Las menciones son el único resaltado que la app entiende
+
+Y son mejores que la negrita, porque además **enlazan**: el chip abre la ficha al hacer clic y
+enseña un preview al pasar por encima. El formato es literal, se escribe a mano en el campo:
+
+```
+@[Nombre exacto](seccion:uuid)
+```
+
+Las siete secciones válidas (`MENTION_SOURCES` en `app.js`, y la lista real se lee de ahí):
+
+| sección | tabla |
+|---|---|
+| `npcs` `ciudades` `establecimientos` `lugares` `items` `quests` | la del mismo nombre |
+| `personajes` | `players` — ojo: la **sección** es `personajes`, la **clave** es `players` |
+
+**Dónde se pintan y dónde no** — esto se mide, no se supone:
+
+| campo | ¿pinta el chip? | por qué |
+|---|---|---|
+| `texto` de un bloque `texto` o `nota` | **sí** | `CuerpoTexto` monta el motor de menciones |
+| `items[].t` de un `checklist` | **NO** | `CampoEditable` escribe `textContent` pelado |
+| `titulo` de cualquier bloque | **NO** | idem |
+| `texto` de una `rama` / `ruta` | **NO** | `CuerpoRama` también usa `CampoEditable` |
+
+O sea: una mención en un checklist o en un título **se ve como `@[Chana Tepetl](npcs:9717…)`**, en
+crudo, en mitad del plan. Ahí va el nombre a secas.
+
+Dos reglas de escritura, y las dos salieron de regarla:
+
+- **No le pongas artículo delante si el nombre ya lo trae.** `el @[El campanario de Belén](…)` se
+  lee «el El campanario». Barrido: `grep -Ei '(el|la|los|las|del|al) @\[(El|La|Los|Las) '`.
+- **La primera vez el nombre completo, después el corto.** El chip repetido doce veces en un
+  párrafo lo vuelve ilegible; menciona la entidad donde el DM necesita saltar a la ficha, no cada
+  vez que la nombras.
+
+**Antes de escribir menciones, resuelve los uuid de una sola consulta** y guárdalos en constantes:
+inventar un uuid no falla —se guarda igual— y produce un chip que no abre nada.
 
 ---
 
@@ -389,6 +565,14 @@ veredicto sea «no hace falta».
       de los ocho y el que caza las roturas gordas.
 - [ ] **Cada secreto tiene su «qué cambia»**, y cambia de verdad una decisión, una opción táctica o
       el trato con alguien. El que no, se borra.
+- [ ] **Cada secreto está colgado de al menos una escena**, y el bloque de referencia está al FINAL
+      del plan, no al principio.
+- [ ] **Cero `**` en el plan.** `grep -c '\*\*'` sobre los `texto` tiene que dar 0: el planeador no
+      renderiza markdown.
+- [ ] **Todas las menciones resuelven**, y ninguna está en un `checklist`, un `titulo` o una `rama`
+      —ahí se ven en crudo—. Consulta de barrido en `references/alta-en-la-app.md` §Menciones.
+- [ ] **Los dos combates no comparten la mitad de sus roles.** Compara el histograma, no el CR.
+- [ ] **El clímax tiene peligros**, al menos uno de ellos a favor de la mesa.
 - [ ] Cada `refId` / `encuentroId` / `mapaId` del árbol resuelve a una fila viva. **No son claves
       foráneas** — viven dentro de un jsonb y la base no los valida; si la entidad se borra el
       bloque queda huérfano y solo lo dice la UI.
@@ -472,6 +656,14 @@ Las tres dieron falsos negativos en una verificación real:
 - Planeaste cinco escenas para tres horas
 - Ninguna escena intermedia tiene costura de corte
 - **Un secreto no sabe decir qué cambia si la mesa lo descubre**
+- **Los diez secretos están al principio del plan y ninguna escena los menciona**
+- **El clímax es el combate de la escena A con un jefe encima**
+- **Escribiste `**negritas**` en un bloque del planeador**
+- **Metiste una mención en un checklist o en un título**
+- **Una escena arranca porque los jugadores «tienen curiosidad», sin que nadie les pida nada**
+- **Un aliado suelta información en una escena a la que nunca lo hiciste llegar**
+- **La mesa necesita un objeto y el plan no dice quién sabe dónde está**
+- **El cierre es un epílogo con preguntas, sin una sola decisión**
 - Los secretos dicen «si hablan con X» en vez del hecho
 - Escribiste `cf_*` sin haber leído el overlay de esa campaña
 - **Inventaste un valor para un campo `select` porque el enum no tenía el tuyo**
