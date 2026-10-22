@@ -89,6 +89,10 @@ cruce es el oro de la inspiración.
   (p. ej. "Vampire", no "Vampire (undead, CR 13)"; "Gothic Horror"; "Body Horror"). `canonicalize.py`
   fusiona por label normalizado → labels consistentes = mejor fusión cross-book. Usa nombres de
   `theme`/`motif` estables y reutilizables entre libros (no inventes sinónimos por libro).
+- **Nada de labels genéricos para cosas concretas.** Un lugar o sala con nombre común (`The
+  Citadel`, `Library`, `Shrine`) se fusionará con el primer homónimo de otro libro. Cualifícalo:
+  `Citadel of Thaymount`, `Sanctum Library`. Los genéricos sí valen para lo que de verdad es
+  compartido (temas, motivos, tipos de criatura, criaturas de catálogo).
 
 ## Prompt para cada subagente de extracción
 
