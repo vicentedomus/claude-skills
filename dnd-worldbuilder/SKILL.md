@@ -45,6 +45,9 @@ profesional. Los datos viven en Supabase (PostgreSQL). Todas las consultas usan 
    - Quest → `references/quest.md`
    - **Combate / Encuentro** → `references/combate.md` (incluye framework Encounter Axis + tabla XP XDMG 2024)
    - Item → `references/item.md`
+6. Si la entidad es **Ciudad, Establecimiento, Lugar o Combate**, lee también `references/mapas.md`:
+   esas entidades se proponen con un **mapa que ya exista** (de la campaña o del catálogo del
+   compendio) antes de inventar o generar uno.
 
 ---
 
@@ -54,22 +57,34 @@ profesional. Los datos viven en Supabase (PostgreSQL). Todas las consultas usan 
 skill `dnd-compendium` disponible (en este proyecto vive en `questkeep/compendium/graphify-out/`),
 es la **primera fuente de inspiración** — inventar desde cero es el último recurso.
 
-> **Para NPCs, empieza por las npc-cards, no por el grafo.** Son 3585 personas ya escritas
-> con esquema espejo de la tabla `npcs`, en JSON plano: no necesitan `graphify` ni que el
-> grafo esté disponible. Ver `references/npc.md` → «Semilla desde npc-cards». El grafo
-> sigue siendo la vía para temas, arquetipos, facciones y los otros 6 tipos de elemento.
+El grafo ya no es solo lore: `graph.json` tiene **~10.500 nodos en cuatro capas** —lore de 13 libros
+(~3.800, `file_type=document`), npc-cards (~5.300), facciones (~490, con aristas `pertenece_a` desde
+sus miembros) y map-stubs (~850)—. Las cifras se mueven; si te importan, cuéntalas en
+`compendium/sources.json` en vez de fiarte de estas.
+
+> **Para NPCs, empieza por las npc-cards, no por el grafo.** Son ~5.900 personas ya escritas
+> (100 aventuras) con esquema espejo de la tabla `npcs`, en JSON plano: no necesitan `graphify`.
+> Ver `references/npc.md` → «Semilla desde npc-cards». El grafo sigue siendo la vía para temas,
+> arquetipos, facciones y los otros tipos de elemento. **Para la planta de un sitio, ver
+> `references/mapas.md`.**
 
 1. Identifica el tema/arquetipo de lo que vas a crear (p. ej. "villano trágico atado a un lugar",
    "facción de intriga", "bosque con algo antiguo y hambriento").
-2. Consúltalo por la **vía sancionada del CLI**: `graphify query "<tema>"`,
+2. Consúltalo por la **vía sancionada del CLI**, **desde `questkeep/compendium/`** (busca
+   `graphify-out/graph.json` relativo al directorio actual; desde otro sitio falla con
+   `graph file not found`, o pásale `--graph <ruta>`): `graphify query "<tema>"`,
    `graphify explain "<nodo>"`, `graphify path "A" "B"` (o lee `GRAPH_REPORT.md` para comunidades,
-   **hyperedges/arquetipos** y "surprising connections").
+   **hyperedges/arquetipos** y "surprising connections"). Si `explain` responde *Ambiguous* (p. ej.
+   `Zhentarim` es a la vez un nodo de lore y una facción), repite con el id completo
+   (`faccion:zhentarim`). En los contenedores de Claude Code web `graphify` ya viene instalado
+   (paquete PyPI `graphifyy`); si faltara, `pip install graphifyy`, o lee `graph.json` —JSON plano—
+   con `python3`.
 3. Toma **un** arquetipo + sus `theme`/`motif` como **semilla de flavor**, **limando los nombres
-   propios Y los tags de dominio que no encajen**: el grafo es multi-libro (~3.072 nodos, NO solo
-   Ravenloft), así que un nodo puede arrastrar el setting de su libro (p. ej. el tag "Dominion of
-   Shatrekvan" de Ravenloft sobre un lugar goliath) → descarta el setting de origen y quédate con
-   el arquetipo (nada de "Strahd"/"Barovia"/"Shatrekvan" directo). El compendio es
-   museo/inspiración; el mundo de la campaña (Supabase) es la fuente de verdad.
+   propios Y los tags de dominio que no encajen**: el grafo es multi-libro (Ravenloft, Wildemount,
+   Faerûn, Eberron, Ravnica, Grim Hollow…), así que un nodo puede arrastrar el setting de su libro
+   (p. ej. el tag "Dominion of Shatrekvan" de Ravenloft sobre un lugar goliath) → descarta el setting
+   de origen y quédate con el arquetipo (nada de "Strahd"/"Barovia"/"Shatrekvan" directo). El
+   compendio es museo/inspiración; el mundo de la campaña (Supabase) es la fuente de verdad.
 
 Si no hay compendio disponible, sigue con los principios narrativos. Lo que tomes del compendio es
 *grounding* de sabor; el tono final y la coherencia los dan el lore del mundo (Paso 1) + los
@@ -172,6 +187,10 @@ escribe en tres capas:
 Para tipos con `subtipo→perfil` (Lugar, Ciudad, Establecimiento): puebla solo los `cf_*` del perfil del
 `subtipo`; manda el resto a `_hidden`.
 
+Si el DM eligió un mapa (Ciudad, Establecimiento, Lugar), va en la columna base **`mapa_id`**
+(→ `mapa_nodos.id`). Uno del catálogo se crea antes en `mapa_nodos`, oculto a los jugadores y sin
+duplicar su `img_url` — receta en `references/mapas.md`.
+
 **Coexistencia:** aditivo — no borres ni migres en masa columnas de otros registros. Migraciones
 perezosas solo donde se acordó (p. ej. `lider`→NPC de ciudad, `Místico`→Arcanista) al tocar la fila.
 
@@ -209,6 +228,9 @@ No se duplica trabajo — el session planner da la estructura, esta skill da la 
 - **Nunca escribir a la BD sin confirmación explícita del DM**
 - **El compendio es la primera fuente de inspiración (la musa):** consúltalo en el Paso 0.5 antes
   de inventar; inventar desde cero es el último recurso. Lima los nombres propios de la fuente.
+- **Mapas existentes primero:** para ciudades, establecimientos, lugares y combates, propón un mapa
+  que la campaña ya tenga o uno del catálogo del compendio antes de generar uno (`mapas.md`), y di
+  de qué peldaño salió.
 - El lore es fundamento, no decoración: si el lore dice X, la descripción lo hace sentir sin decirlo
 - Humor coherente con la cultura, nunca random
 - Cada entidad necesita al menos un detalle ancla memorable

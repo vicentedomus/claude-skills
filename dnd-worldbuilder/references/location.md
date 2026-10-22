@@ -48,6 +48,9 @@ origen · `cf_inspiracion`.
 2. Elige **`cf_subtipo`** → carga su perfil.
 3. Saca *flavor* del grafo por subtipo (bioma para naturaleza; facción para zona urbana) — limando setting.
 4. Siembra conexiones a la escena/quest/npcs.
+5. **Mapa:** propón uno que ya exista para `mapa_id` — un pin en el mapa de la región/ciudad si
+   cae dentro, o una planta del catálogo del compendio por `cf_subtipo` — antes de generar uno.
+   Ver `mapas.md`.
 
 Un lugar con `criatura`/`encuentro` + `cf_hazard` **es un semilla de combate** pre-armada → se enchufa
 al Encounter Axis (`combate.md`).
@@ -60,3 +63,4 @@ al Encounter Axis (`combate.md`).
 - [ ] si hay criatura residente, sus marcas son visibles antes (statblock del ETL)
 - [ ] al menos un elemento interactivo / gancho
 - [ ] misterio menor (algo sin explicación inmediata)
+- [ ] `mapa_id` propuesto desde un mapa existente (campaña o catálogo), o dicho por qué no lo hay

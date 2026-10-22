@@ -51,6 +51,8 @@ quests · `lider`(npc) · facción.
 3. Cultura/gobierno de una **comunidad-facción** del grafo + bioma de un **god-node** (`Magic as
    Industry` para Sleh) — limando setting.
 4. Teje la descripción fluida con `cf_detalle_ancla` como campo propio; siembra `lider`(npc) + conexiones.
+5. **Mapa:** si la campaña ya tiene un mapa de la región, la ciudad es un pin ahí; para la ciudad
+   en sí, propón un `asentamiento` del catálogo del compendio con su bioma. Ver `mapas.md`.
 
 ## Checklist de calidad
 
@@ -60,3 +62,4 @@ quests · `lider`(npc) · facción.
 - [ ] gobierno/cultura se siente sin decirse; bioma/clima como personaje
 - [ ] `lider` es rel a un NPC (no texto)
 - [ ] ≥1 conexión (comercio, rivalidad, visitantes)
+- [ ] `mapa_id` propuesto desde un mapa existente (campaña o catálogo), o dicho por qué no lo hay
