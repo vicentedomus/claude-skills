@@ -4,20 +4,55 @@
     {
       "id": 1,
       "prompt": "Ingiere Ravenloft: The Horrors Within (RHW) al compendio.",
-      "expected_output": "Verifica graphify + clon de questkeep; clona la fuente 5etools a /tmp; construye el corpus tipado con build-compendium-corpus.mjs (un archivo por unidad lógica, encabezados kind:); extrae con subagentes en paralelo usando la taxonomía centrada en género; canonicaliza intra-libro y luego une+canonicaliza contra compendium/extract.json; reconstruye graphify-out; reporta el delta (nodos/aristas/comunidades nuevas + fusiones cross-book) y commitea compendium/ a la rama. NO escribe a Supabase. NO commitea corpus crudo.",
-      "files": []
+      "expected_output": "Lee pipeline-journal.md antes de empezar. Verifica graphify, el clon de questkeep y que la skill esté materializada en .claude/skills/dnd-compendium/; clona la fuente 5etools a /tmp; construye el corpus tipado con build-compendium-corpus.mjs y revisa el reparto por kind; extrae con subagentes en paralelo con la taxonomía centrada en género; canonicaliza el libro solo; revisa las colisiones cross-book; fusiona con merge-book-extract.py y propaga con integrate-book-to-graph.py (por delta, con --dry-run primero); verifica el delta; actualiza sources.json y README y commitea. NO reconstruye el grafo entero con graphify. NO escribe a Supabase. NO commitea corpus crudo.",
+      "files": [],
+      "assertions": [
+        {"text": "Lee compendium/pipeline-journal.md (umbrales y gotchas) antes de la primera escritura"},
+        {"text": "Fusiona con compendium/merge-book-extract.py, NO pasando la unión entera por canonicalize.py"},
+        {"text": "Propaga a graph.json con compendium/integrate-book-to-graph.py, NO reconstruyendo graphify-out/ entero con graphify"},
+        {"text": "Revisa las colisiones de labels del libro contra el grafo antes de fusionar y las juzga una a una (no 'colisión = error')"},
+        {"text": "Corre los scripts de delta con --dry-run antes de la corrida real"},
+        {"text": "Revisa la prosa de algunos fragmentos (acentos, nombres de reglas en inglés), no solo el conteo"},
+        {"text": "No escribe en Supabase ni commitea el corpus markdown"}
+      ]
     },
     {
       "id": 2,
       "prompt": "Agrega el siguiente libro al grafo y dime qué se conectó con lo que ya teníamos.",
-      "expected_output": "Mismo flujo de ingesta. Énfasis en el Paso 4 (unión canonicalizada): reporta cuántas entidades del libro nuevo cayeron sobre nodos canónicos existentes (géneros, tipos de criatura, criaturas de catálogo) — las conexiones cross-book — como señal de que el compendio se teje en vez de duplicarse. Actualiza sources.json.",
+      "expected_output": "Mismo flujo del carril A. Reporta cuántas entidades del libro nuevo cayeron sobre nodos existentes (géneros, tipos de criatura, criaturas de catálogo, lugares de un setting compartido): las fusiones cross-book, como señal de que el compendio se teje en vez de duplicarse. Si salen en 0, comprueba los labels antes de aceptar que es una isla. Comprueba que extract.json y graph.json no divergen y actualiza sources.json.",
       "files": []
     },
     {
       "id": 3,
       "prompt": "Consulta el compendio: ¿qué arquetipos de darklord de horror gótico tenemos?",
-      "expected_output": "Modo consulta (no ingesta): consulta graph.json del compendio con /graphify query o revisa GRAPH_REPORT.md (comunidades, surprising connections, hyperedges arquetípicas). Devuelve patrones/arquetipos (p. ej. 'darklords de obsesión trágica') con su evidencia en el grafo, listos como semilla para dnd-worldbuilder. No genera la entidad de campaña por sí misma.",
+      "expected_output": "Modo consulta (no ingesta): corre graphify query/explain desde questkeep/compendium/ (o con --graph) o revisa GRAPH_REPORT.md (comunidades, surprising connections, hyperedges arquetípicas). Devuelve patrones/arquetipos (p. ej. 'darklords de obsesión trágica') con su evidencia en el grafo, listos como semilla para dnd-worldbuilder. No genera la entidad de campaña por sí misma.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Saca las NPC cards de la nueva aventura que salió en 5etools y mételas al compendio.",
+      "expected_output": "Carril B. Control sobre el árbol limpio primero (la cadena de integradores no mueve nada); corpus con build-adventure-corpus.py --chunk=45000; un subagente por parte, todos en un mensaje, con el prompt y el vocabulario cerrado de references/npc-cards.md, escribiendo a rutas explícitas del scratchpad; merge-chunk-cards.py con --parts; validación de esquema, enums y calidad del texto; resolve-npc-avatars.py; integrate-npcs-to-graph.py + integrate-factions-to-graph.py + build-npc-catalog.mjs; verifica que el catálogo ve la aventura; actualiza npc-cards.md y commitea.",
+      "files": [],
+      "assertions": [
+        {"text": "Corre el control (integradores sobre el repo sin cambios, diff vacío) ANTES de crear el fichero de cards, y no intenta git stash de un fichero sin trackear"},
+        {"text": "Trocea el corpus a ≤ ~45k palabras por subagente y despacha todos los subagentes en un solo mensaje"},
+        {"text": "El prompt de extracción usa el vocabulario cerrado de Halo (raza, tipo_npc, rol, estado) y prohíbe ampliarlo; razas fuera del enum van a null"},
+        {"text": "Pide narrativa en español con acentos y cf_statblock.name en inglés, por referencia (no copia statblocks)"},
+        {"text": "Pasa --parts explícito a merge-chunk-cards.py"},
+        {"text": "Abre y lee varias cards para revisar la calidad del texto antes de integrar"},
+        {"text": "Regenera npc-catalog.json con build-npc-catalog.mjs y comprueba que la aventura aparece en él"}
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "El grafo del compendio tiene comunidades raras, reconstrúyelo entero con graphify desde extract.json.",
+      "expected_output": "No lo hace sin más: explica que re-clusterizar disuelve las comunidades fijas de las capas map-stub (458), npc-card (459) y faction (460) y produce miles de comunidades nuevas (medido: 3614 donde hay 461), que es un cambio de ~250k líneas y que el rebuild limpio es una ronda propia con re-etiquetado de comunidades. Ofrece planearla o arreglar la comunidad concreta por delta, y deja la decisión al usuario.",
+      "files": [],
+      "assertions": [
+        {"text": "No ejecuta un rebuild completo de graphify-out/ sobre el repo"},
+        {"text": "Explica el coste con las cuatro capas y las comunidades fijas, citando el journal"},
+        {"text": "Propone una alternativa (ronda propia planificada, o arreglo por delta) y pregunta antes de actuar"}
+      ]
     }
   ]
 }

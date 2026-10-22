@@ -16,7 +16,7 @@ git clone --depth 1 https://github.com/5etools-mirror-3/5etools-src.git /tmp/5et
 | Statblocks de criaturas | `data/bestiary/bestiary-<id>.json` |
 | Lore/fluff de criaturas (descripciones narrativas) | `data/bestiary/fluff-bestiary-<id>.json` |
 | Magic items (todos los libros en un archivo; filtrar por `source`) | `data/items.json` |
-| Texto narrativo de aventuras | `data/adventure/adventure-<id>.json` |
+| Texto narrativo de aventuras (lore con `build-compendium-corpus.mjs --book=…`, NPC cards con `build-adventure-corpus.py`) | `data/adventure/adventure-<id>.json` |
 
 `<id>` es el código de fuente en minúsculas (p. ej. `rhw` para *Ravenloft: The Horrors Within*).
 Las fuentes activas de QuestKeep viven en `questkeep/data/5e/meta.json → sources`.
@@ -25,8 +25,10 @@ Las fuentes activas de QuestKeep viven en `questkeep/data/5e/meta.json → sourc
 
 - El **constructor de corpus** (`questkeep/scripts/build-compendium-corpus.mjs`) infiere el `kind`
   de cada sección por heurística de capítulo + overrides. Si un libro nuevo tiene una estructura
-  de capítulos distinta, revisa el `_corpus-manifest.json` que emite y ajusta los sets
-  `EXPLODE`/`SKIP`/`chapterKind` del script (en questkeep) antes de ingerir.
+  de capítulos distinta, revisa el `_corpus-manifest.json` que emite y prueba primero
+  `--whole-chapters="<título>=<kind>,…"` (AU: `magic items=item,tomb of the shadow
+  serpents=adventure`); solo si eso no basta, ajusta los sets `EXPLODE`/`SKIP`/`chapterKind` del
+  script (en questkeep).
 - La sección de bestiary **dentro del libro** suele ser solo punteros a statblocks; la prosa real
   vive en `bestiary-<id>.json` + `fluff-bestiary-<id>.json`. Por eso se pasan aparte.
 - El handler `{@area}` del ETL devuelve el ID del área, no el texto; el constructor de corpus ya
