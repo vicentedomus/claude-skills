@@ -72,6 +72,21 @@
         {"text": "La ficha resultante usa los campos cf_* de la ficha rediseñada, igual que en la vía card-first"},
         {"text": "DICE la falta de cobertura en la PROPUESTA que lee el DM, no solo en su razonamiento interno: si solo lo piensa, la vía degrada en silencio"}
       ]
+    },
+    {
+      "id": 10,
+      "prompt": "Crea una taberna nueva en Sleh donde los jugadores se reúnan con su contacto la próxima sesión.",
+      "expected_output": "Además de la ficha del establecimiento, la propuesta incluye una sección Mapa: primero mira los mapa_nodos de la campaña (y si Sleh tiene mapa, sugiere un pin ahí), después busca en el catálogo del compendio con query-map-index.mjs (--tipo=taberna --ambiente=urbano) y presenta hasta 3 candidatos con miniatura. Si el DM elige uno, crea el nodo en mapa_nodos oculto a los jugadores, con el nombre de la campaña y sin duplicar img_url, y pone mapa_id en la fila.",
+      "files": [],
+      "assertions": [
+        {"text": "Consulta los mapas que la campaña ya tiene (mapa_nodos tipo='map') antes de buscar en el catálogo o proponer generar uno"},
+        {"text": "Busca en el catálogo del compendio con query-map-index.mjs usando claves válidas de map-taxonomy.json (p. ej. --tipo=taberna --ambiente=urbano)"},
+        {"text": "Presenta como mucho 3 candidatos con fuente, salas/tamaño y enlace a la miniatura, y deja elegir al DM"},
+        {"text": "Dice de qué peldaño salió el mapa, o por qué no hay ninguno, en la propuesta que lee el DM"},
+        {"text": "Al escribir, el nodo nuevo en mapa_nodos lleva players_visible=false, img_url con la URL completa del img repo y el nombre de la campaña (no 'Elfsong Tavern'); comprueba antes que esa img_url no esté ya en el VTT"},
+        {"text": "Vincula el mapa con la columna base mapa_id de la fila de establecimientos, no con un cf_*"},
+        {"text": "No descarga la imagen al repo ni la sube a ningún sitio: modo referencia"}
+      ]
     }
   ]
 }
