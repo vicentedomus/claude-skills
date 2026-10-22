@@ -61,6 +61,9 @@ macropolis=Very Rare).
 3. Flavor del grafo por tipo (mercado/gremio para tiendas; deidad para templo) + la cultura de la
    `ciudad`, limando setting.
 4. Sesga exterior→interior con `cf_detalle_ancla` y `cf_gancho_interaccion` como campos propios.
+5. **Mapa:** propón para `mapa_id` una planta del catálogo del compendio por `tipo` (taberna, tienda,
+   templo…) y apunta el pin en el mapa de la ciudad si lo tiene. Ver `mapas.md`. Si eliges planta,
+   el interior describe **esa** planta (salas, niveles, accesos), no una inventada al lado.
 
 ## Checklist de calidad
 
@@ -70,3 +73,4 @@ macropolis=Very Rare).
 - [ ] humor coherente con la cultura del lugar; un misterio menor
 - [ ] perfil del `tipo` poblado; inventario acorde a la `categoria` de la ciudad
 - [ ] ≥1 conexión (item/quest/rumor/rivalidad)
+- [ ] `mapa_id` propuesto desde un mapa existente (campaña o catálogo), o dicho por qué no lo hay

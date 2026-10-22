@@ -226,6 +226,12 @@ DM elige **2**. La Regla de Tres queda cumplida (Protein + 2 ejes = 3 dimensione
 Mapa mental breve (texto, 3-5 oraciones): dónde vive cada eje, qué señales lo hacen
 descubrible por los PCs sin anunciarlo. El DM debe poder visualizar la sala al leerlo.
 
+**¿Hace falta mapa?** Si el combate pasa en un lugar/establecimiento que ya tiene `mapa_id`, ese es
+el mapa: coloca los ejes sobre él. Si no, ofrece las opciones en este orden —un mapa que la campaña
+ya tenga, una planta del catálogo del compendio (`--cuadros=40x25` para descartar pósters), generarlo
+con `battlemap`, o **sin mapa, por zonas**— y deja elegir al DM. Ver `mapas.md`, incluido por qué un
+clímax a cielo abierto rara vez está en el catálogo.
+
 ### 8. Proponer las 3 capas sensoriales del monstruo-Protein
 
 **Proactivamente**, ofrecer al DM:

@@ -72,12 +72,12 @@ estas 18, los 17 valores distintos del compendio quedan cubiertos al 100%.
 
 ## Semilla desde npc-cards — la primera opción
 
-El compendio tiene **3585 npc-cards** extraídas de 36 aventuras oficiales
+El compendio tiene **5866 npc-cards** extraídas de 100 aventuras oficiales
 (`questkeep/compendium/npc-cards.*.json`), con esquema **espejo de la tabla `npcs`**.
 Para un NPC **concreto** son mejor semilla que el grafo: en vez de componer los 5 slots
 desde átomos abstractos, se **descompone** una persona entera ya escrita por un
 profesional. Es el patrón «desenterrar los blobs» aplicado al revés — y no necesita
-`graphify` (que en contenedores de Claude Code web ni siquiera está instalado).
+`graphify`: es JSON plano.
 
 ```
 grafo:  tema abstracto  → componer 5 slots → NPC
@@ -86,7 +86,7 @@ cards:  persona entera  → descomponer en 5 slots → limar setting → NPC
 
 ### Retrieval
 
-Índice plano (478 KB en crudo, 89 KB comprimido): `questkeep/compendium/npc-catalog.json`, con claves cortas
+Índice plano (780 KB en crudo, 145 KB comprimido): `questkeep/compendium/npc-catalog.json`, con claves cortas
 `n·r·t·ro·f·a·s·sl` = nombre, raza, tipo_npc, rol, faccion, avatar_url, fuente, slug.
 
 ```bash
@@ -107,17 +107,17 @@ print([c for c in json.load(open('questkeep/compendium/npc-cards.TFTYP-TFOF.json
 ```
 
 Si `npc-catalog.json` aún no existe (lo genera QuestKeep), el fallback es un glob sobre
-los 36 `npc-cards.*.json` — más verboso, y **no da el mismo resultado**: los shards traen
-variantes sin acentos (p. ej. `Lider politico`, 7 filas) que el catálogo normaliza. Por
-glob, `Líder político` da 224; por catálogo, 231 (la cifra de la tabla de abajo).
+los 100 `npc-cards.*.json` — más verboso, pero hoy da las mismas cifras: los shards ya traen
+`tipo_npc` normalizado (antes había variantes sin acentos, p. ej. `Lider politico`, que solo el
+catálogo arreglaba). Si vuelven a divergir, manda el catálogo.
 
 **Cobertura por vocación** (para saber cuándo esta vía aplica):
 
 ```
-Otro 1092 · Guardia 354 · Arcanista 339 · Religioso 290 · Criminal 290 ·
-Líder político 231 · Aventurero 203 · Noble 174 · Comerciante 162 · Tabernero 127 ·
-Minero 66 · Bibliotecario 57 · Herrero 55 · Cazador 45 · Gremio 38 · Granjero 36 ·
-Alquimista 26
+Otro 1829 · Arcanista 596 · Guardia 525 · Religioso 488 · Criminal 465 ·
+Líder político 416 · Aventurero 301 · Comerciante 282 · Noble 274 · Tabernero 187 ·
+Bibliotecario 86 · Minero 84 · Cazador 83 · Herrero 81 · Gremio 66 · Granjero 63 ·
+Alquimista 40
 ```
 
 `Proxeneta` —muy usado en Halo (17 filas)— **no tiene ni una card**. Cuando la vocación
@@ -130,7 +130,7 @@ distingue un NPC nacido de una persona ya escrita de uno compuesto desde un tema
 la vía **degrada en silencio** — que es peor que no tenerla, porque parece que funcionó. Cuando
 sí hubo card, ese mismo papel lo cumple `cf_inspiracion`.
 
-**No te fíes de la tabla de arriba para decidir: cuéntalo.** Estas cifras son de 2026-08-10 y el
+**No te fíes de la tabla de arriba para decidir: cuéntalo.** Estas cifras son de 2026-10-22 y el
 catálogo se regenera. Filtra el catálogo por la vocación pedida y mira qué sale; si dieras por
 buena la tabla estarías recitando este documento en vez de consultar el dato.
 
