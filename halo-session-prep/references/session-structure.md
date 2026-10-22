@@ -1,195 +1,75 @@
-# Plantilla — Estructura de Sesión
+# Vocabulario del árbol — bloques y convenciones de halo
 
-Esta plantilla genera el contenido que luego se commitea en `session_plans`, **anidado dentro de la
-columna `bloques` (jsonb)** — `bloques['bloque_strong_start']`, `['bloque_escenas']`, etc. (las columnas
-`bloque_*` sueltas son legacy y la UI las ignora; ver Paso 4b del SKILL). Las **entidades** que el prep
-crea (NPCs, tesoros, locaciones) usan la **ficha rediseñada** por tipo (`cf_*`, ancla a catálogo ETL;
-ver `../dnd-worldbuilder/references/<tipo>.md`).
+El plan de una sesión es un **árbol de bloques** en el Planeador (spec 007 de questkeep). Este
+archivo **no es una plantilla**: cada sesión decide su forma en el Paso 3a. Aquí está el vocabulario
+—qué hace cada bloque y cuándo conviene— y las convenciones de texto que el DM ya usa en mesa.
 
-El estilo es cinematográfico-directo (Matt Mercer al hablar, no al escribir) + principios de
-Lazy DM y DMG 2024.
+**El JSON y cómo se escribe** viven en `../../oneshot/references/plantilla-arbol.md` (campos por
+tipo, `hijos` siempre presente, texto plano, menciones, reglas de la rama, verificación). No se
+duplican aquí.
 
----
+## Los bloques
 
-```markdown
-# 📜 Propuesta Sesión — [Título narrativo de la sesión]
+| Tipo | Qué guarda | Úsalo para |
+|---|---|---|
+| `texto` | `texto` plano con `@[Nombre](seccion:uuid)` | Cada beat de la sesión, y todo lo que se lee o se consulta |
+| `checklist` | `items: [{t, ok}]` | El SEGUIMIENTO de arriba y los secretos que salieron |
+| `rama` + `ruta` | `texto`; una ruta `probable` | Una decisión con caminos que el DM quiere tener escritos. Nace con dos rutas |
+| `encuentro` | `encuentroId` → `encuentros` | El combate. Lee monstruos, mesa y dificultad **en vivo** |
+| `mapa` | `mapaId` → `mapa_nodos` | El plano de una escena |
+| `npc` · `lugar` · `ciudad` · `establecimiento` · `quest` · `tesoro` · `statblock` | `refId` | La ficha viva de lo que aparece en el beat. Sin hijos se pinta como **chip en línea** |
 
-## ⚡ Apertura fuerte (bloque_strong_start)
-[Una escena inicial concreta que lanza la acción de inmediato. Sin preámbulos.
-Describe exactamente qué ven/oyen/sienten los jugadores al abrir los ojos en la sesión.
-Debe tener al menos un detalle sensorial específico.
-Ej: "La sesión abre con el estrépito de pasos en el pasillo del burdel —
-los guardias ya saben que están ahí."]
+No uses `nota` ni `peligro`: el DM los retiró del catálogo (2026-08-26). Un peligro de combate va
+**en el encuentro** (`encuentros.hazards`), no como bloque.
 
-## 🗺️ Escenas posibles (bloque_escenas)
-[3-5 escenas como ingredientes. Cada una: objetivo claro + obstáculo. El DM no tiene
-que usarlas todas ni en ese orden.]
+## La espina que funciona en mesa
 
-- **[Nombre de escena]** — Tipo: [combate/social/exploración/misterio/revelación].
-  Objetivo: [qué quieren lograr]. Obstáculo: [qué lo impide].
-- **[Nombre de escena]** — Tipo: [...]. Objetivo: [...]. Obstáculo: [...].
-- **[Nombre de escena]** — Tipo: [...]. Objetivo: [...]. Obstáculo: [...].
+Un ejemplo, no un molde (sesión de viaje de 3h, halo 21-oct-26):
 
-### Escenas de combate — Encounter Axis
-
-Si una escena es `tipo: combate`, además del objetivo/obstáculo, debe incluir el campo
-**`ejes`** (framework Encounter Axis — ver `../dnd-worldbuilder/references/combate.md`).
-**Regla de Tres obligatoria:** 1 Protein + ≥2 ejes adicionales (Optimizers / Hazards / Chaos).
-
-**Shape del campo `ejes` en la escena:**
-
-```json
-{
-  "protein": {
-    "tipo": "Kill Them | Kill the Target | Protect the Target | Stop the Flood | Escape | Stop the Ritual | Get the MacGuffin | Pull the Lever / Destroy the Nexus",
-    "descripcion": "...",
-    "condicion_cierre": "qué cierra el encuentro",
-    "retreat_number": "HP% o # bajas (solo si Protein = 'Kill Them'; null en los demás)"
-  },
-  "optimizers": [
-    {
-      "tipo": "The High Ground | The Stash | The BIG Gun | Levers 'n' Traps | Boons | Reinforcements",
-      "descripcion": "...",
-      "como_descubrirlo": "cómo los PCs lo encuentran sin anunciárselos"
-    }
-  ],
-  "hazards": [
-    {
-      "tipo": "No-Go Zones | Vats of Acid | Frogger | Thin Ice",
-      "descripcion": "...",
-      "stages": ["stable", "cracked", "broken"]
-    }
-  ],
-  "chaos": [
-    {
-      "tipo": "Fire | Lights Out | The Random Stash | Bring It Down | Unlabeled Levers | Free Them | Activate It",
-      "descripcion": "...",
-      "trigger": "qué dispara este elemento (ronda X, HP Y, acción Z)"
-    }
-  ],
-  "espacio": "mapa mental breve — dónde vive cada eje en la sala",
-  "dificultad": "Low | Moderate | High",
-  "xp_budget": "valor_tabla × # PCs (XDMG 2024)"
-}
+```
+☑ SEGUIMIENTO — lo que ya pasó en mesa         badge «EN MESA», verde
+▸ 1 · APERTURA — El atracadero vacío           badge «0:00 · 15 min»
+    └ chips: Aukan · Sleh · El rescate de Brenna
+▸ 2 · EL ARCHIVO DE RAMMEL                     badge «0:15 · 35 min · ✂»
+    └ chips: Rammel · Torben · Orvo · Pim · Capitanía del Canal
+▸ 3 · CAMINO A LAS CUMBRES                     badge «0:50 · 25 min · ✂»
+▸ 4 · LA CACERÍA                               badge «1:15 · 60 min · NO SE CORTA», rojo
+    └ chips: El Pasto Alto · Tavra  +  [encuentro]
+▸ 5 · GANCHO — banderas de Khaz-Alun           badge «2:15 · 20 min»
+▸ 6 · LOS SECRETOS — referencia                badge «DM · referencia», gris, plegado
+    └ ☑ Cuáles salieron
 ```
 
-El diseño de esta escena se delega a `dnd-worldbuilder` vía `references/combate.md` (flujo
-de 8 pasos: contexto → dificultad → budget → 2-3 combos de monstruos → 3 Proteins → 4 ejes
-→ narración del espacio → 3 capas sensoriales del monstruo-Protein).
+- **El reloj va en el badge** (hora de inicio · duración · `✂` si se puede recortar). El índice
+  del Planeador muestra badge + título de cada raíz: se lee como escaleta.
+- **En campaña larga el último beat es un gancho**, no un cierre: siembra la siguiente sesión.
+- Sesión **de viaje o investigación** → lista de beats. Sesión **en un sitio** (torreón, barco,
+  mansión) → una situación: locación + habitantes con su comportamiento + meta.
 
-## 🔍 Secretos y pistas (bloque_secretos)
-[3-5 secretos que el party puede descubrir. Para cada secreto, múltiples caminos.
-No importa cuál encuentren — todos llevan al mismo lugar.]
+## Las etiquetas dentro de un `texto`
 
-- **[Secreto 1]**
-  - Si hablan con [NPC]: [pista A]
-  - Si registran [lugar]: [pista B]
-  - Si tienen éxito en [habilidad]: [pista C]
+El texto es plano: lo que estructura un beat son etiquetas en mayúsculas y separadores
+(`────────────────────────────────`). Las que el DM ya reconoce:
 
-- **[Secreto 2]**
-  - ...
+| Etiqueta | Qué va debajo |
+|---|---|
+| `GLOSARIO —` | La definición de un término inventado que aparece en este bloque. Arriba del todo |
+| `LEE EN VOZ ALTA:` | El párrafo literal, entre «». Nunca un puntero a otra ficha |
+| `QUÉ LA DISPARA:` · `QUÉ QUIEREN:` · `QUÉ SE LLEVAN:` | La escena en tres líneas |
+| `LO QUE TÚ SABES Y ELLOS NO:` | Lo que es solo del DM |
+| `SI VAS TARDE (✂):` | Qué se corta y cómo se resume |
+| `MENÚ DE SUCESOS` | En un viaje: 2-3 sucesos para elegir según el ritmo |
+| `CÓMO SALE DE ESCENA` | Pocas salidas (normalmente dos), cada una con `Siguiente sesión:` |
+| `SECRETOS QUE PUEDEN SALIR AQUÍ` | `· N · <una línea> → <la semilla de esta escena>` |
+| `DETALLE ANCLA:` | Lo que la mesa va a repetir de una criatura o un NPC |
 
-## 🎭 NPCs activos esta sesión (bloque_npcs)
-**Regla dura: mínimo 6 NPCs, composición 4 existentes + 2 nuevos.** Cada NPC explica su
-**relación con la sesión** — qué rol narrativo cumple, por qué aparece, cómo se cruza con los
-objetivos. No vale dejarlo vacío.
+Las menciones `@[Nombre](seccion:uuid)` son el único marcado que se pinta. Úsalas para toda
+entidad que ya tenga fila (NPCs, PJs como `personajes`, lugares, ciudades, quests).
 
-| NPC | Existente/Nuevo | Ubicación | Relación con sesión | Qué quiere | Cómo suena |
-|-----|------|-----------|---------------------|------------|------------|
-| [Nombre] | Existente | [Dónde está] | [Qué aporta a la sesión: pista, obstáculo, aliado, etc.] | [Motivación real] | [1 línea de arquetipo de voz] |
-| [Nombre] | Existente | ... | ... | ... | ... |
-| [Nombre] | Existente | ... | ... | ... | ... |
-| [Nombre] | Existente | ... | ... | ... | ... |
-| [Nombre] | **Nuevo** | ... | ... | ... | ... |
-| [Nombre] | **Nuevo** | ... | ... | ... | ... |
+## El combate en el árbol
 
-Para cada NPC **nuevo**, además de la tabla, generar la **ficha rediseñada** (`../dnd-worldbuilder/references/npc.md`):
-- `cf_descripcion_fisica` + `cf_distintivo` (público — lo que el DM narra)
-- `cf_forma_de_hablar` + `cf_motivacion` + `cf_secreto` (DM; sensibles → `_hidden`)
-- `cf_statblock` (del ETL, por vocación) — ya **no** `primera_impresion`/`notas_roleplay`
-
-En el Paso 4 del skill, el DM confirma si estos 2 NPCs se guardan en la tabla `npcs`. Si sí,
-la transición `nuevo → existente` ocurre ahí (INSERT con `conocido_jugadores=false`,
-`campaign_slug='halo'`). El flag `nuevo` queda como snapshot histórico de esta sesión.
-
-## 🏛️ Locaciones (bloque_locaciones)
-[3-5 lugares con descripción sensorial y **relación con la sesión**. No vale describir un lugar
-que no aporte a ninguna escena.]
-
-| Lugar | Tipo | Región | Relación con sesión | Descripción sensorial |
-|-------|------|--------|---------------------|----------------------|
-| [Nombre] | [Urbano/Naval/etc.] | [Ciudad/Región] | [Qué escena ocurre aquí, qué rol cumple] | [1-2 líneas sensoriales] |
-
-## 💰 Tesoros y recompensas (bloque_tesoros)
-**Regla dura: del catálogo 5e VIGENTE (el ETL `data/5e/items.json`), nunca inventados.**
-(Ver `../dnd-worldbuilder/references/catalogos.md`; **no** la tabla `items_catalog` huérfana.)
-
-Prioridad:
-1. **match_directo** — item oficial del ETL que satisface tal cual. Sin reskin.
-2. **reskin** — solo si nada encaja: fila homebrew en `items_catalog` (`es_homebrew`, `base`=oficial,
-   mismas stats), flavor nuevo (`../dnd-worldbuilder/references/item.md`).
-3. **Nunca** inventar items.
-
-| Tesoro (nombre narrativo) | Item base (Supabase) | Tipo | Rareza | Portador sugerido | Reskin aplicado |
-|---------------------------|----------------------|------|--------|--------------------|-----------------|
-| [Nombre con flavor] | [nombre_item_base + item_id] | [match directo / reskin] | [común/raro/etc.] | [PJ] | [Texto del reskin si aplica, o `—` si es match directo] |
-
-## ⚖️ Momento pivote
-[La decisión, confrontación o revelación central de la sesión. Lo que la hace memorable.
-Debe conectar con al menos una escena y un secreto.
-Ej: "Sera les revela que el cristal no fue robado — ella lo vendió voluntariamente."]
-
-## 🎲 Cierre sugerido / Gancho siguiente sesión
-- Cierre natural: [situación al terminar]
-- Gancho 1: [algo sin resolver que tire al party hacia adelante]
-- Gancho 2: [opcional]
-
-## ⚔️ Monstruos / Enemigos (bloque_monstruos)
-**Regla dura: del catálogo 5e VIGENTE (el ETL `data/5e/bestiary.json`), nunca inventados.**
-(Ver `../dnd-worldbuilder/references/catalogos.md`; **no** la tabla `monstruos` de ~6 filas.)
-
-Prioridad:
-1. **match_directo** — statblock del ETL que encaja narrativa y mecánicamente. Sin reskin.
-2. **reskin** — solo si nada encaja: fila homebrew en `monstruos` (`es_homebrew`, `base`). **Stat block
-   no cambia**, solo flavor (3 capas sensoriales — ofrecidas proactivamente por `combate.md`).
-3. **Nunca** inventar stat blocks.
-
-| Enemigo (nombre narrativo) | Stat block base (tabla monstruos) | CR | Cantidad | Tipo | Contexto narrativo |
-|-----------------------------|------------------------------------|----|----|------|--------------------|
-| [Nombre con flavor] | [nombre_monstruo_base + monstruo_id] | [1/4, 1, 3, etc.] | [#] | [match directo / reskin] | [Rol táctico, prioridades, comportamiento observable] |
-
-Si es reskin, incluir las 3 capas narrativas del monstruo (primera señal en el entorno antes
-del encuentro, encuentro visual con detalle ancla, comportamiento en combate con patrones
-observables).
-
-**Dificultad y budget XP:** calibrar con tabla XDMG 2024 (Low/Moderate/High × # PCs, sin
-multiplicador por cantidad). Detalles en `../dnd-worldbuilder/references/combate.md`.
-
-## 📝 Notas privadas DM
-[Solo para Vicente. Motivaciones ocultas de NPCs, contingencias si el plan falla, secretos a
-largo plazo.]
-- [NPC]: su verdadera motivación es [...]
-- Si el party hace [X]: contingencia es [...]
-- Secreto a largo plazo: [...]
-```
-
----
-
-## Notas sobre la plantilla
-
-**Sobre las escenas:** son ingredientes, no actos obligatorios. Si los jugadores ignoran una
-escena y crean la suya propia, perfecto — el DM tiene contexto para improvisar.
-
-**Sobre los secretos:** múltiples caminos a la misma info. Si el party no encuentra la pista A,
-puede encontrar la B. Nunca un secreto con un único camino.
-
-**Sobre los NPCs:** el campo "Cómo suena" es solo una línea de arquetipo
-(ej: "habla despacio, nunca mira a los ojos"). No se preparan diálogos completos.
-El piso de 6 NPCs (4+2) es **regla dura**, no calibrable por duración.
-
-**Sobre el momento pivote:** una sesión sin pivote es olvidable. Revelación, traición, decisión
-moral, o consecuencia inesperada.
-
-**Calibrar por duración (solo escenas y secretos, NO NPCs):**
-- Sesión de 2h → 2-3 escenas, 2-3 secretos, ≥6 NPCs (piso fijo)
-- Sesión de 3-4h → 3-5 escenas, 3-5 secretos, ≥6 NPCs (piso fijo)
+El Encounter Axis (`../../dnd-worldbuilder/references/combate.md`) sigue siendo el criterio de
+diseño, pero ya no tiene campo propio: el Protein y los ejes se escriben **en el texto del beat**,
+y lo que pasa en una ronda concreta va como **peligro** del encuentro (una tirada de sigilo, la
+llegada de un NPC, el monstruo oculto que un peligro con `revela` destapa). El bloque `encuentro`
+cuelga del beat del combate. Las notas tácticas como `texto` hijos, solo si el DM las quiere.
