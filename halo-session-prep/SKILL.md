@@ -14,7 +14,7 @@ description: >
   Frases de activación típicas: "prepara la sesión", "session prep", "genera el prep",
   "qué hacemos la próxima sesión", "notas de DM".
 compatibility:
-  tools: [Supabase MCP, Agent]
+  tools: [Supabase MCP]
 ---
 
 # Halo — Session Prep Skill
@@ -28,12 +28,16 @@ mismo tiempo **expande el mundo** (2 NPCs nuevos cada sesión). Los tesoros y st
 **catálogo 5e vigente (el ETL)**, no de las tablas Supabase casi vacías — nunca se inventan (ver
 `../dnd-worldbuilder/references/catalogos.md`).
 
-**Modelo de campos (rediseño 2026):** las entidades nuevas se generan con la **ficha rediseñada** por
-tipo (`dnd-worldbuilder/references/<tipo>.md` + `data-model` del rediseño): campos `cf_*` en
-`custom_data`, ancla a catálogo ETL, `subtipo→perfil` para tipos heterogéneos, sensibles en `_hidden`.
-**Coexistencia:** aditivo — lo viejo (fichas planas) sigue operando; nada de UPDATE masivo. Migraciones
-perezosas solo donde se acordó (`lider`→NPC de ciudad city-by-city; `Místico`→Arcanista al tocar la
-fila). **Nunca escribir estructura ni datos sin confirmación del DM.**
+**Destino: un plan modular.** El prep es un **árbol de bloques** en el Planeador de la app
+(`session_plans.bloques` como array, spec 007 de questkeep). Cada sesión tiene su propia forma: la
+skill no impone plantilla, enseña el vocabulario (`references/session-structure.md`) y reusa el
+contrato de escritura de la skill `oneshot` (`../oneshot/references/plantilla-arbol.md`).
+
+**Modelo de campos:** las entidades nuevas se generan con la ficha por tipo de `dnd-worldbuilder`
+(`references/<tipo>.md`), pero **se escriben en los campos que la app muestra para la campaña**
+(overlay `entity_schemas`): un `cf_*` que el overlay no declara no se pinta. Ver Paso 4a.
+**Coexistencia:** aditivo — nada de UPDATE masivo, y a una ficha existente se le **añade**, no se le
+sobrescribe. **Nunca escribir estructura ni datos sin confirmación del DM.**
 
 ---
 
@@ -92,6 +96,7 @@ SELECT m.id, m.created_at::date AS fecha,
 FROM public.bitacora_mensajes m
 JOIN public.bitacoras b ON b.id = m.bitacora_id
 WHERE b.campaign_slug = 'halo' AND b.owner_role = 'dm' AND m.deleted_at IS NULL
+  AND length(regexp_replace(m.content_html, '<[^>]+>', ' ', 'g')) > 300  -- fuera los «mensaje de prueba»
 ORDER BY m.created_at DESC
 LIMIT 10;
 
@@ -139,12 +144,25 @@ WHERE n.ciudad_id = 'uuid_ciudad' AND NOT n.archived AND n.campaign_slug = 'halo
 > homebrew (`es_homebrew`, `base`). Filtrar el ETL por substring (`cr`/`tipo` son strings compuestos).
 
 ```sql
--- Party real (para calibrar combate): nivel/clase de los PJs
-SELECT nombre, clase, raza, nivel, ac, hp_maximo
-FROM personajes
-WHERE campaign_slug = 'halo' AND NOT archived
-ORDER BY nombre;
+-- La mesa: los PJs se agrupan en carpetas (character_folders = «mesas»). La mesa
+-- del día es el default del Paso 2, no la lista cruda (que trae pruebas y monturas).
+SELECT f.nombre AS mesa, p.id, p.nombre, p.clase, p.subclase, p.raza, p.nivel, p.ac, p.hp_maximo, p.jugador, p.descripcion
+FROM personajes p LEFT JOIN character_folders f ON f.id = p.folder_id
+WHERE p.campaign_slug = 'halo' AND NOT p.archived
+ORDER BY f.nombre NULLS LAST, p.nombre;
+
+-- Fuentes apagadas en la campaña: una criatura de aquí NO resuelve en Encuentros.
+SELECT cc_disabled_sources FROM campaigns WHERE slug = 'halo';
+
+-- Planes modulares que el DM ya dirigió (cualquier campaña): de aquí salen sus
+-- convenciones de forma (reloj en el badge, costura, SEGUIMIENTO, secretos al final).
+SELECT id, nombre, campaign_slug FROM session_plans
+WHERE jsonb_typeof(bloques) = 'array' AND jsonb_array_length(bloques) > 0
+ORDER BY updated_at DESC LIMIT 5;
 ```
+
+Repasa a los PJs como pide el manual Lazy DM (§2.1): **backgrounds y descripción**. Un detalle de
+la hoja suele ser el arco personal de la sesión (*«un gnomo azul que cree que es un goliath»*).
 
 **Higiene de datos al leer entidades:** la BD tiene ruido — entradas de prueba (p. ej.
 "Fighter Prueba", "Pruebo"), animales/monturas ("Nelly la Yegua", "Altino el Caballo Albino")
@@ -159,410 +177,340 @@ Si no encuentras algo mencionado por el DM, anótalo como `[no encontrado]` y pr
 Con el contexto de Supabase en mano, haz **solo las preguntas necesarias** — no preguntes lo
 que ya encontraste. Agrúpalas en un solo mensaje:
 
-1. ¿Cuándo es la próxima sesión? *(para el nombre y fecha de la nota)*
-2. ¿Cuál es el objetivo de los jugadores para esa sesión?
-3. ¿Cuántas horas tiene la sesión? *(calibrar contenido)*
-4. ¿Hay combate planeado? ¿Con quién? *(acota la búsqueda de monstruos)*
-5. ¿Hay revelación o giro importante que quieras que ocurra?
-6. ¿Hay algún NPC nuevo que quieras forzar, o dejamos que la skill proponga los 2 nuevos?
+1. ¿Cuándo es la sesión? *(para el nombre y la fecha del plan)*
+2. ¿Quién juega? Default: **la mesa** (la carpeta de `character_folders`), nombrando a cada PJ
+   con su nivel. *«Los de la mesa Miércoles: Pithor 4, Lupin 4, Maverick 4, Alexios 3, Doran 4.»*
+3. ¿Cuál es el objetivo de los jugadores para esa sesión?
+4. ¿Cuántas horas tiene la sesión? *(calibrar contenido)*
+5. ¿Hay combate? ¿Con quién, y **con qué reglamento: Flee, Mortals! o el XP del DMG 2024?**
+   El reglamento **se pregunta en cada sesión** (decisión del DM, 2026-10-21): no hay default.
+6. ¿Hay revelación o giro importante que quieras que ocurra?
+7. ¿Hay algún NPC nuevo que quieras forzar, o dejamos que la skill proponga los 2 nuevos?
 
-El techo es **6 preguntas** en ese mensaje, y **no se inventan preguntas fuera de esas seis**: si
+El techo es **7 preguntas** en ese mensaje, y **no se inventan preguntas fuera de esas siete**: si
 vas a preguntar algo que tú mismo vas a deducir treinta líneas más abajo, no lo preguntes.
 
-**Cada una de las seis se resuelve de una de dos formas, nunca en silencio:**
+**Cada una se resuelve de una de dos formas, nunca en silencio:**
 
 - **(a) Se omite**, porque el Paso 1b ya la contestó. Al omitirla, **nombra el dato y de dónde
   salió**: *«No te pregunto las horas — las dos últimas sesiones fueron de 3h
   (`session_plans.input_data.duracion_horas`); asumo 3h salvo que digas otra cosa.»* Una frase
-  paraguas del tipo «el resto ya lo saqué de Supabase» **no vale**: no es verificable y suele
-  tapar que no se miró.
+  paraguas del tipo «el resto ya lo saqué de Supabase» **no vale**.
 - **(b) Se pregunta, con el default ya derivado** de la BD o de `learnings.md`, para que el DM
-  confirme en vez de redactar: *«¿combate en tier High contra la guardia del gremio, como las dos
-  últimas?»*
+  confirme en vez de redactar.
 
-**Las que la BD no puede contestar se preguntan igual.** La fecha de la próxima sesión, el giro
-que quieres que ocurra y el NPC que quieras forzar **no están en ninguna tabla**: omitirlas en
-silencio es peor que preguntarlas. Ojo con inferir el día de la semana — los `session_plans` de
-halo son **miércoles**, y el único sábado es un one-shot de otro grupo; una inferencia de calendario
-mal hecha te mete una fecha equivocada en el nombre de la nota.
+**Las que la BD no puede contestar se preguntan igual**: la fecha, el reglamento, el giro y el NPC
+forzado no están en ninguna tabla. Ojo con inferir el día de la semana — los planes de halo son
+**miércoles**; verifica el día con `date` antes de escribirlo.
 
-**Las alertas de contradicción van aparte y no cuentan para el techo.** Si el contexto que dio el
-DM en el Paso 1a contradice lo que dice Supabase (Paso 1b) — p. ej. el DM dice que el party está
-en un lugar y la bitácora dice que se fueron de ahí hace meses —, señálalo aunque ya haya 6
-preguntas: es información que el DM necesita.
+**Si el reglamento es Flee, Mortals! y la mesa tiene niveles mezclados, avísalo en el mismo
+mensaje.** La app promedia el nivel **hacia abajo** (`react/encuentros/estrategias/fm.ts`, como pide
+el libro): con 4·4·4·3 calcula nivel 3, y un encuentro de CR 4 sale «Extremo» en su semáforo.
+Pregunta a qué nivel quiere calibrar; si elige otro distinto al de la app, el plan lo dice junto al
+encuentro.
 
-> **Pero una «alerta» que le pide al DM que elija es una pregunta, y cuenta.** El carve-out
-> cubre lo informativo («ojo: esto no cuadra»), no lo que espera un turno de respuesta («¿cuál de
-> estos dos puentes narrativos prefieres?»). Si necesitas que decida, es la séptima pregunta y
-> tienes que sacrificar otra.
+**Las alertas de contradicción van aparte y no cuentan para el techo** (el DM dice que el party
+está en un lugar y la bitácora dice otro). **Pero una «alerta» que le pide al DM que elija es una
+pregunta, y cuenta.**
 
-### Paso 3 — Construir la propuesta (co-diseño sección por sección)
+### Paso 3 — Co-diseñar el árbol
 
-**Modo de trabajo preferido del DM (co-diseño):** no entregar el borrador completo de golpe.
-Recorrer las etapas de la sesión **una por una** y, en cada sección, **ofrecer 3 opciones**
-distintas (no variaciones cosméticas: deben diferir en enfoque, tono o consecuencia). El DM
-elige una, pide mezclar, o pide ajustar; recién entonces se pasa a la siguiente sección. El
-prep se va construyendo en conjunto, no se presenta cerrado.
+El entregable es un **plan modular**: un árbol de bloques en el Planeador de la app (spec 007).
+**No hay plantilla**: cada sesión tiene su propia forma, y la skill enseña vocabulario y criterio
+(`references/session-structure.md`), no un formulario.
 
-Orden sugerido de las etapas: **Strong Start → Escenas → Combate → Secretos & Pistas → NPCs
-(4 existentes + 2 nuevos) → Locaciones → Tesoros → Momento pivote → Notas DM.**
+#### 3a. Acordar la espina antes de llenarla
 
-Para cada sección:
-1. Presenta **3 opciones** etiquetadas (A/B/C) con 1-2 líneas cada una y, si aplica, su
-   gancho/consecuencia. Da una recomendación breve.
-2. Espera la decisión del DM (elige / mezcla / ajusta).
-3. Fija lo acordado y avanza a la siguiente etapa.
+Propón primero **los bloques raíz** de esta sesión y espera el visto bueno. Mira los planes
+modulares que el DM ya dirigió (Paso 1b) y copia sus convenciones. La forma que funciona en mesa:
 
-Mantén un **resumen vivo** de lo ya fijado para que el DM no pierda el hilo entre secciones.
-Solo cuando todas las secciones estén acordadas se arma el borrador final y se pasa al Paso 4.
+- **SEGUIMIENTO** arriba: un `checklist` con badge «EN MESA» y un punto por beat de la sesión, con
+  los estados con alternativa escritos («La presa: de Cumbre Rota / de Lanza de Ceniza / compartida»).
+- **Beats numerados**, cada uno un `texto`, con **el reloj en el badge**: `0:15 · 35 min · ✂`
+  (✂ = se puede recortar) o `NO SE CORTA`. El índice del Planeador lee esos badges como escaleta.
+- **Un gancho al final**, no un cierre: es una campaña larga, la última escena siembra la siguiente.
+- **LOS SECRETOS** al final, plegado, con un `checklist` hijo para tachar los que salieron.
+
+Una sesión de viaje pide lista de beats; una sesión en un sitio pide **situación** (locación +
+habitantes con su comportamiento + meta) — `questkeep/docs/lazy-dm-manual.md` §2.3.
+
+#### 3b. Co-diseño sección por sección
+
+**Modo de trabajo preferido del DM:** no entregar el borrador completo de golpe. Recorre las
+secciones **una por una** y, en cada decisión abierta, **ofrece 3 opciones** distintas (enfoque,
+tono o consecuencia; no variaciones cosméticas), con una recomendación. Si el DM rechaza las 3 y
+da su propia visión, incorpórala y sigue ofreciendo opciones en la siguiente decisión abierta.
+Mantén un **resumen vivo** de lo ya fijado.
+
+Orden (el del manual Lazy DM, que manda sobre el viejo de esta skill): **strong start → secretos →
+locaciones → escenas → NPCs → combate → tesoros.**
 
 Principios guía (aplican a todas las opciones que ofrezcas):
 
-- **Prep = ingredientes, no script**: el DM improvisa sobre esto
-- **Strong Start**: la apertura lanza la acción de inmediato, sin preámbulo
-- **Escenas posibles**: 3-5 escenas con objetivo + obstáculo cada una
-- **Secrets & Clues**: múltiples caminos a la misma información
-- **Mundo se sigue expandiendo**: 2 NPCs nuevos por sesión, bien integrados
+- **Prep = ingredientes, no script**: el DM improvisa sobre esto.
+- **Strong Start**: la apertura lanza la acción de inmediato, sin preámbulo.
 - **Compendio primero (la musa)**: para cualquier elemento NUEVO (locación, gancho, tono de
-  escena, villano/arquetipo), consulta primero el **compendio de flavor** (`questkeep/compendium/graphify-out/`)
-  por la **vía sancionada del CLI**: `graphify query "<tema>"`, `graphify explain "<nodo>"`,
-  `graphify path "A" "B"` (o lee `GRAPH_REPORT.md` para hyperedges/arquetipos). Toma un
-  arquetipo/`theme`/`motif` como semilla, **limando los nombres propios Y los tags de dominio que no
-  encajen**: el grafo es **multi-libro (~3.072 nodos / 377 archivos, NO solo Ravenloft)**, así que
-  un nodo puede arrastrar el setting de su libro (p. ej. Batan trae el tag "Dominion of Shatrekvan"
-  de Ravenloft, que no pega con goliaths) → quédate con el arquetipo, descarta el setting. Inventar
-  desde cero es el último recurso. (El compendio es inspiración; Supabase es la fuente de verdad.)
-  **NPCs concretos no pasan por este CLI**: van por npc-card (ver más abajo, «2 nuevos» y
-  `dnd-worldbuilder/references/npc.md` → «Semilla desde npc-cards»), que no depende de graphify.
-- **Nada inventado**: todo secreto/gancho/pista nace de un hecho en BD o recap, o se marca como propuesta nueva a aprobar. No disfrazar flavor de NPC (p. ej. una línea de `notas_roleplay`) como secreto de trama.
-- **Consistencia causal**: si un NPC posee un objeto o sabe algo, debe haber una razón in-world explícita. Cazar plotholes antes de presentar (¿de dónde sacó X esa prueba/llave/carta?).
-- **Decisión con consecuencias**: cuando ofrezcas una elección importante, telegrafía la ruta alternativa para que los jugadores la vean, dale a cada rama su propio beat/combate, y cierra con una escena de Desenlace que enumere los resultados.
+  escena, villano, facción), consulta primero el compendio por la vía sancionada del CLI —
+  `graphify query "<tema>"`, `graphify explain "<nodo>"` — y las npc-cards y `place-index.json`.
+  Toma el arquetipo, **lima nombres propios y tags de setting**, y cita la semilla al proponer.
+  El grafo es multi-libro: un nodo puede arrastrar el setting de su libro. Al terminar, borra
+  `compendium/graphify-out/cache/` (graphify la deja y ensucia el árbol de git).
+- **Nada inventado**: todo secreto, gancho o pista nace de un hecho en BD o recap, o **se marca
+  como propuesta** a aprobar. Al presentar, distingue explícitamente *(hecho)* de *(propuesta)*.
+- **Consistencia causal**: si un NPC posee un objeto o sabe algo, hay una razón in-world explícita.
+- **Decisión con consecuencias**: telegrafía la ruta alternativa y dale a cada rama su beat.
 
-**Reglas duras por sección** (se auditan en el Paso 6):
+**Las tres reglas del texto** (salieron de rechazos del DM; aplican a todo bloque `texto`):
 
-#### NPCs — **mínimo 6, composición 4 existentes + 2 nuevos**
+1. **Cada momento trae su texto literal.** Una sección `LEE EN VOZ ALTA:` con el párrafo completo,
+   nunca un puntero («lee su primera impresión» no basta si la escena depende de ella).
+2. **Ninguna referencia queda colgando.** Todo término inventado —una institución, una facción,
+   una costumbre («el Diván», «la Piedra de las Cuentas»)— se define en el plan, en una línea
+   `GLOSARIO —` arriba del bloque donde aparece por primera vez. Auto-chequeo antes de escribir:
+   cada sustantivo propio y cada «ese/el/la» deíctico, *¿está resuelto en esta página?*
+3. **Separar lo que sabe el DM de lo que sabe la mesa**: sección `LO QUE TÚ SABES Y ELLOS NO`.
 
-- **4 existentes**: selecciona los más relevantes a la quest, ciudad o lugar objetivo de la sesión.
-- **2 nuevos**: genera frescos invocando el flujo de `dnd-worldbuilder` con `references/npc.md`
-  (la **ficha rediseñada**: `cf_descripcion_fisica`/`cf_distintivo`/`cf_forma_de_hablar`/`cf_statblock`
-  + situacionales — ya **no** `primera_impresion`/`notas_roleplay`).
-  **Primera opción: una npc-card del compendio** (`npc.md` → «Semilla desde npc-cards»):
-  filtra por `tipo_npc`×`raza`, descompón su prosa en los `cf_*` y **lima el setting**
-  (nombre nuevo; `faccion`/`familia` **nunca** se copian: son de Faerûn). Si la vocación no
-  tiene cobertura —`Proxeneta` no tiene ni una card—, dilo y cae al grafo (`genome.md`) o a
-  los principios. El `cf_statblock` se reverifica contra el ETL (`catalogos.md`).
-- Cada NPC (existente o nuevo) lleva el campo **"Relación con la sesión"**: qué rol narrativo cumple,
-  por qué aparece, cómo se cruza con los objetivos. No vale dejarlo vacío.
-- Marca cada NPC con flag `existente` o `nuevo`. Este flag se preserva como snapshot histórico
-  de esa sesión.
-- La transición `nuevo → existente` en la BD ocurre en el Paso 4 (ver abajo).
+**Salidas de escena: pocas y limpias.** Normalmente dos, cada una con su consecuencia escrita para
+la **siguiente sesión** (`Siguiente sesión: …`). No ramifiques por cada combinación posible: el DM
+improvisa el resto.
 
-#### Locaciones — **cada una explica su relación con la sesión**
+#### NPCs — **mínimo 6: 4 existentes + 2 nuevos**
 
-- Cada locación lleva campo "Relación con la sesión": qué escena ocurre ahí, qué rol cumple
-  (combate, social, revelación, exploración). No vale dejarlo vacío.
+- **4 existentes**: los más relevantes a la quest, ciudad o lugar de la sesión.
+- **2 nuevos**: primero una **npc-card** del compendio (`dnd-worldbuilder/references/npc.md` →
+  «Semilla desde npc-cards»): filtra por `tipo_npc`×`raza`, lima el setting, nombre nuevo. Si la
+  vocación no tiene cobertura, cae al grafo o a los principios. Statblock por vocación contra el
+  ETL (`catalogos.md`), reverificado.
+- Cada NPC lleva su **relación con la sesión** (qué rol cumple, por qué aparece). No vale vacía.
+- `rol` solo admite `Neutral`/`Aliado`/`Enemigo`: `Antagonista`→`Enemigo`, `Informante`→`Neutral`.
 
-#### Secretos & ganchos — **anclados a la fuente, nada inventado**
+#### Locaciones — **todo sitio con nombre es una entidad**
 
-- Cada secreto sale de (a) un hecho en BD (quest, NPC, item, recap) o (b) se marca como
-  **propuesta nueva** para que el DM la apruebe. Nunca presentar como "secreto de sesión" algo
-  que en realidad es flavor de un NPC (p. ej. una muletilla de `notas_roleplay`).
-- **Múltiples caminos (rule of three):** entidades o info *gated* por investigación (un NPC
-  oculto, una prueba) deben tener ≥2-3 vías de descubrimiento, repartidas entre lo social y lo
-  de acción, para que el grupo no se quede sin verlo.
-- **Plothole check:** antes de presentar, pregunta por cada pieza clave "¿por qué este NPC
-  tiene/sabe esto?". Si no hay razón in-world, invéntala con base en el mundo existente o
-  recórtala. (Ej. real: "¿por qué Rammel tiene el libro de Torben?" → porque archiva el
-  comercio de la ciudad y descifró los manifiestos.)
+Si el plan nombra un sitio («el libro de salidas de la capitanía del canal»), ese sitio **nace como
+fila** en `lugares` (o `establecimientos` si es un negocio con dueño) y se enlaza en el plan con chip
+y mención. Se genera con `dnd-worldbuilder/references/location.md`: **propósito** ligado a la
+escena, **atmósfera** con ≥2 sentidos, al menos un elemento interactivo y un **misterio menor**.
 
-#### Tesoros — **del catálogo 5e VIGENTE (el ETL), nunca inventados.** Regla de prioridad estricta:
+#### Secretos — **diez hechos, semillas solo en los que salen hoy**
 
-> **Fuente correcta:** el catálogo vigente es el **ETL** `questkeep/data/5e/items.json` (2062, XDMG
-> 2024, con Common/Artifact) — **no** la tabla `items_catalog` (669 filas `DMG'24` huérfanas, sin
-> commons). La tabla `items` son las **instancias** de campaña; `items_catalog` es el **store de
-> homebrew** (`es_homebrew`, `base`). Delegar a `../dnd-worldbuilder/references/catalogos.md`.
+Formato y reglas en `questkeep/docs/lazy-dm-manual.md` §2.4: el hecho abstraído, `semillas`, `QUÉ
+CAMBIA` (si no cambia una decisión, una opción táctica o un trato, es relleno) y `DÓNDE` se cuelga
+en el árbol. Viven en **dos sitios**: al pie de cada beat, `SECRETOS QUE PUEDEN SALIR AQUÍ` con la
+semilla de esa escena, y completos en el bloque final. Crosscheck contra los recaps: si la party
+ya lo sabe, no es secreto.
 
-1. **match_directo** — un item oficial del **ETL** que encaja tal cual → referenciarlo, sin escribir.
-2. **reskin** — invocar `dnd-worldbuilder` con `references/item.md`: **fila homebrew** en `items_catalog`
-   (`es_homebrew=true`, `base`=oficial del ETL, **misma mecánica**), flavor nuevo. La instancia va a
-   `items` con `cf_item_base`.
-3. **Nunca inventar.** El ETL ya trae commons/artifacts; si faltara un oficial, darlo de alta verbatim.
+#### Tesoros — **del catálogo 5e vigente (el ETL), nunca inventados**
 
-Cada tesoro lleva: `cf_item_base` (ref al ETL/homebrew), flag `match_directo | reskin`, y el flavor si aplica.
+Prioridad: **match_directo** (oficial del ETL `data/5e/items.json`) > **reskin** (homebrew en
+`items_catalog` con `es_homebrew` y `base`, misma mecánica) > nunca inventar. Delegar a
+`../dnd-worldbuilder/references/catalogos.md`. Para el bloque `tesoro` hace falta una fila
+(`items` o `items_catalog`); si el tesoro solo vive en el ETL, nómbralo en el texto.
 
-#### Combate / Encuentro — invocar `dnd-worldbuilder` con `references/combate.md`
+#### Combate / Encuentro
 
-Los combates se diseñan como **encuentros multi-dimensionales** (framework Encounter Axis),
-no como listas de monstruos. Delegar a `dnd-worldbuilder` con `references/combate.md` pasando:
+**El reglamento es el que el DM eligió en el Paso 2.**
 
-- Party composition (nivel y clases de `personajes`)
-- Ubicación del combate y quest/tono
-- Catálogo `monstruos` consultado en Paso 1b (filtrado por CR y `entorno`)
+- **Flee, Mortals!** — lee `questkeep/docs/flee-mortals-manual.md` antes de proponer. La
+  aritmética la hace `react/encuentros/estrategias/fm.ts`: no la recalcules a mano. **Prefiere
+  criaturas del propio libro**: solo ellas traen **rol** (Brute, Controller, Skirmisher…), y la
+  composición se arma por roles. Filtra por `source === 'FleeMortals'`: 36 nombres chocan con XMM.
+  Para un monstruo único, FM pide un **Solo** (tabla de Solos), no una criatura normal sola.
+- **DMG 2024** — tabla de XP por personaje (abajo) × nº de PJs reales.
 
-La skill hermana retorna:
+**Antes de elegir ninguna criatura, comprueba que su fuente está activa en la campaña**
+(`campaigns.cc_disabled_sources`, Paso 1b). Una criatura de una fuente apagada **no resuelve** en
+la isla de Encuentros: sale el id crudo, «CR ?» y 0 XP.
 
-1. **1 entrada de `bloque_escenas`** con `tipo: "combate"`, `objetivo`, `obstaculo`, `espacio`
-   y el nuevo campo **`ejes`** JSONB (`protein` + `optimizers[]` + `hazards[]` + `chaos[]`).
-   Cumple la **Regla de Tres**: 1 Protein + ≥2 ejes adicionales.
-2. **N entradas de `bloque_monstruos`**, una por tipo de monstruo del encuentro (con
-   `cantidad`, `contexto_narrativo`, y si hay reskin, las 3 capas sensoriales en
-   `reskin_primera_senal` / `reskin_encuentro` / `reskin_comportamiento`).
+Reglas que no cambian: **≥1 combate difícil** por default (tier High / Hard); pieza central
+temática + apoyos, no enjambre trivial; **muestra la cuenta** (criaturas, CR o XP, total, umbral);
+nunca inventar statblocks (match_directo del ETL > reskin homebrew con `base`).
 
-**Reglas estrictas para monstruos:**
+**Llegada por sorpresa** (un refuerzo que cae en la ronda N): marca ese monstruo **oculto** en el
+encuentro y añade un **peligro programado** con `revela` apuntando a él (desde questkeep #600).
+Tira iniciativa y cuenta para la dificultad, pero la mesa no lo ve hasta que el peligro lo destapa.
+Los **peligros** sirven también como recordatorios con ronda (una tirada de sigilo, la llegada de
+un NPC); su texto es solo el nombre, así que la regla va completa en él.
 
-1. **Primero** busca un statblock del **ETL** (`questkeep/data/5e/bestiary.json`, 1169) que encaje. Si
-   encaja, úsalo (`kind:compendium`). **No** la tabla `monstruos` (~6 filas) — es solo store de homebrew.
-2. **Solo si nada encaja**, `combate.md` aplica reskin: **fila homebrew** en `monstruos`
-   (`es_homebrew`, `base`=oficial del ETL, **nunca el stat block**). Ver `catalogos.md`.
-3. **Nunca inventar** stat blocks.
+**La criatura principal se describe en dos capas** (`dnd-worldbuilder/references/combate.md` §8):
+**primera señal** (lo que perciben antes de verla) y **encuentro** con un **detalle ancla** que la
+mesa va a repetir, ligado a una acción real de su ficha. La tercera capa, el **comportamiento en
+combate**, **solo si el DM la pide**: no la escribas por default.
 
-Cada monstruo lleva: ref al statblock base (`{kind, name/id, source}`), flag `match_directo | reskin`,
-cantidad, contexto narrativo, y si es reskin las 3 capas completas.
+**Tabla XP budget por personaje (XDMG 2024)** — multiplica por nº de PJs reales:
 
-**Dificultad — calibrar contra el party REAL y mostrar la cuenta:**
+| Nivel | Low | Moderate | High | | Nivel | Low | Moderate | High |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 50 | 75 | 100 | | 11 | 1 900 | 2 900 | 4 100 |
+| 2 | 100 | 150 | 200 | | 12 | 2 200 | 3 700 | 4 700 |
+| 3 | 150 | 225 | 400 | | 13 | 2 600 | 4 200 | 5 400 |
+| 4 | 250 | 375 | 500 | | 14 | 2 900 | 4 900 | 6 200 |
+| 5 | 500 | 750 | 1 100 | | 15 | 3 300 | 5 400 | 7 800 |
+| 6 | 600 | 1 000 | 1 400 | | 16 | 3 800 | 6 100 | 9 800 |
+| 7 | 750 | 1 300 | 1 700 | | 17 | 4 500 | 7 200 | 11 700 |
+| 8 | 1 000 | 1 700 | 2 100 | | 18 | 5 000 | 8 700 | 14 200 |
+| 9 | 1 300 | 2 000 | 2 600 | | 19 | 5 500 | 10 700 | 17 200 |
+| 10 | 1 600 | 2 300 | 3 100 | | 20 | 6 400 | 13 200 | 22 000 |
 
-1. Lee `personajes` (`campaign_slug='halo'`) y **cuenta los PJs reales**, descartando entradas
-   de prueba/animales (p. ej. "Fighter Prueba", "Pruebo", monturas como "Nelly la Yegua"). Usa
-   nivel y cantidad reales — no asumas 4.
-2. Calcula el presupuesto con la **tabla XP por personaje XDMG 2024** (abajo; Low/Moderate/High,
-   sin multiplicador por cantidad) × nº de PJs. Ej.: 5 PJs nivel 4 → Low 1 250 / Moderate 1 875 /
-   **High = 2 500**. (Si el DM pide un combate **deadly**, puede gastarse por encima del High
-   oficial; eso es caso por caso y suele pedir una mitigación que el DM defina.)
+**Items de personajes:** nunca asumas que un PJ posee un item si no está en `items` con
+`personaje_id` apuntándolo.
 
-   **Tabla XP budget por personaje (XDMG 2024)** — multiplica por nº de PJs reales:
-
-   | Nivel | Low | Moderate | High | | Nivel | Low | Moderate | High |
-   |---|---|---|---|---|---|---|---|---|
-   | 1 | 50 | 75 | 100 | | 11 | 1 900 | 2 900 | 4 100 |
-   | 2 | 100 | 150 | 200 | | 12 | 2 200 | 3 700 | 4 700 |
-   | 3 | 150 | 225 | 400 | | 13 | 2 600 | 4 200 | 5 400 |
-   | 4 | 250 | 375 | 500 | | 14 | 2 900 | 4 900 | 6 200 |
-   | 5 | 500 | 750 | 1 100 | | 15 | 3 300 | 5 400 | 7 800 |
-   | 6 | 600 | 1 000 | 1 400 | | 16 | 3 800 | 6 100 | 9 800 |
-   | 7 | 750 | 1 300 | 1 700 | | 17 | 4 500 | 7 200 | 11 700 |
-   | 8 | 1 000 | 1 700 | 2 100 | | 18 | 5 000 | 8 700 | 14 200 |
-   | 9 | 1 300 | 2 000 | 2 600 | | 19 | 5 500 | 10 700 | 17 200 |
-   | 10 | 1 600 | 2 300 | 3 100 | | 20 | 6 400 | 13 200 | 22 000 |
-3. **Default del DM: al menos un combate difícil (tier High).** Apunta el total cerca de High.
-4. **Composición = pieza central temática + apoyos**, no un enjambre de CR trivial. Una criatura
-   ancla con buena economía de acción (boss/coloso, con reskin si hace falta para el tono) +
-   minions. Evita rellenar solo con CR 1/8–1/4.
-5. **Muestra la cuenta** al presentar el combate: lista monstruos, XP de cada uno, total y tier
-   resultante vs. el umbral del party. Detalle del framework en
-   `../dnd-worldbuilder/references/combate.md`.
-
-**Otras validaciones antes de presentar el borrador:**
-
-- **Items de personajes:** nunca asumir que un PJ posee un item si no está en la tabla `items`
-  con `personaje_id` apuntándolo. "Quiero que X obtenga Y" es quest futura, no hecho actual.
-- **Secretos:** crosscheck contra resúmenes de sesiones consultadas en Paso 1b. Si los jugadores
-  ya lo saben, no es secreto — busca algo nuevo.
-
-#### Desenlace — **obligatorio si la sesión tiene una decisión bifurcante**
-
-Si el pivote ofrece una elección de peso (p. ej. aliarse vs. traicionar), incluye una **escena
-final de Desenlace** en `bloque_escenas` que enumere cada rama y sus consecuencias concretas
-(qué gana/pierde el grupo, qué relación queda con los NPCs, qué semilla de futuro). Sin combate
-ni ejes; es el aterrizaje de la decisión. Vigila que ambas ramas sigan siendo **tentadoras**:
-si un giro vuelve una opción "claramente mala" (ej. la trata volvió a Torben villano puro),
-avisa al DM del corrimiento de tono y reajusta qué compra cada rama para que la elección pese.
-
-**Presentar el borrador al DM y preguntar:** "¿Quieres algún cambio?"
-- Si pide cambios → ajustar y volver a presentar.
-- Si aprueba → pasar al Paso 4.
+**Presentar el borrador al DM y preguntar:** «¿Quieres algún cambio?». Si aprueba → Paso 4.
 
 ---
 
-## Paso 4 — Commit a Supabase (incluye transición `nuevo → existente`)
+## Paso 4 — Escribir en Supabase
 
-### 4a. Commit de NPCs nuevos a la tabla `npcs`
+### 4a. Las entidades primero, con una sola confirmación
 
-Antes de insertar el `session_plan`, pregunta al DM:
+Los bloques de la app **apuntan** a filas por id y leen la ficha viva; no guardan copias. Así que
+toda entidad que el árbol vaya a referenciar **tiene que existir antes** que el árbol. Lista en un
+solo mensaje todo lo que vas a escribir —con las fichas completas de lo nuevo— y pide **una**
+confirmación:
 
-> "¿Confirmas guardar los 2 NPCs nuevos ([nombre X], [nombre Y]) en la tabla `npcs`?"
+| Qué | Dónde | Notas |
+|---|---|---|
+| NPCs nuevos | `npcs` | `campaign_slug='halo'`, `conocido_jugadores=false` |
+| Sitios con nombre | `lugares` / `establecimientos` | `campaign_slug='halo'`, con `ciudad_id` y `region` |
+| La quest del arco, si no existe | `quests` | `campaign_slug='halo'`, `estado='Activa'` |
+| El encuentro | `encuentros` | `campaign_slug='halo'`, `estrategia` (`'fm'` o `'dnd2024'`), `party` = ids de la mesa, `monsters`, `hazards`, `user_id` del DM |
+| Vínculos | `npcs_quests`, `quests_lugares` | la gente y los sitios del arco |
+| Fichas existentes | `npcs` (UPDATE) | **se añade al final** de `notas_roleplay`, nunca se sobrescribe |
 
-Si el DM aprueba:
+**Escribe en los campos que la app muestra para la campaña.** Antes de escribir, mira el overlay
+(`entity_schemas`, columna `overlay`): un `cf_*` que no esté ahí **no se pinta**. En halo hoy:
+
+- **NPCs**: `primera_impresion` (descripción sensorial en acción) + `notas_roleplay` (voz,
+  motivación, secreto, ancla, `Inspiración: <card> (<fuente>)`) + `faccion` + `custom_data.cf_statblock`
+  (`{"kind":"compendium","name":"…","source":"XMM"}`).
+- **Lugares**: `descripcion` (propósito y qué pasa ahí), `descripcion_exterior` (atmósfera, ≥2
+  sentidos), `descripcion_interior` (lo interactivo y el misterio).
+
+**Monstruos del encuentro:** `{"id":"srd:<FUENTE>:<nombre>","count":1}` (p. ej.
+`srd:FleeMortals:Griffon`), u `cat:<uuid>` para homebrew; `"oculto": true` para una llegada por
+sorpresa. **Peligros:** `{"id","name","type":"always|start|mid|end","round","revela"?}`, con un
+`id` corto y único en el encuentro (`h-grifo`). `revela` lleva **el mismo `id` que la entrada del
+monstruo oculto** (`srd:FleeMortals:Griffon`), y no vale con `type:"always"`.
+El `user_id` del DM es el `owner_user_id` de la bitácora con `owner_role='dm'` de halo (`campaigns.created_by` está vacío).
+
+Captura los ids que devuelve cada INSERT (`RETURNING id`): el árbol los necesita.
+
+### 4b. El árbol
+
+**El contrato de escritura vive en `../oneshot/references/plantilla-arbol.md`. Léelo y síguelo**:
+los campos por tipo, `hijos` siempre presente, un `id` uuid por bloque, **texto plano** (sin
+markdown: `**` sale literal; lo único que se pinta son las menciones `@[Nombre](seccion:uuid)`, y
+solo en `texto`), las reglas de la `rama`, el plegado y cómo comprobar. Esta skill no lo duplica.
+
+Lo propio de halo:
 
 ```sql
--- Ficha rediseñada: los campos narrativos van en custom_data (cf_*), NO en las columnas
--- primera_impresion/notas_roleplay (deprecadas). Los sensibles se listan en _hidden.
-INSERT INTO npcs (nombre, raza, tipo_npc, rol, ciudad_id, edad, conocido_jugadores, campaign_slug, custom_data)
-VALUES ('Nombre', 'Raza', 'tipo_npc (18 canónicas)', 'Rol', 'uuid_ciudad_o_NULL', 42, false, 'halo',
-  '{"cf_descripcion_fisica":"...","cf_distintivo":"...","cf_forma_de_hablar":"...",
-    "cf_statblock":{"kind":"compendium","name":"Noble","source":"XMM"},
-    "cf_motivacion":"...","cf_secreto":"...",
-    "_hidden":["cf_forma_de_hablar","cf_statblock","cf_motivacion","cf_secreto"]}'::jsonb)
-RETURNING id;
+INSERT INTO session_plans (nombre, fecha_sesion, estado, campaign_slug, bloques)
+VALUES ('Sesión DD-mmm-YY', 'YYYY-MM-DD', 'borrador', 'halo', '<array de bloques>'::jsonb)
+RETURNING id, jsonb_typeof(bloques) AS forma;   -- forma DEBE ser 'array'
 ```
-El overlay `entity_schemas` (section='npcs') debe existir con esos `cf_*` — lo escribe `dnd-worldbuilder`
-tras confirmación (una vez por campaña). El `cf_statblock` se resuelve por vocación contra el ETL.
 
-`tipo_npc` sale de las **18 options canónicas** (`npc.md`). `rol` solo admite
-`Neutral`/`Aliado`/`Enemigo`: si la card de origen traía `Antagonista` o `Informante`,
-mapéalo (`Antagonista`→`Enemigo`, `Informante`→`Neutral`) y pon el matiz real en
-`cf_relacion_party`, que es solo-DM. Mismo mapeo que aplica el buscador de NPCs de la app,
-para que las dos vías no diverjan.
+- **`bloques` es un ARRAY.** Un objeto (el viejo formato de 9 claves `bloque_strong_start`,
+  `bloque_escenas`…) manda el plan a la **vista legacy de solo lectura**. `input_data` va `null`.
+- Bajo cada beat, sus entidades como **chips**: un bloque referencial (`npc`, `lugar`, `ciudad`,
+  `establecimiento`, `tesoro`, `quest`, `statblock`) vinculado y **sin hijos** se pinta en línea, y
+  los consecutivos se agrupan en una fila.
+- Bajo el beat del combate, el bloque `encuentro`. Notas tácticas como `texto` hijos **solo si el DM
+  las quiere**.
+- Genera el árbol con un script (scratchpad) que verifique ids únicos, `hijos` presente y cero `**`
+  antes del INSERT.
 
-Captura el `id` devuelto por cada INSERT. Usa esos `npc_id` reales en el bloque `bloque_npcs`
-del session_plan.
+### 4c. Ediciones después de que el DM abrió el plan
 
-Si el DM rechaza el commit, los NPCs se quedan solo en el bloque del session_plan (sin `npc_id`),
-pero no como entidad reutilizable.
-
-**Regla:** todo NPC marcado `nuevo` en un session_plan commiteado debe tener `npc_id` apuntando
-a una fila real en `npcs`. El Paso 6 lo audita.
-
-### 4b. Insertar el session_plan
-
-El frontend de QuestKeep (`preparador.js`) lee el plan desde **una sola columna `bloques`**
-(jsonb anidado) — `plan.bloques['bloque_strong_start']`, `plan.bloques['bloque_escenas']`, etc. —
-más una columna `bloques_committed` (jsonb). **NO leas/escribas las columnas legacy sueltas**
-(`bloque_strong_start`, `bloque_escenas`, …): existen por compatibilidad pero la UI las ignora,
-y un plan escrito ahí sale **vacío** en el planner. Todos los bloques van anidados dentro de
-`bloques`. Hacer un solo INSERT:
+En cuanto el DM abre o edita el plan en la app, el árbol en la base ya no es el que escribiste.
+**Nunca vuelvas a escribir `bloques` entero.** Cada cambio es un `jsonb_set` (o `replace` sobre un
+texto) a una ruta concreta, **con guarda** y verificación:
 
 ```sql
-INSERT INTO session_plans (
-  nombre, fecha_sesion, estado, campaign_slug,
-  bloques,
-  bloques_committed,
-  input_data
-) VALUES (
-  'Sesión DD-MMM-YY',
-  'YYYY-MM-DD',
-  'borrador',
-  'halo',
-  '{
-    "bloque_strong_start": "texto del strong start",
-    "bloque_escenas": [{"titulo":"...","descripcion":"...","tipo":"combate|social|exploración|misterio|revelación","tension":1,"objetivo":"...","obstaculo":"...","espacio":"... (solo combate)","secretos":[{"secreto":"...","pistas":["pista A","pista B","pista C"],"quien_sabe":"..."}],"es_pivote":false,"pivote":"texto del pivote SI esta escena es el momento bisagra; si no, null","ejes":{"protein":{"tipo":"...","descripcion":"...","condicion_cierre":"...","retreat_number":null},"optimizers":[{"tipo":"...","descripcion":"...","como_descubrirlo":"..."}],"hazards":[{"tipo":"...","descripcion":"...","stages":["..."]}],"chaos":[{"tipo":"...","descripcion":"...","trigger":"..."}]}}],
-    "bloque_npcs": [{"npc_id":"uuid_o_null","nombre":"...","raza":"...","rol":"...","flag":"existente|nuevo","relacion_sesion":"...","motivacion":"...","tono":"...","frase":"...","primera_impresion":"...","notas_roleplay":"..."}],
-    "bloque_locaciones": [{"nombre":"...","tipo":"...","region":"...","relacion_sesion":"...","descripcion_sensorial":"..."}],
-    "bloque_tesoros": [{"item_id":"uuid_de_items_catalog","nombre":"...","rareza":"...","flag":"match_directo|reskin","reskin_flavor":"... o null","portador_sugerido":"..."}],
-    "bloque_monstruos": [{"monstruo_id":"uuid","escena_idx":0,"nombre":"...","cantidad":1,"flag":"match_directo|reskin","contexto_narrativo":"...","reskin_primera_senal":"... o null","reskin_encuentro":"... o null","reskin_comportamiento":"... o null"}],
-    "bloque_secretos": [],
-    "bloque_pivote": null,
-    "bloque_notas_dm": ["nota privada DM 1", "nota privada DM 2"]
-  }'::jsonb,
-  '{}'::jsonb,
-  '{"pregunta_objetivos":"...","duracion_horas":3,"notas_dm":[]}'::jsonb
+UPDATE session_plans SET bloques = jsonb_set(bloques, '{4,texto}',
+  to_jsonb(replace(bloques #>> '{4,texto}', '<frase vieja exacta>', '<frase nueva>'))), updated_at = now()
+WHERE id = '<plan>' AND position('<frase vieja exacta>' in bloques #>> '{4,texto}') > 0
+RETURNING position('<frase nueva>' in bloques #>> '{4,texto}') > 0 AS ok;
+```
+
+La ruta es de índices: `'{4,texto}'` es la 5.ª raíz, `'{3,hijos,1,texto}'` el 2.º hijo de la 4.ª.
+Sácala del árbol vivo, nunca de tu copia:
+
+```sql
+WITH RECURSIVE t AS (
+  SELECT ARRAY[(o-1)::text] AS ruta, b AS blk FROM session_plans p, jsonb_array_elements(p.bloques) WITH ORDINALITY x(b, o) WHERE p.id = '<plan>'
+  UNION ALL SELECT t.ruta || ARRAY['hijos', (o-1)::text], h FROM t, jsonb_array_elements(t.blk->'hijos') WITH ORDINALITY y(h, o)
 )
-RETURNING id, nombre, fecha_sesion, estado;
+SELECT array_to_string(ruta, ',') AS ruta, blk->>'tipo' AS tipo, blk->>'titulo' AS titulo FROM t ORDER BY ruta;
 ```
 
-Captura el `session_plan_id` — lo necesita el Paso 6.
-
-> **Nota de migración:** los bloques viven **dentro** de `bloques` (jsonb), no en columnas
-> sueltas. Para verificar/auditar un plan, consulta `bloques->'bloque_npcs'`,
-> `bloques->>'bloque_strong_start'`, etc. — no las columnas `bloque_*` legacy.
-
-**Contrato de render del planner (`preparador.js`) — cómo se anidan los bloques:**
-
-- **Secretos y pivote van DENTRO de cada escena** (`bloque_escenas[i].secretos[]` y
-  `bloque_escenas[i].es_pivote` / `bloque_escenas[i].pivote`). El planner pinta las escenas
-  **en orden** (apoyo narrativo de "qué sigue") y muestra los secretos y el pivote dentro de
-  su escena. `bloque_secretos` y `bloque_pivote` quedan **deprecados** (`[]` / `null`): solo
-  se usan como fallback para planes viejos. **No** dupliques la info en ambos lados.
-- **Cada monstruo lleva `escena_idx`** (índice 0-based dentro de `bloque_escenas`) que lo liga
-  a su escena de combate. La pestaña Combate agrupa por encuentro: muestra los **Ejes/Hazards**
-  de la escena y el **statblock base** de cada monstruo, leído del catálogo `monstruos` vía
-  `monstruo_id` (o por nombre si falta el id). Sin `escena_idx`, el monstruo no se agrupa.
-- **Tesoros:** `item_id` referencia el catálogo global **`items_catalog`** (no `items`).
-  `items` es el inventario instanciado de la campaña. Si el item no existe en `items_catalog`
-  (p. ej. items 2014 fuera del DMG'24), **darlo de alta primero** en `items_catalog` con su
-  texto oficial verbatim; al entregarse al party se instancia en `items` con `personaje_id`.
+Si la guarda no encuentra nada (`RETURNING` vacío), **relee el árbol** con esa consulta: el DM
+movió o borró bloques. **Lo que el DM borró no se recrea sin preguntarle.**
 
 ---
 
 ## Paso 5 — Confirmar creación
 
-Confirma al DM mostrando: `id`, `nombre`, `fecha_sesion`, `estado`, y un resumen (# de escenas,
-# de NPCs por flag, # de tesoros, # de monstruos).
+Muestra al DM: `id`, `nombre`, `fecha_sesion`, forma (`array`), nº de raíces y de bloques, y la
+lista de entidades creadas con su id corto.
 
 ---
 
-## Paso 6 — Auditoría final *(cierre de la skill)*
+## Paso 6 — Verificación final *(cierre de la skill)*
 
-Este es el **último paso** de la skill. La skill no termina hasta que este reporte se emite.
+Comprobaciones **deterministas**, contra la base, sin subagente:
 
-Lanza un **subagente auditor** (Agent tool, `subagent_type=general-purpose`) con prompt fijo que
-incluye la lista de reglas abajo y el `session_plan_id` del Paso 4b. El auditor tiene acceso al
-Supabase MCP para verificaciones. **Solo reporta — no edita ni inserta.**
+1. **Forma:** `jsonb_typeof(bloques) = 'array'`.
+2. **Vínculos:** recorre el árbol **completo** (no solo la raíz) y resuelve cada `refId`,
+   `encuentroId` y cada mención `@[…](seccion:uuid)` de los textos. Cero rotos:
 
-> Los bloques se consultan dentro de la columna `bloques` (jsonb): `bloques->'bloque_npcs'`,
-> `bloques->>'bloque_strong_start'`, `jsonb_array_length(bloques->'bloque_monstruos')`, etc. Un
-> plan con `bloques` NULL o `{}` está vacío para la UI aunque las columnas legacy tengan datos.
-
-**El auditor verifica 3 dimensiones:**
-
-### 1. Cumplimiento de reglas duras (determinístico, verificable contra BD)
-
-- `bloque_npcs` tiene ≥6 entries, con exactamente 2 flag=`nuevo` y ≥4 flag=`existente`.
-- Cada NPC tiene `npc_id` apuntando a una fila real en `npcs` (SELECT de verificación). Si un
-  NPC flag=`nuevo` no tiene `npc_id`, es issue crítico (la transición no se hizo).
-- Cada NPC tiene `relacion_sesion` no vacía.
-- Cada locación en `bloque_locaciones` tiene `relacion_sesion` no vacía.
-- Cada tesoro en `bloque_tesoros` tiene `cf_item_base` (ref) a un item **oficial del ETL** o a una fila
-  **homebrew** de `items_catalog` (`es_homebrew`, `base`). Nunca a las 669 filas huérfanas ni inventado.
-- Cada monstruo en `bloque_monstruos` referencia un statblock del **ETL** (`bestiary.json`) o homebrew
-  de `monstruos` (`base`), **y** un `escena_idx` válido (índice 0-based dentro de `bloque_escenas`).
-- Cada NPC nuevo tiene la **ficha rediseñada** en `custom_data` (`cf_descripcion_fisica`, `cf_distintivo`,
-  `cf_forma_de_hablar`, `cf_statblock`); los campos sensibles están en `custom_data._hidden`.
-- Cada tesoro y monstruo tiene flag `match_directo | reskin`. Si es reskin, flavor/capas completas.
-- Cada escena con `tipo='combate'` tiene el campo `ejes` con `protein` + ≥2 ejes adicionales
-  (Optimizers/Hazards/Chaos). Regla de Tres cumplida. Si Protein = `Kill Them`, debe tener
-  `retreat_number` definido.
-- **Dificultad de combate:** la suma de XP de los monstruos (por `escena_idx`) está calibrada
-  contra el party real (nº de PJs × tabla XDMG 2024), y por defecto ≥1 combate alcanza tier
-  **High**. Combates de puro CR trivial sin pieza central → issue.
-- **Secretos y pivote anidados:** los secretos viven en `bloque_escenas[i].secretos[]` y el pivote
-  en `bloque_escenas[i].pivote` (+`es_pivote`). `bloque_secretos`/`bloque_pivote` deben estar
-  vacíos/null (deprecados). Issue si la info está duplicada en ambos lados o solo en los legacy.
-- Secretos no duplican info ya conocida por el party (crosscheck contra los recaps de la
-  bitácora del DM consultados en Paso 1b).
-- `nombre` en formato `"Sesión DD-MMM-YY"`, `fecha_sesion` ISO, `estado='borrador'`, `campaign_slug='halo'`.
-
-### 2. Cohesión narrativa (cualitativo)
-
-- NPCs referenciados en ≥1 escena, secreto o locación (nadie huérfano).
-- Locaciones consistentes con las escenas propuestas.
-- Momento pivote (si aplica) conecta con ≥1 escena y ≥1 secreto.
-- Tesoros y monstruos encajan en escenas concretas (no cuelgan sueltos).
-- Tono uniforme entre secciones.
-- **Consistencia causal (plotholes):** cada prueba/objeto/conocimiento que tiene un NPC tiene
-  una razón in-world rastreable en el plan. Marca como issue cualquier "¿de dónde sacó esto?"
-  sin respuesta (ej. un NPC que tiene un documento incriminatorio sin explicar cómo llegó a él).
-- **Nada inventado:** ningún secreto es flavor de NPC reciclado como trama; cada secreto/gancho
-  ancla a BD/recap o estaba marcado como propuesta aprobada por el DM.
-- **Desenlace:** si hay decisión bifurcante, existe una escena de cierre que enumera las ramas y
-  ambas siguen siendo opciones tentadoras (ninguna es obviamente la "correcta").
-
-### 3. Calidad de contenido (cualitativo ligero)
-
-- `bloque_strong_start` es concreto (tiene detalle sensorial), no genérico.
-- Cada NPC nuevo tiene `primera_impresion` + `notas_roleplay` según formato dnd-worldbuilder.
-- Escenas llevan objetivo + obstáculo explícitos.
-
-**Formato del reporte** (cierre de la skill al DM):
-
-```
-📋 Auditoría — Sesión [nombre] (id: [uuid])
-
-[REGLAS]    ✓ 8/8 checks
-[COHESIÓN]  ✗ 2 issues
-[CALIDAD]   ⚠ 1 observación
-
-Issues:
-- [COHESIÓN] NPC "Dona Ferris" no aparece en ninguna escena ni secreto.
-- [COHESIÓN] Tesoro "Hilo de plata" no tiene portador en ninguna escena.
-- [CALIDAD] bloque_strong_start es genérico ("los jugadores llegan a la taberna").
-
-¿Corrijo y actualizo el plan en Supabase? (S/N)
+```sql
+WITH RECURSIVE t AS (
+  SELECT b AS blk FROM session_plans p, jsonb_array_elements(p.bloques) b WHERE p.id = '<plan>'
+  UNION ALL SELECT h FROM t, jsonb_array_elements(t.blk->'hijos') h
+), refs AS (
+  SELECT coalesce(blk->>'refId', blk->>'encuentroId', blk->>'mapaId') AS ref FROM t
+  WHERE coalesce(blk->>'refId', blk->>'encuentroId', blk->>'mapaId') IS NOT NULL AND blk->>'tipo' <> 'statblock'
+  UNION ALL
+  SELECT m[1] FROM t, regexp_matches(coalesce(blk->>'texto',''), '@\[[^\]]+\]\([a-z_]+:([0-9a-f-]{36})\)', 'g') AS m
+)
+SELECT ref FROM refs WHERE NOT EXISTS (SELECT 1 FROM npcs WHERE id::text = ref)
+  AND NOT EXISTS (SELECT 1 FROM lugares WHERE id::text = ref) AND NOT EXISTS (SELECT 1 FROM ciudades WHERE id::text = ref)
+  AND NOT EXISTS (SELECT 1 FROM establecimientos WHERE id::text = ref) AND NOT EXISTS (SELECT 1 FROM quests WHERE id::text = ref)
+  AND NOT EXISTS (SELECT 1 FROM encuentros WHERE id::text = ref) AND NOT EXISTS (SELECT 1 FROM personajes WHERE id::text = ref)
+  AND NOT EXISTS (SELECT 1 FROM items WHERE id::text = ref) AND NOT EXISTS (SELECT 1 FROM items_catalog WHERE id::text = ref)
+  AND NOT EXISTS (SELECT 1 FROM mapa_nodos WHERE id::text = ref);
 ```
 
-**Flujo post-reporte:**
-- Reporte limpio (0 issues) → skill termina con confirmación al DM.
-- Con issues → el DM decide: corregir (la skill hace UPDATE sobre los `bloque_*` del plan ya
-  insertado), dejar como está, o iterar. **No re-insertar ni duplicar registros.**
+Un bloque `statblock` no entra: su `refId` es un id del bestiario (`srd:<FUENTE>:<nombre>`, el
+mismo de los monstruos del encuentro) y se comprueba en el punto 3.
+
+3. **Encuentro y statblocks:** cada `monsters[].id` y cada `refId` de un bloque `statblock` existe en el ETL **y su fuente está activa** en la campaña.
+   Si el semáforo de la app no coincide con la dificultad elegida (el redondeo de FM), el plan lo
+   explica junto al encuentro.
+4. **Reglas** (cualitativo, lo revisas tú): ≥6 NPCs (4+2) con su relación con la sesión · todo
+   sitio con nombre es entidad · las tres reglas del texto · secretos anclados con `QUÉ CAMBIA` y
+   `DÓNDE` · ≥1 combate difícil con la cuenta mostrada.
+
+**Formato del reporte:**
+
+```
+📋 Verificación — Sesión [nombre] (id: [uuid])
+[FORMA]     ✓ array · N raíces · M bloques
+[VÍNCULOS]  ✓ X resuelven · 0 rotos
+[ENCUENTRO] ✓ fuentes activas · Hard a nivel 4 (la app dice «Extremo»: explicado en el plan)
+[REGLAS]    ⚠ 1 observación
+```
+
+Con issues: el DM decide (corregir con ediciones del Paso 4c, o dejar como está). **No re-insertar
+el plan ni duplicar entidades.**
+
+### Gotchas operativos de `execute_sql` (MCP de Supabase)
+
+- **Nunca un `;` dentro de un texto**, ni en una cadena: el MCP corta la consulta y se cuelga hasta
+  el timeout de 60 s. Escribe la frase con punto o dos puntos.
+- **Sin emojis de 4 bytes** (🦅) en los textos: mismo síntoma.
+- **Tras un timeout, verifica con un `SELECT` antes de reintentar**: no sabes si entró.
+- Textos largos con comillas: dollar-quoting (`$t$ … $t$`).
 
 ---
 
@@ -589,16 +537,15 @@ La worldbuilder vive en `../dnd-worldbuilder/` y tiene las referencias narrativa
 |-----------|-------------------|--------------|
 | NPC nuevo (2 por sesión) | `../dnd-worldbuilder/references/npc.md` | Ciudad, rol narrativo, conexión a quest/sesión |
 | Reskin de item | `../dnd-worldbuilder/references/item.md` | `item_id` base, nuevo contexto/tono |
-| **Combate / encuentro** | `../dnd-worldbuilder/references/combate.md` | Party composition, ubicación, quest/tono, catálogo `monstruos` filtrado |
+| **Combate / encuentro** | `../dnd-worldbuilder/references/combate.md` (+ `questkeep/docs/flee-mortals-manual.md` si el reglamento es FM) | La mesa, ubicación, quest/tono, reglamento, fuentes activas |
+| **Lugar nuevo** (todo sitio con nombre) | `../dnd-worldbuilder/references/location.md` | La escena que lo pide, la ciudad |
 
 **Qué esperar:**
-- NPC: la **ficha rediseñada** (`cf_descripcion_fisica`/`cf_distintivo`/`cf_forma_de_hablar`/
-  `cf_statblock` + situacionales, en `custom_data`; sensibles en `_hidden`), lista para commit a `npcs`
-  y para `bloque_npcs` del session_plan.
-- Item (reskin): flavor nuevo con el `item_id` base preservado, para `bloque_tesoros`.
-- Combate: **dos piezas** — una escena tipo `combate` con campo `ejes` JSONB (Protein +
-  Optimizers + Hazards + Chaos) para `bloque_escenas`, y N entradas de monstruos para
-  `bloque_monstruos` (con reskin opcional de 3 capas sensoriales).
+- NPC: la ficha por tipo, **volcada a los campos que la app muestra** (Paso 4a), lista para `npcs`.
+- Item (reskin): flavor nuevo con el base preservado, para el bloque `tesoro` o el texto del beat.
+- Combate: el diseño (Protein + ejes del Encounter Axis) va **como texto del beat** y, lo que tenga
+  ronda, como **peligros** del encuentro. Los monstruos van a `encuentros.monsters`. Ya no hay
+  campos `ejes`, `escena_idx` ni `bloque_monstruos`.
 - Coherencia con `../dnd-worldbuilder/references/principles.md` (15 principios narrativos)
   y, en combates, con el framework Encounter Axis + tabla XP XDMG 2024.
 
@@ -613,8 +560,8 @@ que se active, es un banco de patrones al que esta skill consulta.
 - Tono: **cinematic, conciso, directo** — como Matt Mercer habla, no como se escribe un ensayo
 - Escenas: listas de lo esencial, no párrafos de prosa
 - NPCs: arquetipo claro + qué quieren + cómo suenan. Sin monólogos preparados
-- **Campos de NPC visibles en el planner (UI):** `rol`, `motivacion`, `tono`, `frase`, `relacion_sesion`
-- **Campos de NPC para Supabase (commit):** `primera_impresion`, `notas_roleplay`, `raza`, `edad`
+- **Campos de NPC:** los que la app muestra en la campaña (Paso 4a). En halo: `primera_impresion`,
+  `notas_roleplay`, `faccion`, `raza`, `edad` y `cf_statblock`.
 - `primera_impresion`: descripción sensorial en acción ("mostrar no decir", "NPCs en movimiento
   no en pose"). Lo que el DM narra al presentar al NPC por primera vez.
 - `notas_roleplay`: muletillas, patrones de habla, reacciones típicas. Solo para el DM.
@@ -642,12 +589,16 @@ que se active, es un banco de patrones al que esta skill consulta.
 | `npcs` | nombre, raza, rol, estado, tipo_npc, ciudad_id, establecimiento_id, primera_impresion, notas_roleplay, edad, campaign_slug | PJs no jugadores |
 | `ciudades` | nombre, descripcion, lider, poblacion, estado, conocida_jugadores | Ciudades del mapa |
 | `establecimientos` | nombre, tipo, ciudad_id, dueno_id, descripcion_exterior, descripcion_interior | Tiendas, tabernas |
-| `items_catalog` | nombre, fuente, rareza, tipo, requiere_sintonizacion, descripcion, valor | **Catálogo global 5e** (≈668, `DMG'24`), sin `campaign_slug` — compartido. **Origen de los tesoros** (`item_id` → aquí) |
+| `items_catalog` | nombre, fuente, rareza, tipo, requiere_sintonizacion, descripcion, valor, es_homebrew, base | **Store de homebrew** (reskins con `base`). Las 669 filas `DMG'24` sin homebrew son huérfanas: el catálogo real es el ETL |
 | `items` | nombre, tipo, rareza, personaje_id, npc_portador_id, descripcion, requiere_sintonizacion, campaign_slug | **Instancias** de campaña (lo que alguien posee). NO es el catálogo |
 | `personajes` | nombre, clase, raza, jugador, nivel, ac, hp_maximo | PJs del party |
 | `lugares` | nombre, tipo, region, ciudad_id | Puntos de interés |
-| `monstruos` | nombre, tipo, tamano, cr, entorno, hp, ac, rasgos, acciones, … | **Catálogo 5e oficial** — compartido entre campañas (sin `campaign_slug`) |
-| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloques** (jsonb), **bloques_committed** (jsonb), input_data | **Destino final del prep**. Bloques anidados dentro de `bloques` (`bloque_strong_start`, `bloque_escenas` —con `secretos[]` y `pivote` anidados por escena—, `bloque_npcs`, `bloque_locaciones`, `bloque_tesoros`, `bloque_monstruos` —con `escena_idx`—, `bloque_notas_dm`). `bloque_secretos`/`bloque_pivote` deprecados. Las columnas `bloque_*` sueltas son legacy y la UI las ignora. |
+| `monstruos` | nombre, tipo, tamano, cr, es_homebrew, base, … | **Store de homebrew** (`cat:<uuid>` en encuentros). El catálogo real es el ETL (`srd:<fuente>:<nombre>`) |
+| `session_plans` | nombre, fecha_sesion, estado, campaign_slug, **bloques** (jsonb), input_data | **Destino final del prep.** `bloques` **array** = plan modular (árbol). Un **objeto** de 9 claves (`bloque_strong_start`…) = plan legacy, de solo lectura en la app: así quedaron los planes de halo hasta junio de 2026. `input_data` va `null` |
+| `encuentros` | nombre, descripcion, estrategia ('fm'/'dnd2024'), monsters, party, hazards, companions, user_id | El encuentro que lee el bloque `encuentro`. RLS por rol de campaña |
+| `character_folders` | nombre | Las **mesas** (grupos de jugadores). `personajes.folder_id` apunta aquí |
+| `campaigns` | slug, cc_disabled_sources | Matriz de fuentes: qué libros/celdas están apagados en la campaña |
+| `entity_schemas` | campaign_slug, section, overlay | Qué campos `cf_*` pinta la app por sección. Si no está, no se ve |
 
 ### Junction tables (relaciones M2M)
 
@@ -670,17 +621,21 @@ que se active, es un banco de patrones al que esta skill consulta.
 
 ### Jugadores del party
 
-PJs en `public.personajes` (`campaign_slug='halo'`): Pithor, Maverick, Lupin, Doran (+ Zif
-como compañero). La asistencia por sesión se infiere del recap del DM en la bitácora.
+PJs en `public.personajes` (`campaign_slug='halo'`), mesa **Miércoles** en `character_folders`:
+Pithor, Lupin (+ Zif, su compañero de Beast Master), Maverick, Alexios y Doran. La asistencia de
+cada sesión se pregunta (Paso 2).
 
 ---
 
 ## Referencias
 
 - `references/learnings.md` — Memoria del skill (preferencias, reglas aprendidas, historial)
-- `references/session-structure.md` — Plantilla detallada del contenido de sesión
+- `references/session-structure.md` — Vocabulario de bloques y convenciones de halo (no es plantilla)
+- `../oneshot/references/plantilla-arbol.md` — **Contrato de escritura del árbol** (JSON, texto plano, menciones, verificación)
+- `questkeep/docs/lazy-dm-manual.md` — Método: orden, cantidades, secretos (§2.4), qué no preparar
+- `questkeep/docs/flee-mortals-manual.md` — Números y piezas del combate cuando el reglamento es FM
 - `../dnd-worldbuilder/references/npc.md` — Formato NPC (primera_impresion + notas_roleplay)
 - `../dnd-worldbuilder/references/item.md` — Formato item (3 capas: apariencia, sensación, historia)
-- `../dnd-worldbuilder/references/combate.md` — Formato combate (framework Encounter Axis + tabla XP XDMG 2024 + 3 capas sensoriales opcionales del monstruo-Protein)
-- `../dnd-worldbuilder/references/location.md` — Formato locación (aproximación, interior, peligros)
+- `../dnd-worldbuilder/references/combate.md` — Formato combate (framework Encounter Axis + tabla XP XDMG 2024 + capas sensoriales del monstruo-Protein)
+- `../dnd-worldbuilder/references/location.md` — Formato lugar (propósito, atmósfera, interactivo, misterio)
 - `../dnd-worldbuilder/references/principles.md` — 15 principios narrativos (benchmark Matt Mercer)
