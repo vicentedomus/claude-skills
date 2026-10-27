@@ -234,3 +234,24 @@ el dashboard de Supabase (Reports/Usage), no en este endpoint.
 > respuesta en una agregación JSON, así que `pg_stat_statements.rows` es **1 por
 > llamada** para toda lectura vía API y `rows_per_call` sale 1.0 siempre. Sirve para
 > comparar `calls`, no para estimar el tamaño del payload.
+
+## 10. Avisos del checklist que no llegaron a n8n (domus-hub, ronda 14 del checklist)
+
+Los avisos de WhatsApp del checklist de recepción salen de la base por `pg_net` y quedan en `checklist_avisos_envios`;
+`pg_cron` (`checklist-avisos-revisar`, cada 10 min) los reintenta hasta 3 veces. Un `fallido` es un aviso que **nadie
+recibió** (n8n caído, secreto rotado a medias, 5xx sostenido).
+
+```sql
+-- Fallidos de las últimas 24 h (≥ 1 → WARN, hallazgo accionable: qué evento, qué lote, qué error)
+select * from checklist_avisos_fallidos(now() - interval '24 hours');
+
+-- Panorama del día: cuántos ok / enviado (en curso) / fallido
+select estado, count(*), max(intentos) as max_intentos
+  from checklist_avisos_envios where creado_el > now() - interval '24 hours' group by 1;
+
+-- ¿El cron corre? (última ejecución y su estado)
+select status, start_time from cron.job_run_details d join cron.job j using (jobid)
+ where j.jobname = 'checklist-avisos-revisar' order by start_time desc limit 3;
+```
+
+`enviado` con más de 1 h de antigüedad también es señal: el cron no está corriendo o `pg_net` no despacha.
