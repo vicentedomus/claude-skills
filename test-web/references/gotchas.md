@@ -115,3 +115,28 @@ pinnean la versión de Playwright y el browser instalado queda huérfano — **o
 **Fix:** apunta `executablePath` al Chromium preinstalado. El helper
 `assets/playwright.remote-env.ts` (gotcha 2) ya lo hace: pinnea `executablePath` a
 `/opt/pw-browsers/chromium` cuando existe. Un solo helper cubre gotchas 1, 2 y 4.
+
+---
+
+## 5. `pkill -f` / `pgrep -f` con el texto literal matan el propio shell (y lo que cuelga de él)
+
+**Síntoma:** al detener el server de la app (`vite preview`, `npm run dev`, `serve`…) el comando
+termina con **exit 144** (o el shell muere sin salida), y después fallan cosas que no tocaste:
+`docker ps` dice "Cannot connect to the Docker daemon", el backend local (p. ej. Supabase en
+`127.0.0.1:54321`) da `ECONNREFUSED` y todos los tests caen en el `beforeAll`.
+
+**Causa:** el tool de Bash corre cada comando dentro de un `bash -c '<tu comando>'`. Con
+`pkill -f "vite preview"` o `kill $(pgrep -f 'vite --port 5173')`, el patrón también aparece en la
+línea de comando de **ese** shell, así que se mata a sí mismo. Si un daemon (`dockerd`) se arrancó
+en segundo plano desde un shell hijo, puede caer con él, y con él todos sus contenedores.
+
+**Fix:** buscar el proceso con el truco del corchete, que el propio comando no cumple:
+
+```bash
+kill $(ps -eo pid,args | awk '/[n]ode.*vite/ {print $1}')
+```
+
+(o anotar el PID al arrancar el server y matar por PID). Arrancar los daemons desacoplados de
+cualquier shell: `setsid nohup dockerd > dockerd.log 2>&1 < /dev/null &`. Si ya se cayó
+`dockerd`, tras levantarlo el primer `supabase start` suele dar `HealthCheckTimeoutError` o
+"container is not ready": `supabase stop --no-backup` y volver a `start`.
