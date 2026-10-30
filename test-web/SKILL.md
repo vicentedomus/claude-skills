@@ -168,7 +168,7 @@ Read `references/gotchas.md` for the full symptom→cause→fix of each, plus wh
 
 Force the JSON reporter via CLI so the results file always exists, regardless of what the config sets. `--reporter=line,json` keeps console progress visible *and* writes the file; `PLAYWRIGHT_JSON_OUTPUT_NAME` controls where it lands (Step 4 reads exactly this path). Two more flags pull their weight on every run:
 
-- `--trace=retain-on-failure --video=retain-on-failure` — keep a full **trace** (DOM snapshots, network, console) and a **video** only for tests that fail. The trace viewer is the single fastest way to see *why* an E2E broke, far beyond a lone screenshot, and "on-failure" keeps green runs cheap.
+- `--trace=retain-on-failure` — keep a full **trace** (DOM snapshots, screencast, network, console) only for tests that fail. The trace viewer is the single fastest way to see *why* an E2E broke, far beyond a lone screenshot, and "on-failure" keeps green runs cheap. There is **no `--video` CLI flag** (`playwright test` rejects it with `unknown option`): video is only set in the config (`use: { video: 'retain-on-failure' }`). Don't edit the committed config for it — the trace already carries the screencast.
 - `--retries=2` — re-run a failing test up to twice. This is how QA separates a **real failure** (fails every time) from a **flaky** one (passes on retry). It does not paper over bugs: a test that only passes on retry is reported as flaky in Step 4, not as clean green.
 
 ```bash
@@ -177,7 +177,7 @@ export PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/results.json
 # Role-agnostic checks (primary role). The shared-tests project's setup dependency
 # authenticates automatically — no need to list it separately.
 npx playwright test tests/temp/ --project=shared-tests \
-  --reporter=line,json --trace=retain-on-failure --video=retain-on-failure --retries=2
+  --reporter=line,json --trace=retain-on-failure --retries=2
 ```
 
 **Only run a role-specific block when the change touches role/permission behavior** — e.g. the diff mentions permission flags, role checks, or anything gated by the user's role. There's no point paying for a second auth + run when the change is role-agnostic. When it *is* relevant, run the temp test under the restricted role to verify it behaves correctly (e.g. a non-privileged user can view but not edit):
@@ -186,7 +186,7 @@ npx playwright test tests/temp/ --project=shared-tests \
 # <role> is one discovered in Step 0; the temp file is tests/temp/<role>.verify-*.spec.ts.
 # The <role>-tests project's setup-<role> dependency authenticates automatically.
 npx playwright test tests/temp/ --project=<role>-tests \
-  --reporter=line,json --trace=retain-on-failure --video=retain-on-failure --retries=2
+  --reporter=line,json --trace=retain-on-failure --retries=2
 ```
 
 ### Step 4: Read and report results
