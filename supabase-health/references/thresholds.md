@@ -83,6 +83,8 @@ El `status` global = el **peor** de todos los hallazgos.
 | `ERROR` de app (`application_name` = `postgrest`/`authenticator`) | WARN |
 | `ERROR` de SQL ad-hoc por MCP (`application_name` = `mgmt-api`) | informativo: nota aparte, NO sube el semáforo |
 | Advisor performance severidad alta (índice faltante en tabla caliente) | WARN |
+| ≥ 1 aviso del checklist `fallido` en 24 h (`queries.md` #10) | WARN |
+| Aviso del checklist en `enviado` con > 1 h, o el cron `checklist-avisos-revisar` sin correr | WARN |
 
 ## Política de notificación (WhatsApp)
 

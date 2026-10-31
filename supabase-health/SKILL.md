@@ -113,6 +113,10 @@ Lee `references/queries.md` y ejecuta con `execute_sql` (en este orden):
   clientes `HeadlessChrome` o WebSockets de Realtime. Es la causa típica de un salto
   súbito de egress.
 
+- **Avisos del checklist** (`queries.md` #10): `checklist_avisos_fallidos(now() - interval '24 hours')`. Cada fila es
+  un aviso de WhatsApp que nadie recibió (se reintentó 3 veces): repórtala con su lote y su error. El workflow
+  `Checklist - Mantenimiento` de n8n también los avisa a diario; si n8n está caído, este chequeo es el único que los ve.
+
 ### 4. Evaluar estado global
 
 Combina todo y asigna `status` global = el peor de los hallazgos:
