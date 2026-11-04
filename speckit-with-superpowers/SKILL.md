@@ -1,12 +1,12 @@
 ---
 name: speckit-with-superpowers
 description: >-
-  Runbook para arrancar una implementación spec-driven con el combo spec-kit + superpowers
-  cableado en el repo. Dispara con "combo spec kit + superpowers", "arranquemos/implementemos
-  con spec-kit", o al pedir una implementación con andamiaje formal de specs. Conduce las
-  fases-compuerta specify → plan → tasks → implement con checkpoint por artefacto, injerta el
-  rigor de superpowers (TDD, verificación antes de completar, code review) y respeta ponytail.
-  NO es para trabajo suelto sin specs.
+  Runbook para implementaciones spec-driven con el combo spec-kit + superpowers cableado en el
+  repo. Dispara con "combo spec kit + superpowers", "arranquemos/implementemos con spec-kit", al
+  pedir una implementación con specs formales, o al retomar una corrida ("retoma la 002").
+  Conduce specify → plan → tasks con checkpoint, agrupa las tareas en rondas (una ronda = un PR)
+  y las ejecuta en modo manual o automode, con TDD, verificación y review por ronda. NO es para
+  trabajo suelto sin specs.
 ---
 
 # speckit-with-superpowers
@@ -20,12 +20,13 @@ description: >-
 Conduce una implementación **spec-driven** usando el combo ya cableado en el repo:
 **spec-kit** (estructura) + el **weave de superpowers** (rigor) + **ponytail** (tamaño).
 El objetivo es que el flujo siempre corra igual: fases-compuerta ordenadas, con el
-rigor injertado donde toca.
+rigor injertado donde toca, y la entrega en **rondas** (una ronda = un PR).
 
 ## Cuándo usarla
 
 El usuario dice **"combo spec kit + superpowers"**, *"arranquemos/implementemos con
-spec-kit"*, o pide una implementación con andamiaje formal de specs.
+spec-kit"*, pide una implementación con andamiaje formal de specs, o pide **retomar** la
+implementación de un spec que ya tiene `specs/NNN-…/rondas.md`.
 
 **Cuándo NO:** si pide solo pensar/diseñar sin specs, usa el flujo nativo de superpowers
 (`brainstorming` → `writing-plans` → …), no este runbook. No apiles ambos volantes de
@@ -53,25 +54,46 @@ Conduce las fases **en orden**, con **checkpoint de revisión del artefacto de c
    gobernar.
 5. `/speckit-tasks` → `tasks.md` (lista ordenada por dependencias). **Checkpoint.**
 6. `/speckit-analyze` → *(opcional)* chequeo de consistencia spec/plan/tasks.
-7. `/speckit-implement` → ejecuta `tasks.md`. Aquí engrana **todo** el rigor.
+7. **Rondas** (siempre, con cualquier modo) → `specs/NNN/rondas.md`. Agrupa las tareas en
+   rondas, detecta los checks del repo, valida la tabla con `scripts/validar-rondas.sh` y
+   presenta la tabla. **Checkpoint: pregunta si la implementación va en manual o en
+   automode.** Detalle: [`references/rondas.md`](references/rondas.md).
+8. **Ejecución por ronda**: cada ronda = rama + `/speckit-implement` **acotado a sus tareas**
+   + checks (Art. I–III) + PR. Aquí engrana **todo** el rigor.
+   - **Manual**: PR a `main` y te detienes en cada ronda hasta que la persona apruebe
+     ([`references/rondas.md`](references/rondas.md), *Paso 8 en manual*).
+   - **Automode**: todas las rondas `auto` de corrido sobre `claude/NNN-integracion`;
+     decisiones registradas, bloqueos que no frenan a las independientes
+     ([`references/automode.md`](references/automode.md)).
+9. **Cierre** (automode): aviso final, revisión de decisiones, Ronda H y Gran PR a `main` con
+   aprobación ([`references/automode.md`](references/automode.md) §6).
+
+**Retomar:** si `specs/NNN/rondas.md` ya existe (en `main` o en la rama de integración), no
+vuelvas a planear: léelo y continúa desde su estado.
 
 ## Las tres capas y dónde engrana cada una
 
 | Capa | Qué gobierna | Dónde actúa |
 |---|---|---|
-| **spec-kit** | estructura (spec/plan/tasks/artefactos) | todas las fases |
-| **superpowers** (weave de `constitution.md`) | método/rigor: TDD RED-GREEN-REFACTOR, verificación antes de completar, code review por severidad | `plan` y sobre todo `implement` |
+| **spec-kit** | estructura (spec/plan/tasks/artefactos) y ejecución de tareas (`/speckit-implement`) | todas las fases |
+| **superpowers** (weave de `constitution.md`) | método/rigor: TDD RED-GREEN-REFACTOR, verificación antes de completar, code review por severidad | `plan` y sobre todo cada ronda |
 | **ponytail** (hook always-on) | tamaño: solución mínima (YAGNI, stdlib-first) | siempre; carve-outs: **tests sagrados**, **no podar en diseño** |
+| **este runbook** | orden, rondas, modo y estado de la corrida (`rondas.md`) | pasos 7, 8 y 9 |
 
 En `specify` es estructura pura (el rigor aún no engrana). El injerto de superpowers se
-hace visible en `plan`/`implement`.
+hace visible en `plan` y en cada ronda.
 
 ## Reglas
 
 - **Gated por default**: pausa en cada checkpoint para que el usuario revise el artefacto.
-  Solo encadena de corrido si lo pide explícitamente.
-- **No apiles planeación**: no combines `/speckit-specify` + `/speckit-plan` con
-  `brainstorming`/`writing-plans` de superpowers — elige un volante.
+  Solo encadena de corrido si lo pide explícitamente; automode es esa petición, y solo
+  cubre la ejecución de rondas `auto`, nunca el merge a `main`.
+- **No apiles planeación ni ejecución**: no combines `/speckit-specify` + `/speckit-plan` con
+  `brainstorming`/`writing-plans`, ni `/speckit-implement` con `subagent-driven-development`/
+  `executing-plans` de superpowers — elige un volante.
+- **`rondas.md` es la memoria de la corrida**: actualízalo al cerrar cada ronda; no dependas
+  del chat para saber dónde vas.
 - **Respeta las convenciones del repo consumidor** (p. ej. en QuestKeep el contenido de
-  reglas D&D va en inglés verbatim; en Domus Hub, web + móvil). Este runbook gobierna el
-  *método*, no anula el `CLAUDE.md` del repo.
+  reglas D&D va en inglés verbatim; en Domus Hub y Grax Vida, web + móvil; reglas sobre
+  cuándo correr pruebas de navegador o cómo resumir un PR al mergear). Este runbook gobierna
+  el *método*, no anula el `CLAUDE.md` del repo.
