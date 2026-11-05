@@ -32,7 +32,8 @@ Reglas para agrupar:
 
 No los inventes ni los copies de otro repo: sácalos de `plan.md` (Testing / Constitution
 Check), `CLAUDE.md`, `package.json` (o equivalente) y la constitución. Anota en la cabecera de
-`rondas.md` el comando de cada uno, cuándo aplica (siempre / si hay UI) y el **preflight**
+`rondas.md` el comando de cada uno, cuándo aplica (siempre / si hay UI / si cambia la base: el
+antes/después en el navegador de `references/automode.md` §2) y el **preflight**
 (cómo levantar el entorno local, p. ej. Docker + base local). Respeta las reglas del repo sobre
 pruebas de navegador (p. ej. "test-web solo si se pide").
 

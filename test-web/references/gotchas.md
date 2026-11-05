@@ -140,3 +140,20 @@ kill $(ps -eo pid,args | awk '/[n]ode.*vite/ {print $1}')
 cualquier shell: `setsid nohup dockerd > dockerd.log 2>&1 < /dev/null &`. Si ya se cayó
 `dockerd`, tras levantarlo el primer `supabase start` suele dar `HealthCheckTimeoutError` o
 "container is not ready": `supabase stop --no-backup` y volver a `start`.
+
+## 6. Supabase Auth: una sesión inyectada por contexto, no la misma en varios
+
+**Síntoma:** con la sesión inyectada en `localStorage` (`addInitScript` con la respuesta de
+`/auth/v1/token?grant_type=password`), el primer contexto entra y los siguientes (otro
+dispositivo emulado, otra pestaña, otro `newContext`) terminan en la pantalla de entrar, o
+una corrida que antes pasaba ahora cae al login.
+
+**Causa:** el refresh token de Supabase rota: cuando un cliente (el navegador o un cliente de
+Node del mismo script) lo usa, los demás que tenían el mismo token quedan con uno revocado y
+supabase-js los saca. Aparte: si la usuaria ya existía sin contraseña (la creó un enlace
+mágico de otra prueba), `POST /auth/v1/admin/users` responde 422 y el `password grant` falla
+con `invalid_credentials`.
+
+**Fix:** pedir una sesión **nueva** (otro `password grant`) para cada contexto y para cada
+cliente de Node. Al crear la usuaria, si `admin/users` responde 422, buscarla en
+`GET /auth/v1/admin/users` y fijarle la contraseña de prueba con `PUT /auth/v1/admin/users/{id}`.
