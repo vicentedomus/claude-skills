@@ -11,7 +11,11 @@ ronda, para que una sesión nueva (contenedor reciclado, contexto compactado) pu
 ## 0. Preflight (una vez, antes de R1)
 
 1. `main` actualizado; crea `claude/NNN-integracion` desde `main` y haz push. Si el push a
-   `claude/NNN-*` falla por permisos, **no arranques**: avisa.
+   `claude/NNN-*` falla por permisos, **no arranques**: avisa. En un clon superficial (la nube
+   clona con `--depth 1` y solo sigue `main`), agrega antes el refspec de las ramas de la corrida:
+   `git config --add remote.origin.fetch '+refs/heads/claude/*:refs/remotes/origin/claude/*'` y
+   `git fetch origin`. Sin esto las ramas de ronda quedan sin seguimiento y los hooks de cierre
+   las reportan como "sin subir" aunque ya estén en el remoto.
 2. Levanta el entorno local según la cabecera de `rondas.md` (p. ej. Docker + base local).
 3. Corre **todos los checks sobre `main`**. Si algo ya está en rojo, no arranques: sin una base
    en verde no se puede saber qué rompió cada ronda. (Un rojo conocido y documentado del repo,
@@ -53,11 +57,21 @@ Toma la siguiente ronda `auto` en orden de tabla cuyas dependencias estén todas
      la ronda, en las vistas que pida el repo (p. ej. escritorio + móvil). Elegir automode es
      la aceptación explícita que pide la skill `test-web`. No es la suite E2E permanente: esa
      solo si la persona la pide. Prueba inestable: un reintento; si falla dos veces, es real.
+   - **Antes/después en el navegador** si la ronda cambia la base (esquema, políticas, FK,
+     RPC) aunque no toque pantallas: las pruebas unitarias usan una base falsa y no ven, p. ej.,
+     un embed de PostgREST que se vuelve ambiguo. Captura las mismas pantallas con la base y la
+     app de `main` (un `git worktree` de `main` + reset de la base local a sus migraciones y su
+     semilla) y con las de la ronda, con las mismas usuarias y vistas (escritorio + móvil), y
+     compáralas píxel a píxel (p. ej. PIL). Lo esperado es *idéntico* salvo lo que la ronda
+     cambia a propósito; cualquier otra diferencia se revisa a ojo antes de mergear.
 5. **Review** (Art. III): un subagente **fresco** (sin tu contexto) con
    `requesting-code-review` sobre `git diff claude/NNN-integracion...HEAD`, con el spec, el plan
    y la constitución como referencia y el foco de riesgo del repo (p. ej. fugas entre
    tenants, RLS, datos a terceros). Hallazgos **críticos bloquean**; los demás se corrigen o se
-   anotan en la Bitácora.
+   anotan en la Bitácora. El encargo del subagente dice **explícitamente** que trabaje solo
+   contra el entorno local (base local en `BEGIN … ROLLBACK`, sin modificar archivos) y que
+   **no** use conectores ni credenciales contra producción (p. ej. el MCP de la base remota),
+   aunque los tenga a mano.
 6. **Presupuesto de arreglos**: hasta **2 intentos** por check o review en rojo. Nunca saltes,
    desactives ni debilites una prueba para ponerla en verde. Si sigue en rojo → §3.
 7. **Cierra**: tareas `[x]` con evidencia en `tasks.md`; `rondas.md` (estado `mergeada`,
@@ -104,7 +118,8 @@ desde ahí; nunca rehagas una ronda `mergeada`. Repite el preflight del entorno 
 Cuando se cierra la ronda **Hasta** o no quedan rondas `auto` ejecutables:
 
 1. **Verificación sobre la integración**: todos los checks y, si test-web está autorizado, los
-   escenarios completos de `quickstart.md`.
+   escenarios completos de `quickstart.md`. Si alguna ronda cambió la base, repite el
+   antes/después en el navegador contra `main` con la integración completa.
 2. **Orden de migraciones** (si el repo usa migraciones con timestamp): ninguna migración nueva
    de la integración puede tener timestamp anterior a la última de `main`. Si pasa, renómbralas
    (no se han aplicado en ningún lado) en un commit de la integración y vuelve a correr los

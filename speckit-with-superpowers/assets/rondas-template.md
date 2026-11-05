@@ -24,6 +24,7 @@ Confirmados en el checkpoint del paso 7. Todos en verde para mergear.
 | [Base de datos] | `[npx supabase test db]` | siempre |
 | Build | `[npm run build]` | siempre |
 | test-web | escenarios de `quickstart.md` que toca la ronda, [escritorio + móvil] | si la ronda toca UI |
+| Antes/después | mismas pantallas y usuarias con la base y la app de `main` vs las de la ronda, píxel a píxel | si la ronda cambia la base |
 | Review | subagente con `requesting-code-review` sobre el diff de la ronda | siempre |
 
 **Preflight** (automode, antes de la primera ronda): [cómo levantar el entorno local], suite
