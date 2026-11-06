@@ -108,10 +108,17 @@ reglas del repo sobre qué siempre se pregunta (p. ej. textos que ve la clienta)
 
 ## 5. Retomar
 
-"Retoma la NNN" en una sesión nueva: `git fetch origin claude/NNN-integracion`, lee `rondas.md`
-de esa rama y continúa. Ronda `en curso` → revisa su rama (qué tareas tienen evidencia) y sigue
-desde ahí; nunca rehagas una ronda `mergeada`. Repite el preflight del entorno local (no el de
-`main`) antes de seguir.
+Una sesión nueva retoma con el prompt que dejó el cierre anterior (§6, *Siguiente corrida*):
+`git fetch origin claude/NNN-integracion`, lee `rondas.md` **de esa rama** (en `main` no está) y
+toma de su sección **Siguiente corrida** el alcance (desde/hasta), el modo y las ramas
+autorizadas; esa sección, aprobada por la persona en el cierre, es el permiso para crear y subir
+las ramas `claude/NNN-*` aunque la sesión arranque con otra rama asignada. Pásala a la cabecera
+(**Hasta**) y a la Bitácora al arrancar. Ronda `en curso` → revisa su rama (qué tareas tienen
+evidencia) y sigue desde ahí; nunca rehagas una ronda `mergeada`. Repite el preflight del
+entorno local (no el de `main`) antes de seguir.
+
+Si `rondas.md` no tiene *Siguiente corrida* (o ya se cumplió), no adivines el alcance: pregúntalo
+en una sola pregunta y anótalo antes de empezar.
 
 ## 6. Cierre
 
@@ -130,16 +137,36 @@ Cuando se cierra la ronda **Hasta** o no quedan rondas `auto` ejecutables:
    cabecera).
 
 Si quedan rondas `auto` sin correr (por **Hasta** o por bloqueos), el cierre es parcial: no hay
-Gran PR; la persona decide si se sigue en automode, en manual, o se arregla primero.
+Gran PR. El cierre parcial **define la siguiente corrida** antes de terminar:
+
+4. **Siguiente corrida.** Propón el alcance con su porqué: desde la siguiente ronda ejecutable
+   hasta un corte natural (un bloque de dependencias que cierra, p. ej. "R6–R7: alta y luego
+   invitaciones", o antes de una ronda grande o riesgosa), el modo (automode o manual) y si
+   algo debe resolverse antes (decisiones pendientes, un bloqueo, una tarea de la Ronda H que
+   corre en paralelo). Pregunta en una sola pregunta si la persona lo acepta o qué cambia.
+5. Con la respuesta, escribe la sección **Siguiente corrida** de `rondas.md` (alcance, modo,
+   ramas autorizadas `claude/NNN-*`, avisos, lo que va antes), súbela a la integración por PR
+   como cualquier cambio, y **entrega el prompt completo** para arrancarla en una sesión nueva,
+   listo para copiar:
+
+   > Retoma la implementación de la spec NNN con speckit-with-superpowers, en <modo>, desde la
+   > rama `claude/NNN-integracion`: lee `specs/NNN-…/rondas.md` de esa rama (sección
+   > "Siguiente corrida"). Corre de <Rx> a <Ry>. Tienes permiso de crear y subir las ramas
+   > `claude/NNN-*` de la corrida y de mergear cada ronda a `claude/NNN-integracion`; nada a
+   > `main`. Antes de empezar, levanta el entorno local como dice la cabecera de `rondas.md`.
+   > Avísame <solo al final | por ronda>.
+
+   Recuérdale a la persona dónde abrirla: una sesión **en el repo** del spec (si se abre en una
+   carpeta con varios repos, los hooks no corren y la skill no se carga).
 
 Con todas las rondas `auto` mergeadas, con la persona:
 
-4. **Revisión de decisiones**: confirma o voltea cada `D-NN`. Lo volteado se rehace.
-5. **Ronda H** en modo manual (PRs a la integración, con aprobación): tareas diferidas,
+6. **Revisión de decisiones**: confirma o voltea cada `D-NN`. Lo volteado se rehace.
+7. **Ronda H** en modo manual (PRs a la integración, con aprobación): tareas diferidas,
    decisiones volteadas y stubs. Check final: `grep -rn "RONDA-H:"` sin resultados.
-6. Verificación completa otra vez y **Gran PR** `claude/NNN-integracion` → `main`, con merge
+8. Verificación completa otra vez y **Gran PR** `claude/NNN-integracion` → `main`, con merge
    commit, solo con la aprobación de la persona.
-7. Las rondas humanas de producción (despliegue, cuentas, costo) van después, en manual.
+9. Las rondas humanas de producción (despliegue, cuentas, costo) van después, en manual.
 
 ## 7. Automode nunca
 

@@ -77,3 +77,7 @@ Para cada ronda `auto` en orden de la tabla:
    el primer commit de la ronda siguiente (no hace falta un PR solo para eso).
 
 Las rondas `humanas` se hacen con la persona cuando toque, igual que una ronda manual.
+
+Si la sesión termina con rondas pendientes, ciérrala igual que un cierre parcial de automode
+(`references/automode.md` §6, pasos 4–5): acuerda la **Siguiente corrida** (alcance y modo),
+anótala en `rondas.md` y entrega el prompt completo para retomar en una sesión nueva.

@@ -65,10 +65,14 @@ Conduce las fases **en orden**, con **checkpoint de revisión del artefacto de c
    - **Automode**: todas las rondas `auto` de corrido sobre `claude/NNN-integracion`;
      decisiones registradas, bloqueos que no frenan a las independientes
      ([`references/automode.md`](references/automode.md)).
-9. **Cierre** (automode): aviso final, revisión de decisiones, Ronda H y Gran PR a `main` con
+9. **Cierre** (automode): aviso final y, si quedan rondas, **la siguiente corrida** (alcance
+   acordado en `rondas.md` y el prompt completo para arrancarla en una sesión nueva); con todas
+   mergeadas, revisión de decisiones, Ronda H y Gran PR a `main` con
    aprobación ([`references/automode.md`](references/automode.md) §6).
 
-**Retomar:** si `specs/NNN/rondas.md` ya existe (en `main` o en la rama de integración), no
+**Retomar:** con el prompt que dejó el cierre anterior. Si `specs/NNN/rondas.md` ya existe (en
+automode vive en `claude/NNN-integracion`, no en `main`), su sección *Siguiente corrida* dice el
+alcance y autoriza las ramas; no
 vuelvas a planear: léelo y continúa desde su estado.
 
 ## Las tres capas y dónde engrana cada una
