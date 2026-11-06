@@ -43,6 +43,16 @@ bloqueada · detenida (depende de una bloqueada) · partida (ver R5a/R5b).
 | R2 | [título del PR] | T003–T009 | R1 | auto | pendiente | |
 | RH | Ronda humana: decisiones y tareas diferidas | T010 | — | humana | pendiente | |
 
+## Siguiente corrida
+
+<!-- La escribe el cierre parcial (automode.md §6), acordada con la persona. La sesión que retoma la lee
+     de aquí: alcance, modo y permiso para las ramas. -->
+
+- **Alcance**: [Rx–Ry] — [por qué ese corte]
+- **Modo**: [automode | manual] · **Avisos**: [solo al final | por ronda]
+- **Ramas autorizadas**: `claude/NNN-*` (rondas y su merge a `claude/NNN-integracion`; nada a `main`)
+- **Antes de empezar**: [nada | decisiones, bloqueos o tareas de la Ronda H]
+
 ## Bitácora
 
 <!-- Una línea por evento, la más reciente al final. -->
