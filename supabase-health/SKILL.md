@@ -47,6 +47,15 @@ Crea una lista de tareas con estos pasos para no saltarte ninguno.
 Corre `bash scripts/fetch_metrics.sh`. Lee el `service_role` key de la variable de
 entorno `SUPABASE_SERVICE_ROLE_KEY`.
 
+- **Córrelo tal cual, sin nada antes en el mismo comando.** NO compruebes el key
+  con `echo`/`printenv`/`env`: el script ya avisa si falta, y algo como
+  `${SUPABASE_SERVICE_ROLE_KEY:-NO}` **imprime el key** cuando sí está. El filtro del
+  modo automático bloquea el comando entero (`[Credential Materialization]`) y el
+  script no llega a correr (pasó el 2026-11-10: la corrida salió sin infra y culpó al
+  entorno, pero el key estaba y era válido).
+- **Si un comando se bloquea**, reintenta `bash scripts/fetch_metrics.sh` solo antes
+  de omitir la sección. Repórtalo como "bloqueado" solo si ese reintento limpio
+  también se bloquea; no digas que faltó el key si no lo comprobaste.
 - **Si el key NO está definido**: NO te detengas. Omite esta sección, sigue con la
   introspección de BD (que ya cubre la causa raíz) y **anótalo en el resumen**
   ("⚠️ faltó SUPABASE_SERVICE_ROLE_KEY: sin métricas de infra").

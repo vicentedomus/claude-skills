@@ -8,7 +8,9 @@ Ejecuta el skill `supabase-health` para el proyecto **BD Domus**
 (`ifqwrtheakkvgezewxqx`). Sigue su proceso de principio a fin:
 
 1. Corre `scripts/fetch_metrics.sh` para las métricas de infra (CPU, disk IO/burst
-   balance, disco, RAM, egress, conexiones). Si falta `SUPABASE_SERVICE_ROLE_KEY`,
+   balance, disco, RAM, egress, conexiones). Córrelo tal cual: **no** compruebes ni
+   imprimas el key con `echo` (el modo automático bloquea el comando entero); si algo
+   se bloquea, reintenta el script solo. Si falta `SUPABASE_SERVICE_ROLE_KEY`,
    sigue con la introspección y anótalo. **Para el disco, evalúa el mount `/data`
    (Postgres); el `/` (OS) es informativo, alto por diseño — no marca WARN solo.**
 2. Ejecuta las consultas de `references/queries.md` con `execute_sql`.
