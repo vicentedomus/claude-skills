@@ -1,11 +1,10 @@
 ---
 name: speckit-with-superpowers
 description: >-
-  Runbook para implementaciones spec-driven con el combo spec-kit + superpowers cableado en el
-  repo. Dispara con "combo spec kit + superpowers", "arranquemos/implementemos con spec-kit", al
-  pedir una implementación con specs formales, o al retomar una corrida ("retoma la 002").
-  Conduce specify → plan → tasks con checkpoint, agrupa las tareas en rondas (una ronda = un PR)
-  y las ejecuta en modo manual o automode, con TDD, verificación y review por ronda. NO es para
+  Runbook spec-driven del combo spec-kit + superpowers: conduce specify → plan → tasks con
+  checkpoint, agrupa las tareas en rondas (una ronda = un PR) y las ejecuta en manual o automode
+  con TDD, verificación y review. Dispara con "combo spec kit + superpowers", "implementemos con
+  spec-kit", al pedir specs formales o al retomar una corrida ("retoma la 002"). NO es para
   trabajo suelto sin specs.
 ---
 
@@ -87,6 +86,26 @@ vuelvas a planear: léelo y continúa desde su estado.
 En `specify` es estructura pura (el rigor aún no engrana). El injerto de superpowers se
 hace visible en `plan` y en cada ronda.
 
+## Seguimiento en la sesión (lista de tareas)
+
+La lista de tareas de Claude Code (`TaskCreate`/`TaskUpdate`/`TaskList`; si vienen diferidas,
+cárgalas con `ToolSearch` al arrancar) muestra en vivo lo que corre **esta sesión**. Es solo una
+**vista**: la fuente de verdad sigue siendo `tasks.md` (por tarea, con evidencia) y `rondas.md`
+(por ronda, entre sesiones). **Primero se escribe el archivo, después se actualiza la lista**,
+nunca al revés. Al retomar, la lista se reconstruye desde `rondas.md`.
+
+| Momento | Elementos de la lista |
+|---|---|
+| Pasos 1–7 | Uno por fase que se va a correr (specify, clarify si aplica, plan, tasks, analyze si aplica, rondas): `in_progress` mientras espera su checkpoint, `completed` al aprobarse. |
+| Paso 8, manual | Al abrir la ronda: uno por cada T### de la ronda, más «Checks (Art. II)», «Review (Art. III)» y «Abrir PR», encadenados con `addBlockedBy` (los checks esperan a todas las T###). |
+| Paso 8, automode | Uno por ronda `auto` hasta **Hasta**, con `addBlockedBy` igual a su columna *Depende de*. Solo la ronda activa se desglosa como en manual; al mergearla, su desglose pasa a `deleted` y la ronda a `completed`. |
+| Ronda bloqueada | Se queda `pending` con el título «Rn — bloqueada (D-NN)»; sus dependientes ya quedan bloqueados por `blockedBy`. |
+| Paso 9 | Verificación sobre la integración, orden de migraciones, aviso final y siguiente corrida (o revisión de decisiones, Ronda H y Gran PR). |
+
+Las rondas `humanas` entran a la lista solo cuando se trabajan con la persona. Si la herramienta
+no está disponible, usa un checklist en markdown en el chat con el mismo contenido,
+re-publicado en cada turno.
+
 ## Reglas
 
 - **Gated por default**: pausa en cada checkpoint para que el usuario revise el artefacto.
@@ -96,7 +115,7 @@ hace visible en `plan` y en cada ronda.
   `brainstorming`/`writing-plans`, ni `/speckit-implement` con `subagent-driven-development`/
   `executing-plans` de superpowers — elige un volante.
 - **`rondas.md` es la memoria de la corrida**: actualízalo al cerrar cada ronda; no dependas
-  del chat para saber dónde vas.
+  del chat ni de la lista de tareas para saber dónde vas.
 - **Respeta las convenciones del repo consumidor** (p. ej. en QuestKeep el contenido de
   reglas D&D va en inglés verbatim; en Domus Hub y Grax Vida, web + móvil; reglas sobre
   cuándo correr pruebas de navegador o cómo resumir un PR al mergear). Este runbook gobierna

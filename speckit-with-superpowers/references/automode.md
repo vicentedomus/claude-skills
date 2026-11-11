@@ -21,7 +21,8 @@ ronda, para que una sesión nueva (contenedor reciclado, contexto compactado) pu
    en verde no se puede saber qué rompió cada ronda. (Un rojo conocido y documentado del repo,
    p. ej. una prueba que depende de la hora, se anota en la cabecera como excepción y se acepta
    solo si la persona ya la conocía.)
-4. Primer commit en la integración: `rondas.md` con el plan aprobado.
+4. Primer commit en la integración: `rondas.md` con el plan aprobado. Después, crea en la lista
+   de tareas un elemento por ronda `auto` hasta **Hasta** (`SKILL.md`, *Seguimiento en la sesión*).
 
 Si el preflight falla, no hay automode: reporta qué falló y ofrece modo manual.
 
@@ -47,7 +48,8 @@ Toma la siguiente ronda `auto` en orden de tabla cuyas dependencias estén todas
    Conflicto mecánico (listas que crecieron, docs del spec) → resuélvelo y sigue; los checks de
    la ronda lo validan. Conflicto de fondo → **detén toda la corrida** (afecta a todas) y
    regístralo en Bloqueos.
-2. Rama `claude/NNN-rXX-<slug>` desde la integración. `rondas.md`: ronda `en curso` + Bitácora.
+2. Rama `claude/NNN-rXX-<slug>` desde la integración. `rondas.md`: ronda `en curso` + Bitácora;
+   después, su desglose en la lista de tareas.
 3. `/speckit-implement` **acotado a las tareas de la ronda** (lista de IDs en el argumento).
    Rige la constitución: Art. I (TDD, evidencia rojo→verde por tarea).
 4. **Checks** (Art. II), en el orden de la cabecera:
@@ -76,7 +78,8 @@ Toma la siguiente ronda `auto` en orden de tabla cuyas dependencias estén todas
    desactives ni debilites una prueba para ponerla en verde. Si sigue en rojo → §3.
 7. **Cierra**: tareas `[x]` con evidencia en `tasks.md`; `rondas.md` (estado `mergeada`,
    enlace del PR, Bitácora, decisiones nuevas); push; PR con base en la integración; merge.
-   Si el repo pide reescribir título y cuerpo del PR al mergear, hazlo también aquí.
+   Si el repo pide reescribir título y cuerpo del PR al mergear, hazlo también aquí. En la lista
+   de tareas: el desglose de la ronda a `deleted` y la ronda a `completed`.
 8. ¿Se cerró la ronda **Hasta**? → §6. Si no, siguiente ronda.
 
 Si a media ronda resulta mucho más grande de lo previsto: pártela (`R5a` cerrada con lo hecho,
@@ -115,7 +118,8 @@ autorizadas; esa sección, aprobada por la persona en el cierre, es el permiso p
 las ramas `claude/NNN-*` aunque la sesión arranque con otra rama asignada. Pásala a la cabecera
 (**Hasta**) y a la Bitácora al arrancar. Ronda `en curso` → revisa su rama (qué tareas tienen
 evidencia) y sigue desde ahí; nunca rehagas una ronda `mergeada`. Repite el preflight del
-entorno local (no el de `main`) antes de seguir.
+entorno local (no el de `main`) antes de seguir, y reconstruye la lista de tareas desde
+`rondas.md` (rondas pendientes del alcance, con sus dependencias).
 
 Si `rondas.md` no tiene *Siguiente corrida* (o ya se cumplió), no adivines el alcance: pregúntalo
 en una sola pregunta y anótalo antes de empezar.
