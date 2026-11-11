@@ -64,7 +64,8 @@ Anota el modo en `rondas.md` y agrega la primera línea a la Bitácora.
 Para cada ronda `auto` en orden de la tabla:
 
 1. Rama `claude/NNN-rXX-<slug>` desde `main` actualizado.
-2. Marca la ronda `en curso` en `rondas.md`.
+2. Marca la ronda `en curso` en `rondas.md` y crea su desglose en la lista de tareas
+   (`SKILL.md`, *Seguimiento en la sesión*).
 3. Invoca `/speckit-implement` **acotado a las tareas de la ronda**: pásale en el argumento la
    lista de IDs ("Implementa solo T008, T009, T010… de tasks.md; no toques las demás").
    Dentro de cada tarea rige la constitución (Art. I TDD con evidencia rojo→verde).
