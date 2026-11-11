@@ -32,7 +32,7 @@ Uso:
         comparativo de KPIs (baseline en vivo).
 --hoy:  fecha de corte para "días esperando" de los pendientes (default: hoy).
 """
-import argparse, html, json, math, sys
+import argparse, html, json, math, re, sys
 from datetime import date, timedelta
 
 CAT = [f"var(--cat-{i})" for i in range(1, 10)]  # paleta de la dona
@@ -194,6 +194,30 @@ def kpis(term):
     }
 
 
+# Paginación de pendientes por ALTURA, no por número de filas. Medido en Chromium
+# (styles.css): .pendientes-page mide 830px; thead 74px; una fila de 1 línea 44px y de
+# 2 líneas 69px. Con table-layout auto no se puede predecir qué fila se parte (un lote
+# "Adara 43" o una zona "Recámaras Secundarias" también se parten), así que se presupone
+# el peor caso de 2 líneas. El callout (24px, ~120 chars por línea) va solo en el primer
+# slide: 34px por línea + 22px de margen.
+PAGE_PX, THEAD_PX, ROW_PX = 830, 74, 69
+
+
+def paginar(n, callout=""):
+    """Reparte n filas de pendientes en slides que caben. Devuelve [filas_por_slide]."""
+    lineas = max(1, math.ceil(len(re.sub(r"<[^>]+>", "", callout or "x" * 300)) / 120))
+    cap1 = max(1, (PAGE_PX - THEAD_PX - lineas * 34 - 22) // ROW_PX)
+    capn = (PAGE_PX - THEAD_PX) // ROW_PX
+    if n <= cap1:
+        return [n]
+    k = 2
+    while n > cap1 + (k - 1) * capn:
+        k += 1
+    primero = min(cap1, math.ceil(n / k))
+    resto, k = n - primero, k - 1
+    return [primero] + [resto // k + (1 if i < resto % k else 0) for i in range(k)]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("datos")
@@ -254,11 +278,10 @@ def main():
     print("\n## SLIDE PENDIENTES (backlog actual, ordenado por antigüedad)")
     pend = [(r, dias_esperando(r, hoy)) for r in pendientes]
     pend.sort(key=lambda x: -(x[1] or 0))
-    MAXROWS = 14  # caben ~14 filas legibles en un slide de 1080px
-    nslides = max(1, math.ceil(len(pend) / MAXROWS))
-    per = math.ceil(len(pend) / nslides) if pend else 0
+    tamanos = paginar(len(pend))  # sin callout aún: presupone uno de 3 líneas
+    nslides = len(tamanos)
     if nslides > 1:
-        print(f"  ⚠ {len(pend)} pendientes > {MAXROWS}: PAGINAR en {nslides} slides (~{per} c/u).")
+        print(f"  ⚠ {len(pend)} pendientes no caben en un slide: PAGINAR en {nslides} slides {tamanos}.")
         print(f"    Slide 1 lleva el callout; los de continuación van titulados")
         print(f"    'Pendientes de Programar — continuación' y SIN callout.")
     def _row(r, dh):
@@ -266,11 +289,13 @@ def main():
         e = lambda s: html.escape(str(s or "").strip())
         return (f'    <tr><td>{e(lote_label(r))}{badge_entrega(r)}</td><td>{e(r["zona"])}</td><td>{e(r["descripcion"])}</td>'
                 f'<td class="num">{r["fecha_reporte"]}</td><td class="num{cls}">{dh}</td></tr>')
-    for i in range(nslides):
+    ini = 0
+    for i, t in enumerate(tamanos):
         if nslides > 1:
             print(f"  --- slide {i+1} de {nslides} ---")
-        for r, dh in pend[i * per:(i + 1) * per]:
+        for r, dh in pend[ini:ini + t]:
             print(_row(r, dh))
+        ini += t
     print(f"  (corte días esperando = {hoy}, días hábiles)")
 
 
