@@ -155,6 +155,14 @@ opcional.
    el contenedor web es efímero; lo no commiteado se pierde — así se perdieron los decks
    del 5-may). Entrega ambos al usuario. Push + PR.
 
+## Presentar el deck (motor compartido)
+
+En pantalla cada lámina se ajusta sola a la ventana (una por pantalla) y se navega con el
+teclado: `→`/`PgDn`/`Espacio` siguiente, `←`/`PgUp` anterior, `F` pantalla completa. Las
+tarjetas muestran «Entrega» y la última observación cuando la consulta las trae. El motor
+(`juntas/resultados-proveedores/deck.js` + `styles.css`, en domus-hub) es retroactivo: lo
+cargan todos los decks fechados. Detalle en el `README.md` de esa carpeta.
+
 ## Estructura de slides (fija + editable)
 
 1. Portada · 2. Introducción · 3. Paso 1 (intro lote) · 4. Tickets por Lote ·
