@@ -23,8 +23,8 @@ import argparse, html, json, math, os, sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from aggregates import (CAT, badge_entrega, bizdays, d, fila_terminado, fila_ticket, grupo, jstr, kpis,
-                        lote_label)
+from aggregates import (CAT, badge_entrega, cuenta_en_kpis, d, dias_esperando, fila_terminado, fila_ticket, grupo,
+                        jstr, kpis, lote_label)
 
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
 # La BD guarda las zonas sin acentos; el deck las muestra acentuadas.
@@ -94,7 +94,7 @@ def card_auto(zona, tickets):
 
 def slide_pendientes(pend, hoy, callout, num_from):
     """Devuelve la lista de slides de pendientes (paginados si son muchos)."""
-    filas = sorted(((r, bizdays(d(r["fecha_reporte"]), hoy)) for r in pend),
+    filas = sorted(((r, dias_esperando(r, hoy)) for r in pend),
                    key=lambda x: -(x[1] or 0))
     nsl = max(1, math.ceil(len(filas) / MAXROWS))
     per = math.ceil(len(filas) / nsl) if filas else 0
@@ -146,7 +146,8 @@ def main():
     mes_low = mes.lower()
 
     recibidos = [r for r in rows if r["set"] == "recibido"]
-    terminados = [r for r in rows if r["set"] == "terminado"]
+    # Los marcados «No cuenta para indicadores» salen de KPIs y modales (spec 009); siguen en lote/zona.
+    terminados = [r for r in rows if r["set"] == "terminado" and cuenta_en_kpis(r)]
     pendientes = [r for r in rows if r["set"] == "pendiente"]
     k = kpis(terminados)
 
