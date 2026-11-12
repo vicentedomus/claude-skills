@@ -49,6 +49,8 @@ de esa carpeta.
   detecta las zonas de más (una card que se sale) y las tablas largas.
 - `scripts/build_standalone.py` — empaqueta el deck en UN html autocontenido
   (CSS+JS+logo embebidos) para mandarlo por chat / abrir sin servidor. Sin deps.
+- `tests/` — pruebas de los scripts (stdlib, sin dependencias). Córrelas tras tocar cualquier
+  script: `cd resultados-proveedores && python3 -m unittest discover -s tests -t .`
 - `scripts/export_pdf.mjs` — exporta a PDF (508×285.75 mm) con Playwright (donde
   esté instalado; en Claude Code web suele no haber navegador → usa el standalone).
 
@@ -152,6 +154,14 @@ opcional.
 3. **Commitea SIEMPRE** el `.html` **y el `.pdf`** en la carpeta del mes (regla de oro:
    el contenedor web es efímero; lo no commiteado se pierde — así se perdieron los decks
    del 5-may). Entrega ambos al usuario. Push + PR.
+
+## Presentar el deck (motor compartido)
+
+En pantalla cada lámina se ajusta sola a la ventana (una por pantalla) y se navega con el
+teclado: `→`/`PgDn`/`Espacio` siguiente, `←`/`PgUp` anterior, `F` pantalla completa. Las
+tarjetas muestran «Entrega» y la última observación cuando la consulta las trae. El motor
+(`juntas/resultados-proveedores/deck.js` + `styles.css`, en domus-hub) es retroactivo: lo
+cargan todos los decks fechados. Detalle en el `README.md` de esa carpeta.
 
 ## Estructura de slides (fija + editable)
 

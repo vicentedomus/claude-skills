@@ -23,7 +23,8 @@ import argparse, html, json, math, os, sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from aggregates import CAT, bizdays, d, grupo, jstr, kpis, lote_label, work_days
+from aggregates import (CAT, badge_entrega, cuenta_en_kpis, d, dias_esperando, fila_terminado, fila_ticket, grupo,
+                        jstr, kpis, lote_label)
 
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
 # La BD guarda las zonas sin acentos; el deck las muestra acentuadas.
@@ -93,7 +94,7 @@ def card_auto(zona, tickets):
 
 def slide_pendientes(pend, hoy, callout, num_from):
     """Devuelve la lista de slides de pendientes (paginados si son muchos)."""
-    filas = sorted(((r, bizdays(d(r["fecha_reporte"]), hoy)) for r in pend),
+    filas = sorted(((r, dias_esperando(r, hoy)) for r in pend),
                    key=lambda x: -(x[1] or 0))
     nsl = max(1, math.ceil(len(filas) / MAXROWS))
     per = math.ceil(len(filas) / nsl) if filas else 0
@@ -101,7 +102,7 @@ def slide_pendientes(pend, hoy, callout, num_from):
     for i in range(nsl):
         cont = i > 0
         cuerpo = "\n".join(
-            f'          <tr><td>{esc(lote_label(r))}</td><td>{esc(zd(r["zona"]))}</td>'
+            f'          <tr><td>{esc(lote_label(r))}{badge_entrega(r)}</td><td>{esc(zd(r["zona"]))}</td>'
             f'<td>{esc(r["descripcion"].strip())}</td>'
             f'<td class="num">{fecha_corta(r["fecha_reporte"])}</td>'
             f'<td class="num{" dias-alto" if (dh or 0) >= 60 else (" dias-medio" if (dh or 0) >= 30 else "")}">{dh}</td></tr>'
@@ -145,7 +146,8 @@ def main():
     mes_low = mes.lower()
 
     recibidos = [r for r in rows if r["set"] == "recibido"]
-    terminados = [r for r in rows if r["set"] == "terminado"]
+    # Los marcados «No cuenta para indicadores» salen de KPIs y modales (spec 009); siguen en lote/zona.
+    terminados = [r for r in rows if r["set"] == "terminado" and cuenta_en_kpis(r)]
     pendientes = [r for r in rows if r["set"] == "pendiente"]
     k = kpis(terminados)
 
@@ -196,22 +198,9 @@ def main():
         </div>""" for key in ("trabajo", "programacion", "severidad", "recurrencia"))
 
     # --- arrays JS ---
-    arr_term = "\n".join(
-        f'  {{lote:"{jstr(lote_label(r))}", zona:"{jstr(r["zona"])}", desc:"{jstr(r["descripcion"])}", '
-        f'prioridad:"{r["prioridad"]}", recurrencia:{str(bool(r["recurrencia"])).lower()}, '
-        f'reporte:"{r["fecha_reporte"]}", programacion:"{r["fecha_programacion"]}", '
-        f'terminado:"{r["fecha_terminado"]}", diasTrabajo:{work_days(r)}, '
-        f'diasProg:{bizdays(d(r["fecha_reporte"]), d(r["fecha_programacion"]))}}},'
-        for r in terminados)
-    def q(v):
-        return f'"{v}"' if v else "null"
-
-    arr_tick = "\n".join(
-        f'  {{lote:"{jstr(lote_label(r))}", desc:"{jstr(r["descripcion"])}", '
-        f'prioridad:"{r["prioridad"]}", recurrencia:{str(bool(r["recurrencia"])).lower()}, '
-        f'estatus:"{jstr(r["estatus"])}", reporte:"{r["fecha_reporte"]}", '
-        f'programacion:{q(r["fecha_programacion"])}, terminado:{q(r["fecha_terminado"])}, '
-        f'zona:"{jstr(r["zona"])}"}},' for r in recibidos)
+    # Una fila por ticket, como JSON (spec 009: entrega + última observación; seguro ante saltos de línea y "</").
+    arr_term = "\n".join("  " + fila_terminado(r) for r in terminados)
+    arr_tick = "\n".join("  " + fila_ticket(r) for r in recibidos)
 
     pend_slides = slide_pendientes(pendientes, hoy, P["callout"], 10)
     pasos = "\n".join(f"        <li>{p}</li>" for p in P["pasos"])

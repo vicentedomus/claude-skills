@@ -16,6 +16,14 @@ tickets.proveedor_id -> proveedores.id     (bigint; nombre = PROVEEDOR)
 Campos de `tickets`: `estatus`, `prioridad`, `recurrencia` (bool), `fecha_reporte`,
 `fecha_programacion`, `fecha_terminado` (todas `date`), `descripcion`, `ticket_entrega`.
 
+Observaciones: `ticket_observaciones (ticket_id, texto, creado_el)`. El deck muestra **solo la
+última** de cada ticket (texto y fecha) en su tarjeta (spec 009, 2026-11).
+
+Campos que viajan al deck además de los de siempre (spec 009): `entrega`
+(= `ticket_entrega`, etiqueta «Entrega») y `obs_texto` / `obs_fecha` (última observación).
+`aggregates.py` los acepta ausentes (JSON viejos), así que una consulta vieja no truena: solo
+sale sin etiqueta ni observación.
+
 > **REGLA DE ORO — nunca derives el desarrollo del número de lote.** El lote NO es
 > único entre desarrollos (Capri 48 ≠ Adara 48). **Siempre** une `proyectos` y muestra
 > `desarrollo + lote` juntos. Este error ya se cometió a mano una vez.
@@ -27,7 +35,14 @@ Campos de `tickets`: `estatus`, `prioridad`, `recurrencia` (bool), `fecha_report
 - **Terminados** del mes = `fecha_terminado` dentro del mes objetivo. Alimentan los
   KPIs (slide 9) y el array `TERMINADOS`.
 - **Pendientes** = `estatus = 'Pendiente programacion'` **hoy** (todo el backlog, sin
-  importar el mes). Alimentan el slide "Pendientes de Programar".
+  importar el mes), **más los pausados por el cliente que estaban pendientes** (salen con la
+  etiqueta «Pausado»). Alimentan el slide "Pendientes de Programar".
+
+**Pausas y exclusiones (spec 009):** `pausas` = `[[desde, hasta|null], …]` de `ticket_pausas`;
+`aggregates.py` resta sus días hábiles de los tiempos de programación y de trabajo y de los
+«días esperando» (una pausa abierta se corta en la fecha de corte). `excluir` = el ticket está
+marcado «No cuenta para indicadores»: sigue en lote, zona y análisis cualitativo, pero sale de
+los 4 KPIs, de sus modales y del comparativo con el mes anterior.
 
 Los días (trabajo/programación, y "días esperando" de pendientes) se calculan en
 **días hábiles** (lun–vie, sin descontar festivos). **No los calcules en SQL**:
@@ -51,7 +66,9 @@ Corre esto y confirma que `aggregates.py` reporta los mismos totales por `set`:
 ```sql
 select count(*) filter (where fecha_reporte between :INI and :FIN) as recibidos,
        count(*) filter (where fecha_terminado between :INI and :FIN) as terminados,
-       count(*) filter (where estatus='Pendiente programacion') as pendientes
+       count(*) filter (where estatus='Pendiente programacion' or (estatus='Pausado' and exists (
+         select 1 from ticket_pausas tp where tp.ticket_id = tickets.id and tp.hasta is null
+           and tp.estatus_previo = 'Pendiente programacion'))) as pendientes
 from tickets where proveedor_id = :PV;
 ```
 
@@ -65,25 +82,35 @@ pásalo a `scripts/aggregates.py`.
 ```sql
 with base as (
   select t.*, pr.nombre as desarrollo, u.numero_lote as lote,
-         coalesce(z.nombre,'(sin zona)') as zona
+         coalesce(z.nombre,'(sin zona)') as zona,
+         t.ticket_entrega as entrega, o.texto as obs_texto,
+         (o.creado_el at time zone 'America/Merida')::date as obs_fecha,
+         t.excluir_indicadores as excluir,
+         (select coalesce(json_agg(json_build_array((tp.desde at time zone 'America/Merida')::date,
+                                                    (tp.hasta at time zone 'America/Merida')::date) order by tp.desde), '[]'::json)
+            from ticket_pausas tp where tp.ticket_id = t.id) as pausas,
+         exists (select 1 from ticket_pausas tp where tp.ticket_id = t.id and tp.hasta is null
+                   and tp.estatus_previo = 'Pendiente programacion') as pausado_pendiente
   from tickets t
   join polizas p        on p.id  = t.poliza_id
   join proyectos pr     on pr.id = p.proyecto_id
   join unidades u       on u.id  = p.unidad_id
   left join zonas_garantias z on z.id = t.zona_id
+  left join lateral (select texto, creado_el from ticket_observaciones ob
+                     where ob.ticket_id = t.id order by ob.creado_el desc, ob.id desc limit 1) o on true
   where t.proveedor_id = :PV
 )
 select 'recibido' as set, desarrollo, lote, zona, prioridad, recurrencia, estatus,
-       fecha_reporte, fecha_programacion, fecha_terminado, descripcion
+       fecha_reporte, fecha_programacion, fecha_terminado, descripcion, entrega, obs_texto, obs_fecha, excluir, pausas
 from base where fecha_reporte between :INI and :FIN
 union all
 select 'terminado', desarrollo, lote, zona, prioridad, recurrencia, estatus,
-       fecha_reporte, fecha_programacion, fecha_terminado, descripcion
+       fecha_reporte, fecha_programacion, fecha_terminado, descripcion, entrega, obs_texto, obs_fecha, excluir, pausas
 from base where fecha_terminado between :INI and :FIN
 union all
 select 'pendiente', desarrollo, lote, zona, prioridad, recurrencia, estatus,
-       fecha_reporte, fecha_programacion, fecha_terminado, descripcion
-from base where estatus = 'Pendiente programacion'
+       fecha_reporte, fecha_programacion, fecha_terminado, descripcion, entrega, obs_texto, obs_fecha, excluir, pausas
+from base where estatus = 'Pendiente programacion' or (estatus = 'Pausado' and pausado_pendiente)
 order by set, lote, fecha_reporte;
 ```
 
@@ -97,7 +124,11 @@ el usuario prefiere respetar esos números, úsalos y anótalo.
 ```sql
 select 'terminado' as set, pr.nombre as desarrollo, u.numero_lote as lote,
        coalesce(z.nombre,'(sin zona)') as zona, t.prioridad, t.recurrencia, t.estatus,
-       t.fecha_reporte, t.fecha_programacion, t.fecha_terminado, t.descripcion
+       t.fecha_reporte, t.fecha_programacion, t.fecha_terminado, t.descripcion,
+       t.ticket_entrega as entrega, t.excluir_indicadores as excluir,
+       (select coalesce(json_agg(json_build_array((tp.desde at time zone 'America/Merida')::date,
+                                                  (tp.hasta at time zone 'America/Merida')::date) order by tp.desde), '[]'::json)
+          from ticket_pausas tp where tp.ticket_id = t.id) as pausas
 from tickets t
 join polizas p    on p.id=t.poliza_id
 join proyectos pr on pr.id=p.proyecto_id

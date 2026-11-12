@@ -23,6 +23,7 @@ Entrada: un archivo JSON = arreglo de filas con estas llaves (de la consulta):
   estatus        texto
   fecha_reporte / fecha_programacion / fecha_terminado   'YYYY-MM-DD' | null
   descripcion    texto
+  id, entrega, obs_texto, obs_fecha   (opcionales; la consulta los trae desde 2026-11, spec 009)
 
 Uso:
   python aggregates.py datos.json [--prev datos_mes_anterior.json] [--hoy YYYY-MM-DD]
@@ -31,7 +32,7 @@ Uso:
         comparativo de KPIs (baseline en vivo).
 --hoy:  fecha de corte para "días esperando" de los pendientes (default: hoy).
 """
-import argparse, json, math, sys
+import argparse, html, json, math, sys
 from datetime import date, timedelta
 
 CAT = [f"var(--cat-{i})" for i in range(1, 10)]  # paleta de la dona
@@ -55,13 +56,87 @@ def bizdays(d1, d2):
     return n
 
 
+def bizdays_sin_pausa(d1, d2, pausas, corte=None):
+    """Días hábiles en (d1, d2] sin contar los que el ticket estuvo en pausa por causa del cliente (spec 009).
+    pausas = [[desde, hasta|None], …] en 'YYYY-MM-DD'; cada pausa quita sus días hábiles (desde, hasta] que caen en el
+    tramo. Una pausa abierta (hasta None) se corta en `corte` (la fecha de corte del deck; si falta, en d2)."""
+    total = bizdays(d1, d2)
+    if isinstance(pausas, str):   # algunos volcados traen el json_agg como texto
+        pausas = json.loads(pausas)
+    if total is None or not pausas:
+        return total
+    restado = 0
+    for desde, hasta in pausas:
+        a = max(d1, d(desde))
+        b = min(d2, d(hasta) if hasta else (corte or d2))
+        if b > a:
+            restado += bizdays(a, b)
+    # Sin nada que restar se devuelve tal cual (mismo valor que bizdays, aun si viniera negativo por datos invertidos).
+    return max(0, total - restado) if restado else total
+
+
+def prog_days(r, corte=None):
+    """Días hábiles de programación (reporte → programación), sin pausas."""
+    return bizdays_sin_pausa(d(r["fecha_reporte"]), d(r["fecha_programacion"]), r.get("pausas") or [], corte)
+
+
+def cuenta_en_kpis(r):
+    """Un ticket marcado «No cuenta para indicadores» (spec 009) sale de los KPI y su comparativo, no de lote/zona."""
+    return not r.get("excluir")
+
+
 def lote_label(r):
     return f"{r['desarrollo']} {r['lote']}"
 
 
 def jstr(s):
-    """Escapa una cadena para literal JS entre comillas dobles."""
+    """Escapa una cadena para literal JS entre comillas dobles (texto corto: nombres, zonas)."""
     return (s or "").replace("\\", "\\\\").replace('"', '\\"').strip()
+
+
+def js_val(v):
+    """Literal JS seguro para cualquier valor: JSON (saltos de línea y comillas escapados) y sin ningún `<`
+    (va como \\u003c): un `</script>` o `<!--<script>` en una observación cerraría o desarmaría el <script>
+    del deck. JS y JSON.parse lo leen idéntico."""
+    return json.dumps(v, ensure_ascii=False).replace("<", "\\u003c")
+
+
+def extras(r):
+    """Campos opcionales de la tarjeta (spec 009): etiqueta de entrega y la última observación."""
+    obs = {"texto": r["obs_texto"].strip(), "fecha": r.get("obs_fecha")} if (r.get("obs_texto") or "").strip() else None
+    return {"entrega": bool(r.get("entrega")), "obs": obs}
+
+
+def fila_terminado(r):
+    """Una fila del arreglo TERMINADOS (modales de KPI) como literal JS."""
+    return js_val({
+        "lote": lote_label(r), "zona": r["zona"], "desc": (r["descripcion"] or "").strip(),
+        "prioridad": r["prioridad"], "recurrencia": bool(r.get("recurrencia")),
+        "reporte": r["fecha_reporte"], "programacion": r["fecha_programacion"],
+        "terminado": r["fecha_terminado"], "diasTrabajo": work_days(r),
+        "diasProg": prog_days(r), **extras(r),
+    }) + ","
+
+
+def fila_ticket(r):
+    """Una fila del arreglo TICKETS (recibidos; modales por lote y zona) como literal JS."""
+    return js_val({
+        "lote": lote_label(r), "desc": (r["descripcion"] or "").strip(), "prioridad": r["prioridad"],
+        "recurrencia": bool(r.get("recurrencia")), "estatus": r["estatus"], "reporte": r["fecha_reporte"],
+        "programacion": r["fecha_programacion"] or None, "terminado": r["fecha_terminado"] or None,
+        "zona": r["zona"], **extras(r), "excluido": bool(r.get("excluir")),
+    }) + ","
+
+
+def badge_entrega(r):
+    """Etiquetas de la fila de «Pendientes de Programar»: Entrega y, si está pausado por el cliente, Pausado."""
+    return ((' <span class="badge entrega">Entrega</span>' if r.get("entrega") else "")
+            + (' <span class="badge pausado">Pausado</span>' if r.get("estatus") == "Pausado" else ""))
+
+
+def dias_esperando(r, hoy):
+    """Días hábiles desde el reporte hasta el corte, sin los días en pausa."""
+    return bizdays_sin_pausa(d(r["fecha_reporte"]), hoy, r.get("pausas") or [], hoy)
 
 
 def grupo(rows, keyfn):
@@ -97,13 +172,14 @@ def work_days(r):
     Un tiempo de trabajo negativo no es válido: pasa cuando la fecha de
     programación se capturó DESPUÉS del cierre (dato mal registrado). En ese
     caso se cuenta como 0 (mismo día). Ver footnote del deck."""
-    dt = bizdays(d(r["fecha_programacion"]), d(r["fecha_terminado"]))
+    dt = bizdays_sin_pausa(d(r["fecha_programacion"]), d(r["fecha_terminado"]), r.get("pausas") or [])
     return max(0, dt) if dt is not None else None
 
 
 def kpis(term):
+    term = [r for r in term if cuenta_en_kpis(r)]
     trab = [work_days(r) for r in term]
-    prog = [bizdays(d(r["fecha_reporte"]), d(r["fecha_programacion"])) for r in term]
+    prog = [prog_days(r) for r in term]
     trab = [x for x in trab if x is not None]
     prog = [x for x in prog if x is not None]
     n = len(term)
@@ -167,25 +243,16 @@ def main():
     # ---- arrays JS ----
     print("\n## ARRAY TERMINADOS (slide 9, modales de KPI)")
     for r in terminados:
-        dt = work_days(r)
-        dp = bizdays(d(r["fecha_reporte"]), d(r["fecha_programacion"]))
-        print(f'  {{lote:"{lote_label(r)}", zona:"{r["zona"]}", desc:"{jstr(r["descripcion"])}", '
-              f'prioridad:"{r["prioridad"]}", recurrencia:{str(bool(r.get("recurrencia"))).lower()}, '
-              f'reporte:"{r["fecha_reporte"]}", programacion:"{r["fecha_programacion"]}", '
-              f'terminado:"{r["fecha_terminado"]}", diasTrabajo:{dt}, diasProg:{dp}}},')
+        if cuenta_en_kpis(r):
+            print("  " + fila_terminado(r))
 
     print("\n## ARRAY TICKETS (slides 4/6/7, modal por zona/lote — recibidos)")
     for r in recibidos:
-        prog = f'"{r["fecha_programacion"]}"' if r["fecha_programacion"] else "null"
-        term = f'"{r["fecha_terminado"]}"' if r["fecha_terminado"] else "null"
-        print(f'  {{lote:"{lote_label(r)}", desc:"{jstr(r["descripcion"])}", '
-              f'prioridad:"{r["prioridad"]}", recurrencia:{str(bool(r.get("recurrencia"))).lower()}, '
-              f'estatus:"{r["estatus"]}", reporte:"{r["fecha_reporte"]}", '
-              f'programacion:{prog}, terminado:{term}, zona:"{r["zona"]}"}},')
+        print("  " + fila_ticket(r))
 
     # ---- PENDIENTES (slide nuevo; auto-pagina si son muchos) ----
     print("\n## SLIDE PENDIENTES (backlog actual, ordenado por antigüedad)")
-    pend = [(r, bizdays(d(r["fecha_reporte"]), hoy)) for r in pendientes]
+    pend = [(r, dias_esperando(r, hoy)) for r in pendientes]
     pend.sort(key=lambda x: -(x[1] or 0))
     MAXROWS = 14  # caben ~14 filas legibles en un slide de 1080px
     nslides = max(1, math.ceil(len(pend) / MAXROWS))
@@ -196,7 +263,8 @@ def main():
         print(f"    'Pendientes de Programar — continuación' y SIN callout.")
     def _row(r, dh):
         cls = " dias-alto" if (dh or 0) >= 60 else (" dias-medio" if (dh or 0) >= 30 else "")
-        return (f'    <tr><td>{lote_label(r)}</td><td>{r["zona"]}</td><td>{jstr(r["descripcion"])}</td>'
+        e = lambda s: html.escape(str(s or "").strip())
+        return (f'    <tr><td>{e(lote_label(r))}{badge_entrega(r)}</td><td>{e(r["zona"])}</td><td>{e(r["descripcion"])}</td>'
                 f'<td class="num">{r["fecha_reporte"]}</td><td class="num{cls}">{dh}</td></tr>')
     for i in range(nslides):
         if nslides > 1:
