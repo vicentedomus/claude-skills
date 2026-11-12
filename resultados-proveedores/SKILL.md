@@ -49,6 +49,8 @@ de esa carpeta.
   detecta las zonas de más (una card que se sale) y las tablas largas.
 - `scripts/build_standalone.py` — empaqueta el deck en UN html autocontenido
   (CSS+JS+logo embebidos) para mandarlo por chat / abrir sin servidor. Sin deps.
+- `tests/` — pruebas de los scripts (stdlib, sin dependencias). Córrelas tras tocar cualquier
+  script: `cd resultados-proveedores && python3 -m unittest discover -s tests -t .`
 - `scripts/export_pdf.mjs` — exporta a PDF (508×285.75 mm) con Playwright (donde
   esté instalado; en Claude Code web suele no haber navegador → usa el standalone).
 

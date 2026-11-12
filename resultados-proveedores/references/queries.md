@@ -16,6 +16,14 @@ tickets.proveedor_id -> proveedores.id     (bigint; nombre = PROVEEDOR)
 Campos de `tickets`: `estatus`, `prioridad`, `recurrencia` (bool), `fecha_reporte`,
 `fecha_programacion`, `fecha_terminado` (todas `date`), `descripcion`, `ticket_entrega`.
 
+Observaciones: `ticket_observaciones (ticket_id, texto, creado_el)`. El deck muestra **solo la
+última** de cada ticket (texto y fecha) en su tarjeta (spec 009, 2026-11).
+
+Campos que viajan al deck además de los de siempre (spec 009): `entrega`
+(= `ticket_entrega`, etiqueta «Entrega») y `obs_texto` / `obs_fecha` (última observación).
+`aggregates.py` los acepta ausentes (JSON viejos), así que una consulta vieja no truena: solo
+sale sin etiqueta ni observación.
+
 > **REGLA DE ORO — nunca derives el desarrollo del número de lote.** El lote NO es
 > único entre desarrollos (Capri 48 ≠ Adara 48). **Siempre** une `proyectos` y muestra
 > `desarrollo + lote` juntos. Este error ya se cometió a mano una vez.
@@ -65,24 +73,28 @@ pásalo a `scripts/aggregates.py`.
 ```sql
 with base as (
   select t.*, pr.nombre as desarrollo, u.numero_lote as lote,
-         coalesce(z.nombre,'(sin zona)') as zona
+         coalesce(z.nombre,'(sin zona)') as zona,
+         t.ticket_entrega as entrega, o.texto as obs_texto,
+         (o.creado_el at time zone 'America/Merida')::date as obs_fecha
   from tickets t
   join polizas p        on p.id  = t.poliza_id
   join proyectos pr     on pr.id = p.proyecto_id
   join unidades u       on u.id  = p.unidad_id
   left join zonas_garantias z on z.id = t.zona_id
+  left join lateral (select texto, creado_el from ticket_observaciones ob
+                     where ob.ticket_id = t.id order by ob.creado_el desc, ob.id desc limit 1) o on true
   where t.proveedor_id = :PV
 )
 select 'recibido' as set, desarrollo, lote, zona, prioridad, recurrencia, estatus,
-       fecha_reporte, fecha_programacion, fecha_terminado, descripcion
+       fecha_reporte, fecha_programacion, fecha_terminado, descripcion, entrega, obs_texto, obs_fecha
 from base where fecha_reporte between :INI and :FIN
 union all
 select 'terminado', desarrollo, lote, zona, prioridad, recurrencia, estatus,
-       fecha_reporte, fecha_programacion, fecha_terminado, descripcion
+       fecha_reporte, fecha_programacion, fecha_terminado, descripcion, entrega, obs_texto, obs_fecha
 from base where fecha_terminado between :INI and :FIN
 union all
 select 'pendiente', desarrollo, lote, zona, prioridad, recurrencia, estatus,
-       fecha_reporte, fecha_programacion, fecha_terminado, descripcion
+       fecha_reporte, fecha_programacion, fecha_terminado, descripcion, entrega, obs_texto, obs_fecha
 from base where estatus = 'Pendiente programacion'
 order by set, lote, fecha_reporte;
 ```
@@ -97,7 +109,8 @@ el usuario prefiere respetar esos números, úsalos y anótalo.
 ```sql
 select 'terminado' as set, pr.nombre as desarrollo, u.numero_lote as lote,
        coalesce(z.nombre,'(sin zona)') as zona, t.prioridad, t.recurrencia, t.estatus,
-       t.fecha_reporte, t.fecha_programacion, t.fecha_terminado, t.descripcion
+       t.fecha_reporte, t.fecha_programacion, t.fecha_terminado, t.descripcion,
+       t.ticket_entrega as entrega
 from tickets t
 join polizas p    on p.id=t.poliza_id
 join proyectos pr on pr.id=p.proyecto_id

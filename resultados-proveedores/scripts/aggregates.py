@@ -23,6 +23,7 @@ Entrada: un archivo JSON = arreglo de filas con estas llaves (de la consulta):
   estatus        texto
   fecha_reporte / fecha_programacion / fecha_terminado   'YYYY-MM-DD' | null
   descripcion    texto
+  id, entrega, obs_texto, obs_fecha   (opcionales; la consulta los trae desde 2026-11, spec 009)
 
 Uso:
   python aggregates.py datos.json [--prev datos_mes_anterior.json] [--hoy YYYY-MM-DD]
@@ -31,7 +32,7 @@ Uso:
         comparativo de KPIs (baseline en vivo).
 --hoy:  fecha de corte para "días esperando" de los pendientes (default: hoy).
 """
-import argparse, json, math, sys
+import argparse, html, json, math, sys
 from datetime import date, timedelta
 
 CAT = [f"var(--cat-{i})" for i in range(1, 10)]  # paleta de la dona
@@ -60,8 +61,46 @@ def lote_label(r):
 
 
 def jstr(s):
-    """Escapa una cadena para literal JS entre comillas dobles."""
+    """Escapa una cadena para literal JS entre comillas dobles (texto corto: nombres, zonas)."""
     return (s or "").replace("\\", "\\\\").replace('"', '\\"').strip()
+
+
+def js_val(v):
+    """Literal JS seguro para cualquier valor: JSON (saltos de línea y comillas escapados) y sin ningún `<`
+    (va como \\u003c): un `</script>` o `<!--<script>` en una observación cerraría o desarmaría el <script>
+    del deck. JS y JSON.parse lo leen idéntico."""
+    return json.dumps(v, ensure_ascii=False).replace("<", "\\u003c")
+
+
+def extras(r):
+    """Campos opcionales de la tarjeta (spec 009): etiqueta de entrega y la última observación."""
+    obs = {"texto": r["obs_texto"].strip(), "fecha": r.get("obs_fecha")} if (r.get("obs_texto") or "").strip() else None
+    return {"entrega": bool(r.get("entrega")), "obs": obs}
+
+
+def fila_terminado(r):
+    """Una fila del arreglo TERMINADOS (modales de KPI) como literal JS."""
+    return js_val({
+        "lote": lote_label(r), "zona": r["zona"], "desc": (r["descripcion"] or "").strip(),
+        "prioridad": r["prioridad"], "recurrencia": bool(r.get("recurrencia")),
+        "reporte": r["fecha_reporte"], "programacion": r["fecha_programacion"],
+        "terminado": r["fecha_terminado"], "diasTrabajo": work_days(r),
+        "diasProg": bizdays(d(r["fecha_reporte"]), d(r["fecha_programacion"])), **extras(r),
+    }) + ","
+
+
+def fila_ticket(r):
+    """Una fila del arreglo TICKETS (recibidos; modales por lote y zona) como literal JS."""
+    return js_val({
+        "lote": lote_label(r), "desc": (r["descripcion"] or "").strip(), "prioridad": r["prioridad"],
+        "recurrencia": bool(r.get("recurrencia")), "estatus": r["estatus"], "reporte": r["fecha_reporte"],
+        "programacion": r["fecha_programacion"] or None, "terminado": r["fecha_terminado"] or None,
+        "zona": r["zona"], **extras(r),
+    }) + ","
+
+
+def badge_entrega(r):
+    return ' <span class="badge entrega">Entrega</span>' if r.get("entrega") else ""
 
 
 def grupo(rows, keyfn):
@@ -167,21 +206,11 @@ def main():
     # ---- arrays JS ----
     print("\n## ARRAY TERMINADOS (slide 9, modales de KPI)")
     for r in terminados:
-        dt = work_days(r)
-        dp = bizdays(d(r["fecha_reporte"]), d(r["fecha_programacion"]))
-        print(f'  {{lote:"{lote_label(r)}", zona:"{r["zona"]}", desc:"{jstr(r["descripcion"])}", '
-              f'prioridad:"{r["prioridad"]}", recurrencia:{str(bool(r.get("recurrencia"))).lower()}, '
-              f'reporte:"{r["fecha_reporte"]}", programacion:"{r["fecha_programacion"]}", '
-              f'terminado:"{r["fecha_terminado"]}", diasTrabajo:{dt}, diasProg:{dp}}},')
+        print("  " + fila_terminado(r))
 
     print("\n## ARRAY TICKETS (slides 4/6/7, modal por zona/lote — recibidos)")
     for r in recibidos:
-        prog = f'"{r["fecha_programacion"]}"' if r["fecha_programacion"] else "null"
-        term = f'"{r["fecha_terminado"]}"' if r["fecha_terminado"] else "null"
-        print(f'  {{lote:"{lote_label(r)}", desc:"{jstr(r["descripcion"])}", '
-              f'prioridad:"{r["prioridad"]}", recurrencia:{str(bool(r.get("recurrencia"))).lower()}, '
-              f'estatus:"{r["estatus"]}", reporte:"{r["fecha_reporte"]}", '
-              f'programacion:{prog}, terminado:{term}, zona:"{r["zona"]}"}},')
+        print("  " + fila_ticket(r))
 
     # ---- PENDIENTES (slide nuevo; auto-pagina si son muchos) ----
     print("\n## SLIDE PENDIENTES (backlog actual, ordenado por antigüedad)")
@@ -196,7 +225,8 @@ def main():
         print(f"    'Pendientes de Programar — continuación' y SIN callout.")
     def _row(r, dh):
         cls = " dias-alto" if (dh or 0) >= 60 else (" dias-medio" if (dh or 0) >= 30 else "")
-        return (f'    <tr><td>{lote_label(r)}</td><td>{r["zona"]}</td><td>{jstr(r["descripcion"])}</td>'
+        e = lambda s: html.escape(str(s or "").strip())
+        return (f'    <tr><td>{e(lote_label(r))}{badge_entrega(r)}</td><td>{e(r["zona"])}</td><td>{e(r["descripcion"])}</td>'
                 f'<td class="num">{r["fecha_reporte"]}</td><td class="num{cls}">{dh}</td></tr>')
     for i in range(nslides):
         if nslides > 1:
