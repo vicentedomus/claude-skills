@@ -61,14 +61,18 @@ def bizdays_sin_pausa(d1, d2, pausas, corte=None):
     pausas = [[desde, hasta|None], …] en 'YYYY-MM-DD'; cada pausa quita sus días hábiles (desde, hasta] que caen en el
     tramo. Una pausa abierta (hasta None) se corta en `corte` (la fecha de corte del deck; si falta, en d2)."""
     total = bizdays(d1, d2)
+    if isinstance(pausas, str):   # algunos volcados traen el json_agg como texto
+        pausas = json.loads(pausas)
     if total is None or not pausas:
         return total
+    restado = 0
     for desde, hasta in pausas:
         a = max(d1, d(desde))
         b = min(d2, d(hasta) if hasta else (corte or d2))
         if b > a:
-            total -= bizdays(a, b)
-    return max(0, total)
+            restado += bizdays(a, b)
+    # Sin nada que restar se devuelve tal cual (mismo valor que bizdays, aun si viniera negativo por datos invertidos).
+    return max(0, total - restado) if restado else total
 
 
 def prog_days(r, corte=None):

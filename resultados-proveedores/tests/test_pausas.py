@@ -26,6 +26,17 @@ class DiasSinPausa(unittest.TestCase):
         # pausa vie 6 → lun 9: solo quita el lunes 9
         self.assertEqual(A.bizdays_sin_pausa(d('2026-11-02'), d('2026-11-13'), [['2026-11-06', '2026-11-09']]), 8)
 
+    def test_pausa_fuera_del_tramo_no_resta(self):
+        self.assertEqual(A.bizdays_sin_pausa(d('2026-11-04'), d('2026-11-06'), [['2026-10-01', '2026-10-15'], ['2026-11-20', None]],
+                                             corte=d('2026-11-30')), 2)
+
+    def test_pausas_como_texto_json(self):
+        self.assertEqual(A.bizdays_sin_pausa(d('2026-11-02'), d('2026-11-13'), '[["2026-11-04", "2026-11-06"]]'), 7)
+
+    def test_prog_days_con_pausa(self):
+        r = {"fecha_reporte": "2026-11-02", "fecha_programacion": "2026-11-13", "pausas": [["2026-11-04", "2026-11-06"]]}
+        self.assertEqual(A.prog_days(r), 7)
+
     def test_nunca_negativo(self):
         self.assertEqual(A.bizdays_sin_pausa(d('2026-11-02'), d('2026-11-06'), [['2026-10-01', '2026-12-01']]), 0)
 
