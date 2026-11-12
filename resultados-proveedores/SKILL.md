@@ -108,10 +108,14 @@ delta), `callout`, `footnote_kpi` y `pasos`. Todo lo demás lo calcula el script
   funcionen. Footnote: "*Tiempos en días hábiles" (+ menciona algún outlier si pesa).
 - **Slide Pendientes** (antes de Siguientes pasos): tabla del backlog que dio el
   script; redacta el callout (cuántos, foco más viejo, prioridad inmediata).
-  **Auto-paginación:** el slide mide 1080px y ~14 filas es el máximo legible. Si
-  `aggregates.py` marca que hay que paginar (>14 pendientes), parte la tabla en los
-  slides balanceados que indica: el primero lleva el callout; los de continuación se
+  **Auto-paginación por altura** (`paginar()` en `aggregates.py`, la usan ambos
+  scripts): presupone filas de 2 líneas (69px) en una página de 830px, descontando
+  el callout en la primera → ~9 filas con callout y ~10 en las de continuación,
+  repartidas parejo. Si `aggregates.py` marca que hay que paginar, parte la tabla en
+  los slides que indica: el primero lleva el callout; los de continuación se
   titulan "Pendientes de Programar — continuación" y **sin** callout (solo la tabla).
+  Si aun así `check_fit` marca la página de pendientes (descripciones de 3+ líneas),
+  recorta las descripciones más largas — no vuelvas a un tope fijo de filas.
   Mejor dos páginas legibles que una recortada.
 - **Siguientes pasos**: acciones reales del mes (programar pendientes, etc.).
 - Pega el array `TICKETS` (recibidos) para los modales de Lote/Zona.

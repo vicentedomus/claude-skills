@@ -24,7 +24,7 @@ from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aggregates import (CAT, badge_entrega, cuenta_en_kpis, d, dias_esperando, fila_terminado, fila_ticket, grupo,
-                        jstr, kpis, lote_label)
+                        alto_fila, jstr, kpis, lote_label, paginar)
 
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
 # La BD guarda las zonas sin acentos; el deck las muestra acentuadas.
@@ -33,9 +33,6 @@ ZONA_DISPLAY = {
     "Recamaras Secundarias": "Recámaras Secundarias", "Jardin": "Jardín",
     "Areas Comunes": "Áreas Comunes", "Sala/Comedor": "Sala / Comedor",
 }
-MAXROWS = 14  # filas legibles por slide de pendientes
-
-
 def zd(z):
     return ZONA_DISPLAY.get(z, z)
 
@@ -92,21 +89,30 @@ def card_auto(zona, tickets):
     return " ".join(partes)
 
 
+def pend_msg(r):
+    """Último mensaje del Historial debajo de la descripción del pendiente (vacío si no hay)."""
+    texto = (r.get("obs_texto") or "").strip()
+    if not texto:
+        return ""
+    cuando = f" · {fecha_corta(r['obs_fecha'])}" if r.get("obs_fecha") else ""
+    return (f'<div class="pend-msg"><span class="lbl">{esc(r.get("obs_tipo") or "Observación")}{cuando}</span> '
+            f'{esc(texto)}</div>')
+
+
 def slide_pendientes(pend, hoy, callout, num_from):
     """Devuelve la lista de slides de pendientes (paginados si son muchos)."""
     filas = sorted(((r, dias_esperando(r, hoy)) for r in pend),
                    key=lambda x: -(x[1] or 0))
-    nsl = max(1, math.ceil(len(filas) / MAXROWS))
-    per = math.ceil(len(filas) / nsl) if filas else 0
-    out = []
-    for i in range(nsl):
+    out, ini = [], 0
+    for i, t in enumerate(paginar([alto_fila(r) for r, _ in filas], callout)):
         cont = i > 0
         cuerpo = "\n".join(
             f'          <tr><td>{esc(lote_label(r))}{badge_entrega(r)}</td><td>{esc(zd(r["zona"]))}</td>'
-            f'<td>{esc(r["descripcion"].strip())}</td>'
+            f'<td>{esc(r["descripcion"].strip())}{pend_msg(r)}</td>'
             f'<td class="num">{fecha_corta(r["fecha_reporte"])}</td>'
             f'<td class="num{" dias-alto" if (dh or 0) >= 60 else (" dias-medio" if (dh or 0) >= 30 else "")}">{dh}</td></tr>'
-            for r, dh in filas[i * per:(i + 1) * per])
+            for r, dh in filas[ini:ini + t])
+        ini += t
         titulo = "Pendientes de Programar" + (" — continuación" if cont else "")
         callout_html = "" if cont else f"""      <div class="pendientes-callout">{callout}</div>
 """
