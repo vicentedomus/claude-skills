@@ -4,3 +4,5 @@
 
 # Skills materializadas por los hooks de sync (regenerables)
 .claude/skills/
+__pycache__/
+*.pyc
