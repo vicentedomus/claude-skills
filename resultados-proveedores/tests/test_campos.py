@@ -63,3 +63,23 @@ class Campos(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UltimoMensaje(unittest.TestCase):
+    def test_tipo_viaja_a_la_tarjeta_solo_si_viene(self):
+        r = {"obs_texto": "Error de lote", "obs_fecha": "2026-10-30", "obs_tipo": "Motivo de rechazo"}
+        self.assertEqual(A.extras(r)["obs"], {"texto": "Error de lote", "fecha": "2026-10-30", "tipo": "Motivo de rechazo"})
+        self.assertNotIn("tipo", A.extras({"obs_texto": "x", "obs_fecha": None})["obs"])
+
+    def test_pendientes_muestran_el_mensaje_escapado(self):
+        r = {"obs_texto": "Cliente <b>fuera</b>", "obs_fecha": "2026-11-11", "obs_tipo": "Observación"}
+        html = B.pend_msg(r)
+        self.assertIn('class="pend-msg"', html)
+        self.assertIn("Observación · 11-nov", html)
+        self.assertIn("&lt;b&gt;fuera", html)
+        self.assertEqual(B.pend_msg({"obs_texto": "  "}), "")
+
+    def test_deck_pinta_el_mensaje_en_la_tabla_de_pendientes(self):
+        html = generar()
+        sec = html.split("Pendientes de Programar</div>")[1].split("</table>")[0]
+        self.assertIn("Cliente de viaje", sec)  # fixture t3: pendiente con observación y sin obs_tipo

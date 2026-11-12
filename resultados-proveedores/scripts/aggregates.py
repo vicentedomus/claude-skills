@@ -102,8 +102,10 @@ def js_val(v):
 
 
 def extras(r):
-    """Campos opcionales de la tarjeta (spec 009): etiqueta de entrega y la última observación."""
+    """Campos opcionales de la tarjeta (spec 009): etiqueta de entrega y el último mensaje del Historial."""
     obs = {"texto": r["obs_texto"].strip(), "fecha": r.get("obs_fecha")} if (r.get("obs_texto") or "").strip() else None
+    if obs and r.get("obs_tipo"):
+        obs["tipo"] = r["obs_tipo"]
     return {"entrega": bool(r.get("entrega")), "obs": obs}
 
 
@@ -194,28 +196,43 @@ def kpis(term):
     }
 
 
-# Paginación de pendientes por ALTURA, no por número de filas. Medido en Chromium
-# (styles.css): .pendientes-page mide 830px; thead 74px; una fila de 1 línea 44px y de
-# 2 líneas 69px. Con table-layout auto no se puede predecir qué fila se parte (un lote
-# "Adara 43" o una zona "Recámaras Secundarias" también se parten), así que se presupone
-# el peor caso de 2 líneas. El callout (24px, ~120 chars por línea) va solo en el primer
-# slide: 34px por línea + 22px de margen.
+# Paginación de pendientes por ALTURA. Medido en Chromium (styles.css): .pendientes-page mide
+# 830px; thead 74px; una fila de 1 línea 44px y de 2 líneas 69px. Con table-layout auto no se
+# puede predecir qué fila se parte (un lote "Adara 43" o una zona "Recámaras Secundarias" también
+# se parten), así que cada fila presupone 2 líneas. El último mensaje va debajo de la descripción
+# (.pend-msg, 17px): ~26px la primera línea y ~22px cada una más, a ~110 caracteres por línea.
+# El callout (24px, ~120 chars por línea) va solo en el primer slide: 34px por línea + 22px.
 PAGE_PX, THEAD_PX, ROW_PX = 830, 74, 69
 
 
-def paginar(n, callout=""):
-    """Reparte n filas de pendientes en slides que caben. Devuelve [filas_por_slide]."""
+def alto_fila(r):
+    """Alto estimado (px) de una fila de «Pendientes de Programar»."""
+    msg = (r.get("obs_texto") or "").strip()
+    if not msg:
+        return ROW_PX
+    return ROW_PX + 26 + 22 * (math.ceil((len(msg) + len(r.get("obs_tipo") or "") + 10) / 110) - 1)
+
+
+def paginar(alturas, callout=""):
+    """Reparte las filas (alturas en px, en orden) en slides que caben. Devuelve [filas_por_slide].
+    Usa el mínimo de slides y luego baja el tope parejo para que no quede uno lleno y otro casi vacío."""
     lineas = max(1, math.ceil(len(re.sub(r"<[^>]+>", "", callout or "x" * 300)) / 120))
-    cap1 = max(1, (PAGE_PX - THEAD_PX - lineas * 34 - 22) // ROW_PX)
-    capn = (PAGE_PX - THEAD_PX) // ROW_PX
-    if n <= cap1:
-        return [n]
-    k = 2
-    while n > cap1 + (k - 1) * capn:
-        k += 1
-    primero = min(cap1, math.ceil(n / k))
-    resto, k = n - primero, k - 1
-    return [primero] + [resto // k + (1 if i < resto % k else 0) for i in range(k)]
+    cap1 = PAGE_PX - THEAD_PX - lineas * 34 - 22
+    capn = PAGE_PX - THEAD_PX
+
+    def cortes(escala):
+        out, acc, n, cap = [], 0, 0, cap1 * escala
+        for h in alturas:
+            if n and acc + h > cap:
+                out.append(n)
+                acc, n, cap = 0, 0, capn * escala
+            acc, n = acc + h, n + 1
+        return out + [n]
+
+    k, escala = len(cortes(1)), 1.0
+    while escala > 0.3 and len(cortes(escala - 0.05)) == k:
+        escala -= 0.05
+    return cortes(escala)
 
 
 def main():
@@ -278,7 +295,7 @@ def main():
     print("\n## SLIDE PENDIENTES (backlog actual, ordenado por antigüedad)")
     pend = [(r, dias_esperando(r, hoy)) for r in pendientes]
     pend.sort(key=lambda x: -(x[1] or 0))
-    tamanos = paginar(len(pend))  # sin callout aún: presupone uno de 3 líneas
+    tamanos = paginar([alto_fila(r) for r, _ in pend])  # sin callout aún: presupone uno de 3 líneas
     nslides = len(tamanos)
     if nslides > 1:
         print(f"  ⚠ {len(pend)} pendientes no caben en un slide: PAGINAR en {nslides} slides {tamanos}.")
@@ -287,7 +304,9 @@ def main():
     def _row(r, dh):
         cls = " dias-alto" if (dh or 0) >= 60 else (" dias-medio" if (dh or 0) >= 30 else "")
         e = lambda s: html.escape(str(s or "").strip())
-        return (f'    <tr><td>{e(lote_label(r))}{badge_entrega(r)}</td><td>{e(r["zona"])}</td><td>{e(r["descripcion"])}</td>'
+        msg = (f'<div class="pend-msg"><span class="lbl">{e(r.get("obs_tipo") or "Observación")} · {e(r.get("obs_fecha"))}</span> '
+               f'{e(r["obs_texto"])}</div>') if (r.get("obs_texto") or "").strip() else ""
+        return (f'    <tr><td>{e(lote_label(r))}{badge_entrega(r)}</td><td>{e(r["zona"])}</td><td>{e(r["descripcion"])}{msg}</td>'
                 f'<td class="num">{r["fecha_reporte"]}</td><td class="num{cls}">{dh}</td></tr>')
     ini = 0
     for i, t in enumerate(tamanos):
