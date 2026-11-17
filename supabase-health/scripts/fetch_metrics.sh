@@ -42,7 +42,17 @@ scrape() {  # $1 = archivo destino
     --user "service_role:${SUPABASE_SERVICE_ROLE_KEY}" \
     "$URL")
   if [[ "$code" != "200" ]]; then
-    echo "⚠️  Metrics API devolvió HTTP $code (¿key inválido/rotado?)." >&2
+    # "No API key found" = el header Authorization NO llegó (no es llave mala): pasa cuando
+    # el entorno cloud tiene un secreto de red sobre este host y el proxy lo intercepta
+    # (2026-11-16/17). Con llave mala Supabase responde "Invalid API key".
+    if grep -q "No API key found" "$1" 2>/dev/null; then
+      echo "⚠️  Metrics API devolvió HTTP $code \"No API key found\": la llave NO llegó a Supabase." >&2
+      echo "    No es la llave (no la rotes): el entorno cloud probablemente tiene un secreto de red" >&2
+      echo "    sobre ${PROJECT_REF}.supabase.co y el proxy descarta el header Authorization." >&2
+      echo "    Corre el chequeo en un entorno sin secretos de red sobre ese host." >&2
+    else
+      echo "⚠️  Metrics API devolvió HTTP $code (¿key inválido/rotado?)." >&2
+    fi
     echo "    Respuesta cruda en: $1" >&2
     exit 4
   fi
