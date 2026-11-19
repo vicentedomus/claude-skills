@@ -4,8 +4,9 @@ description: >-
   Runbook spec-driven del combo spec-kit + superpowers: conduce specify → plan → tasks con
   checkpoint, agrupa las tareas en rondas (una ronda = un PR) y las ejecuta en manual o automode
   con TDD, verificación y review. Dispara con "combo spec kit + superpowers", "implementemos con
-  spec-kit", al pedir specs formales o al retomar una corrida ("retoma la 002"). NO es para
-  trabajo suelto sin specs.
+  spec-kit", al pedir specs formales o al retomar una corrida ("retoma la 002"). Modo fast
+  ("combo fast", "speckit fast"): un fast.md, un checkpoint, un PR. NO es para trabajo suelto
+  sin specs.
 ---
 
 # speckit-with-superpowers
@@ -26,6 +27,9 @@ rigor injertado donde toca, y la entrega en **rondas** (una ronda = un PR).
 El usuario dice **"combo spec kit + superpowers"**, *"arranquemos/implementemos con
 spec-kit"*, pide una implementación con andamiaje formal de specs, o pide **retomar** la
 implementación de un spec que ya tiene `specs/NNN-…/rondas.md`.
+
+**Modo fast** (*"combo fast"*, *"speckit fast"*): para un cambio que cabe en un PR, sin tablas
+nuevas ni RLS → sección *Modo fast* abajo.
 
 **Cuándo NO:** si pide solo pensar/diseñar sin specs, usa el flujo nativo de superpowers
 (`brainstorming` → `writing-plans` → …), no este runbook. No apiles ambos volantes de
@@ -74,6 +78,16 @@ automode vive en `claude/NNN-integracion`, no en `main`), su sección *Siguiente
 alcance y autoriza las ramas; no
 vuelvas a planear: léelo y continúa desde su estado.
 
+## Modo fast (implementaciones chicas)
+
+El mismo mecanismo con menos ceremonia: **un archivo** (`specs/NNN-<slug>/fast.md`, misma
+numeración que los completos) con qué, cómo y tareas; **un checkpoint** antes de escribir código;
+TDD, checks y review (Art. I–III) igual de obligatorios, con review inline salvo que el diff toque
+base, dinero o seguridad; **una ronda = un PR a `main`**. Sin rondas.md, sin automode ni Ronda H.
+Si crece (más de ~9 tareas, una decisión de diseño, más de un PR) **escala al completo** en el
+mismo directorio sin perder lo hecho. Criterios de entrada, flujo y escalada:
+[`references/fast.md`](references/fast.md).
+
 ## Las tres capas y dónde engrana cada una
 
 | Capa | Qué gobierna | Dónde actúa |
@@ -81,7 +95,7 @@ vuelvas a planear: léelo y continúa desde su estado.
 | **spec-kit** | estructura (spec/plan/tasks/artefactos) y ejecución de tareas (`/speckit-implement`) | todas las fases |
 | **superpowers** (weave de `constitution.md`) | método/rigor: TDD RED-GREEN-REFACTOR, verificación antes de completar, code review por severidad | `plan` y sobre todo cada ronda |
 | **ponytail** (hook always-on) | tamaño: solución mínima (YAGNI, stdlib-first) | siempre; carve-outs: **tests sagrados**, **no podar en diseño** |
-| **este runbook** | orden, rondas, modo y estado de la corrida (`rondas.md`) | pasos 7, 8 y 9 |
+| **este runbook** | orden, rondas, modo y estado de la corrida (`rondas.md`, o `fast.md` en modo fast) | pasos 7, 8 y 9; todo el modo fast |
 
 En `specify` es estructura pura (el rigor aún no engrana). El injerto de superpowers se
 hace visible en `plan` y en cada ronda.
@@ -100,6 +114,7 @@ nunca al revés. Al retomar, la lista se reconstruye desde `rondas.md`.
 | Paso 8, manual | Al abrir la ronda: uno por cada T### de la ronda, más «Checks (Art. II)», «Review (Art. III)» y «Abrir PR», encadenados con `addBlockedBy` (los checks esperan a todas las T###). |
 | Paso 8, automode | Uno por ronda `auto` hasta **Hasta**, con `addBlockedBy` igual a su columna *Depende de*. Solo la ronda activa se desglosa como en manual; al mergearla, su desglose pasa a `deleted` y la ronda a `completed`. |
 | Ronda bloqueada | Se queda `pending` con el título «Rn — bloqueada (D-NN)»; sus dependientes ya quedan bloqueados por `blockedBy`. |
+| Modo fast | Al aprobar el checkpoint: uno por T###, más «Checks», «Review» y «Abrir PR» (`references/fast.md` §4). |
 | Paso 9 | Verificación sobre la integración, orden de migraciones, aviso final y siguiente corrida (o revisión de decisiones, Ronda H y Gran PR). |
 
 Las rondas `humanas` entran a la lista solo cuando se trabajan con la persona. Si la herramienta
